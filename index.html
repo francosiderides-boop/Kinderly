@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi biblioteca</title>
+<style>
+:root{--bg:#f3f1ec;--card:#fff;--ink:#1c2a3a;--mute:#5d6b7a;--line:#d9d6cd;--acc:#1f4e79;--accInk:#fff;--ok:#2d7a4f;--err:#b3382c}
+@media(prefers-color-scheme:dark){:root{--bg:#141a21;--card:#1d2630;--ink:#e8ecf0;--mute:#9aa7b4;--line:#2e3a47;--acc:#6fa8dc;--accInk:#10202f;--ok:#6cc596;--err:#ff8a7a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:16px;max-width:640px;margin-inline:auto}
+h1{font:700 1.7rem Georgia,serif;margin:4px 0 2px}
+.sub{color:var(--mute);margin:0 0 16px;font-size:.92rem}
+.row{display:flex;gap:8px;margin-bottom:10px}
+input[type=text],input[type=email],input[type=url],textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
+button,.btn{padding:12px 16px;border:0;border-radius:10px;background:var(--acc);color:var(--accInk);font:600 1rem system-ui;cursor:pointer;white-space:nowrap}
+button.ghost,.btn.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
+button:disabled{opacity:.5}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.item b{display:block;font-family:Georgia,serif}
+.item small{color:var(--mute)}
+.tag{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-top:4px;color:var(--mute)}
+#status{position:sticky;bottom:8px;margin-top:12px;padding:12px;border-radius:10px;background:var(--card);border:1px solid var(--line);display:none}
+#status.ok{color:var(--ok)}#status.err{color:var(--err)}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:14px 0}
+summary{font-weight:600;cursor:pointer}
+label{display:block;margin:10px 0 4px;font-size:.9rem;color:var(--mute)}
+pre{white-space:pre-wrap;font-size:.75rem;background:var(--bg);padding:10px;border-radius:8px;max-height:220px;overflow:auto}
+.src{margin:6px 0 0;font-size:.85rem}.src a{color:var(--acc);margin-right:10px}
+#cover{display:none}
+</style>
+</head>
+<body>
+<h1>Mi biblioteca</h1>
+<p class="sub">Epubs legales en español, directo a tu mail.</p>
+
+<div class="row">
+  <input type="text" id="q" placeholder="Título o autor" enterkeyhint="search">
+  <button id="go">Buscar</button>
+</div>
+<div class="row">
+  <label class="btn ghost" for="cover" style="flex:1;text-align:center;margin:0;color:var(--acc)">Buscar por foto de tapa</label>
+  <input type="file" id="cover" accept="image/*">
+</div>
+
+<div id="res"></div>
+<div class="src" id="ext"></div>
+<div id="status" role="status"></div>
+
+<details id="cfg">
+  <summary>Configuración del envío</summary>
+  <label for="mail">Mail de destino (o tu Kindle: usuario@kindle.com)</label>
+  <input type="email" id="mail" placeholder="vos@gmail.com">
+  <label for="url">URL de tu Apps Script</label>
+  <input type="url" id="url" placeholder="https://script.google.com/macros/s/.../exec">
+  <label for="key">Clave secreta (la misma del script)</label>
+  <input type="text" id="key" placeholder="una-clave-que-inventes">
+  <div class="row" style="margin-top:12px"><button id="save">Guardar</button></div>
+  <p class="sub">Código para pegar en script.google.com (Nuevo proyecto → Implementar → Aplicación web, acceso: Cualquier usuario):</p>
+  <pre id="code"></pre>
+  <button class="ghost" id="copy">Copiar código</button>
+</details>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+const GS=`const CLAVE = 'una-clave-que-inventes';
+
+function doPost(e) {
+  try {
+    const d = JSON.parse(e.postData.contents);
+    if (d.key !== CLAVE) return out({ok:false, error:'Clave incorrecta'});
+    const r = UrlFetchApp.fetch(d.url, {followRedirects:true, muteHttpExceptions:true});
+    if (r.getResponseCode() !== 200) return out({ok:false, error:'No se pudo descargar ('+r.getResponseCode()+')'});
+    const blob = r.getBlob().setName(d.filename);
+    MailApp.sendEmail({to:d.to, subject:d.title, body:'Tu libro: '+d.title, attachments:[blob]});
+    return out({ok:true});
+  } catch (err) { return out({ok:false, error:String(err)}); }
+}
+function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }`;
+$('code').textContent=GS;
+$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(GS);say('Código copiado','ok')}catch(e){say('Copialo manualmente','err')}};
+['mail','url','key'].forEach(k=>$(k).value=store.get(k));
+$('save').onclick=()=>{['mail','url','key'].forEach(k=>store.set(k,$(k).value.trim()));say('Configuración guardada','ok')};
+if(!store.get('url'))$('cfg').open=true;
+
+function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
+const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
+const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
+const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()};
+
+// Resolver de epub de Internet Archive
+async function iaEpub(id){
+  const m=await j('https://archive.org/metadata/'+encodeURIComponent(id));
+  const f=(m.files||[]).find(f=>/\.epub$/i.test(f.name));
+  if(!f)throw new Error('Este título no tiene epub');
+  return 'https://archive.org/download/'+encodeURIComponent(id)+'/'+f.name.split('/').map(encodeURIComponent).join('/');
+}
+
+const SOURCES=[
+ {name:'Project Gutenberg',async run(q){
+   const d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q));
+   return d.results.filter(b=>b.formats['application/epub+zip']).map(b=>({title:b.title,author:(b.authors[0]||{}).name||'',url:async()=>b.formats['application/epub+zip']}));}},
+ {name:'Internet Archive',async run(q){
+   const e=q.replace(/["():]/g,' ');
+   const p=new URLSearchParams({q:`(title:(${e}) OR creator:(${e})) AND language:(spa OR Spanish OR es) AND mediatype:texts AND format:EPUB AND -collection:inlibrary AND -access-restricted-item:true`,rows:12,output:'json'});
+   ['identifier','title','creator'].forEach(f=>p.append('fl[]',f));
+   const d=await j('https://archive.org/advancedsearch.php?'+p);
+   return d.response.docs.map(b=>({title:b.title,author:[].concat(b.creator||[])[0]||'',url:()=>iaEpub(b.identifier)}));}},
+ {name:'Open Library',async run(q){
+   const p=new URLSearchParams({q:q+' ebook_access:public',language:'spa',has_fulltext:'true',fields:'title,author_name,ia',limit:12});
+   const d=await j('https://openlibrary.org/search.json?'+p);
+   return d.docs.filter(b=>b.ia&&b.ia.length).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',url:()=>iaEpub(b.ia[0])}));}},
+ {name:'Wikisource',async run(q){
+   const d=await j('https://es.wikisource.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=8&srnamespace=0&srsearch='+encodeURIComponent(q));
+   return d.query.search.map(b=>({title:b.title,author:clean(b.snippet).slice(0,70),url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title)}));}}
+];
+
+let seen=new Set();
+function card(src,b){
+  const k=(b.title+b.author).toLowerCase();
+  const el=document.createElement('div');el.className='item';
+  const t=document.createElement('div');
+  const h=document.createElement('b');h.textContent=b.title;
+  const s=document.createElement('small');s.textContent=b.author;
+  const g=document.createElement('span');g.className='tag';g.textContent=src;
+  t.append(h,s,document.createElement('br'),g);
+  const btn=document.createElement('button');btn.textContent='Enviar';
+  btn.onclick=()=>send(b,btn);
+  el.append(t,btn);$('res').append(el);
+}
+async function search(){
+  const q=$('q').value.trim();if(!q)return;
+  $('res').textContent='';$('status').style.display='none';
+  say('Buscando…');let n=0,done=0;
+  SOURCES.forEach(async s=>{
+    try{const r=await s.run(q);r.forEach(b=>{if(b.title){card(s.name,b);n++}})}catch(e){}
+    if(++done===SOURCES.length)say(n?`${n} resultados`:'Sin resultados. Probá con otra grafía o con solo el apellido del autor.',n?'ok':'err');
+  });
+  const e=encodeURIComponent(q);
+  $('ext').innerHTML=`También podés mirar: <a target="_blank" rel="noopener" href="https://www.cervantesvirtual.com/buscador/?q=${e}">Cervantes Virtual</a><a target="_blank" rel="noopener" href="https://bibliotecadigital.bne.es/bdh/es/results/index.do?text=${e}">Biblioteca Digital Hispánica</a><a target="_blank" rel="noopener" href="https://www.educ.ar/recursos/buscar?q=${e}">Educ.ar</a>`;
+}
+async function send(b,btn){
+  const to=store.get('mail'),url=store.get('url'),key=store.get('key');
+  if(!to||!url){$('cfg').open=true;say('Primero completá la configuración del envío','err');return}
+  btn.disabled=true;say('Preparando envío de “'+b.title+'”…');
+  try{
+    const file=await b.url();
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({to,key,url:file,title:b.title,filename:slug(b.title)+'.epub'})});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error);
+    say('Enviado a '+to,'ok');
+  }catch(e){say('No se pudo enviar: '+e.message,'err')}
+  btn.disabled=false;
+}
+
+$('go').onclick=search;
+$('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
+
+// Lectura de tapa por OCR (gratis, corre en el celular)
+$('cover').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  say('Leyendo la tapa… la primera vez tarda un poco');
+  try{
+    const {data}=await Tesseract.recognize(f,'spa');
+    const lines=data.text.split('\n').map(l=>l.replace(/[^\p{L}\p{N}\s]/gu,' ').trim()).filter(l=>l.length>3);
+    const q=lines.slice(0,3).join(' ').split(/\s+/).slice(0,6).join(' ');
+    if(!q){say('No se pudo leer texto en la tapa. Probá con una foto más nítida.','err');return}
+    $('q').value=q;say('Leído: “'+q+'”. Podés corregirlo antes de buscar.','ok');search();
+  }catch(err){say('Error al leer la imagen','err')}
+};
+</script>
+</body>
+</html>
