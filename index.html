@@ -60,7 +60,7 @@ pre{white-space:pre-wrap;font-size:.75rem;background:var(--bg);padding:10px;bord
 <script>
 const $=id=>document.getElementById(id);
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxbSgqoD7g3KplozKTDAsNn95DoehLYHNdMnBbj8_Kb9N9m2cGjKWWFaINtdt9X12GPmw/exec'; // <- pegá acá la URL de tu Apps Script (entre las comillas)
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwbbWJm21zYRNPlSWiJPw13nEm-sa85SFdO-CImEJsMy-QA0DSO-efSJ_6JbYXRhZ_UEQ/exec'; // <- pegá acá la URL de tu Apps Script (entre las comillas)
 $('mail').value=store.get('mail');
 $('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
 if(!store.get('mail'))$('cfg').open=true;
