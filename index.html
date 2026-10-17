@@ -75,7 +75,7 @@ label{display:block;margin:10px 0 4px;font-size:.9rem;color:var(--mute)}
 <script>
 const $=id=>document.getElementById(id);
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycby9hkzd8jGMz4DYNJIiwvL0CH6eIebK6l7V--8CNEtJRZSDN-MlW0IyDjsTpp3q8ytlxw/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwH6IzwDdTNtO2KDGYTVBPPm8kWu88opqOucWv71p4D3LvY1bVfgOYu3KmMPRs2dC3PVQ/exec';
 $('mail').value=store.get('mail');
 $('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
 if(!store.get('mail'))$('cfg').open=true;
@@ -96,7 +96,7 @@ async function iaEpub(id){
   if(!f)throw new Error('Este título no tiene epub');
   return 'https://archive.org/download/'+encodeURIComponent(id)+'/'+f.name.split('/').map(encodeURIComponent).join('/');
 }
-const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library'];
+const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books'];
 const SOURCES=[
  {name:'Project Gutenberg',async run(q){
    const d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q));
@@ -111,6 +111,11 @@ const SOURCES=[
    const p=new URLSearchParams({q:q+' ebook_access:public first_publish_year:[* TO 1930]',language:'spa',has_fulltext:'true',fields:'title,author_name,ia,key,first_publish_year',limit:20});
    const d=await j('https://openlibrary.org/search.json?'+p);
    return d.docs.filter(b=>b.ia&&b.ia.length).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',url:()=>iaEpub(b.ia[0]),inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key)})}));}},
+ {name:'Google Books',async run(q){
+   const p=new URLSearchParams({q,filter:'free-ebooks',download:'epub',langRestrict:'es',printType:'books',maxResults:20});
+   const d=await j('https://www.googleapis.com/books/v1/volumes?'+p);
+   return (d.items||[]).filter(v=>v.accessInfo&&v.accessInfo.publicDomain&&v.accessInfo.epub&&v.accessInfo.epub.isAvailable&&v.accessInfo.epub.downloadLink).map(v=>{const i=v.volumeInfo||{};
+     return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',url:async()=>v.accessInfo.epub.downloadLink,inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description)})}});}},
  {name:'Wikisource',async run(q){
    const d=await j('https://es.wikisource.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=15&srnamespace=0&srsearch='+encodeURIComponent(q));
    return d.query.search.map(b=>({title:b.title,author:'',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||''}}}));}}
@@ -181,7 +186,7 @@ async function search(author=''){
     else say(`Buscando… (${n} hasta ahora)`);
   });
   const e=encodeURIComponent(q);
-  $('ext').innerHTML=`También podés mirar: <a target="_blank" rel="noopener" href="https://www.cervantesvirtual.com/buscador/?q=${e}">Cervantes Virtual</a><a target="_blank" rel="noopener" href="https://bibliotecadigital.bne.es/bdh/es/results/index.do?text=${e}">Biblioteca Digital Hispánica</a><a target="_blank" rel="noopener" href="https://www.educ.ar/recursos/buscar?q=${e}">Educ.ar</a>`;
+  $('ext').innerHTML=`También podés mirar: <a target="_blank" rel="noopener" href="https://www.cervantesvirtual.com/buscador/?q=${e}">Cervantes Virtual</a><a target="_blank" rel="noopener" href="https://bibliotecadigital.bne.es/bdh/es/results/index.do?text=${e}">Biblioteca Digital Hispánica</a><a target="_blank" rel="noopener" href="https://www.educ.ar/recursos/buscar?q=${e}">Educ.ar</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:elejandria.com">Elejandría</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.org.ar">Biblioteca Virtual Universal</a>`;
 }
 async function send(b,btn){
   const to=store.get('mail');
