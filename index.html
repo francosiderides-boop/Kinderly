@@ -72,7 +72,6 @@ label{display:block;margin:10px 0 4px;font-size:.9rem;color:var(--mute)}
   <div class="camBar"><button class="ghost" id="cx">Cancelar</button><button id="snap">Sacar foto</button><button class="ghost" id="gal">Galería</button></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
@@ -131,12 +130,13 @@ async function loadInfo(b){
   if(!r.year||!r.desc){try{const i=await olLookup(b.title,b.author);if(!r.year&&i.year)r.year=String(i.year);if(!r.desc&&i.desc)r.desc=i.desc}catch(e){}}
   return b.info=r;
 }
-let all=[],qt=[],qn='';
+let all=[],qt=[],qa=[],qn='';
 function score(b){
   const t=norm(b.title),a=norm(b.author);let s=0;
   qt.forEach(w=>{if(t.includes(w))s+=3;else if(a.includes(w))s+=2});
   s=s/(qt.length*3)*10;
   if(t===qn)s+=5;else if(t.startsWith(qn))s+=2.5;else if(t.includes(qn))s+=1.5;
+  qa.forEach(w=>{if(a.includes(w))s+=1.5});
   return s-Math.min(t.length/200,1);
 }
 function add(src,list){list.forEach(b=>{if(!b.title)return;
@@ -170,9 +170,9 @@ function render(){
   l.sort((a,b)=>b.s-a.s);$('res').textContent='';
   l.slice(0,40).forEach(card);return l.length;
 }
-async function search(){
+async function search(author=''){
   const q=$('q').value.trim();if(!q)return;
-  all=[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando…');let done=0;
+  all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando…');let done=0;
   SOURCES.forEach(async s=>{
     const rs=await Promise.allSettled(variants(q).map(v=>s.run(v)));
     rs.forEach(r=>{if(r.status==='fulfilled')add(s.name,r.value)});
@@ -199,40 +199,26 @@ async function send(b,btn){
   }
   say('No se pudo enviar: '+err,'err');btn.disabled=false;
 }
-$('go').onclick=search;
+$('go').onclick=()=>search();
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 
-// ---- Tapa: cámara + OCR ----
-let workerP;
-const getWorker=()=>workerP||(workerP=Tesseract.createWorker('spa').then(async w=>{await w.setParameters({tessedit_pageseg_mode:'11'});return w}));
-function prep(src,inv){
-  const w0=src.videoWidth||src.naturalWidth||src.width,h0=src.videoHeight||src.naturalHeight||src.height,k=Math.min(1,1600/Math.max(w0,h0));
+// ---- Tapa: cámara + reconocimiento con IA (vía tu script) ----
+function shrink(src){
+  const w0=src.videoWidth||src.naturalWidth||src.width,h0=src.videoHeight||src.naturalHeight||src.height,k=Math.min(1,1024/Math.max(w0,h0));
   const c=document.createElement('canvas');c.width=Math.round(w0*k);c.height=Math.round(h0*k);
-  const x=c.getContext('2d');x.drawImage(src,0,0,c.width,c.height);
-  const im=x.getImageData(0,0,c.width,c.height),d=im.data,hist=new Array(256).fill(0);
-  for(let i=0;i<d.length;i+=4){const g=(d[i]*.3+d[i+1]*.59+d[i+2]*.11)|0;d[i]=g;hist[g]++}
-  const tot=c.width*c.height;let lo=0,hi=255,a=0;
-  while(lo<255&&(a+=hist[lo])<tot*.02)lo++;a=0;while(hi>0&&(a+=hist[hi])<tot*.02)hi--;
-  const sc=255/Math.max(hi-lo,1);
-  for(let i=0;i<d.length;i+=4){let g=Math.max(0,Math.min(255,(d[i]-lo)*sc));if(inv)g=255-g;d[i]=d[i+1]=d[i+2]=g}
-  x.putImageData(im,0,0);return c;
-}
-// el título suele ser el texto más grande de la tapa
-function pick(ws){
-  const g=ws.map(w=>({t:w.text.replace(/[^\p{L}]/gu,''),h:w.bbox.y1-w.bbox.y0,y:w.bbox.y0,x:w.bbox.x0,c:w.confidence})).filter(w=>w.t.length>=3&&w.c>=55);
-  if(!g.length)return [];
-  const hs=g.map(w=>w.h).sort((a,b)=>b-a),m=hs[Math.floor(hs.length*.15)];
-  return g.filter(w=>w.h>=m*.45).sort((a,b)=>a.y-b.y||a.x-b.x).slice(0,7);
+  c.getContext('2d').drawImage(src,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.8).split(',')[1];
 }
 async function readCover(el){
-  say('Leyendo la tapa… la primera vez tarda un poco');
+  say('Reconociendo el libro…');
   try{
-    const w=await getWorker();let words=[];
-    for(const inv of [false,true]){const {data}=await w.recognize(prep(el,inv));words=pick(data.words||[]);if(words.length>=2)break}
-    if(!words.length){say('No pude leer texto en la tapa. Probá con más luz o más cerca, o escribí el título.','err');return}
-    const q=words.map(x=>x.t).join(' ');
-    $('q').value=q;say('Leí: “'+q+'”. Podés corregirlo y volver a buscar.','ok');search();
-  }catch(err){say('Error al leer la imagen','err')}
+    const r=await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'identify',image:shrink(el)})});
+    const d=await r.json();
+    if(!d.ok)throw new Error(d.error);
+    if(!d.title){say('No pude reconocer el libro. Probá con la tapa completa y buena luz, o escribí el título.','err');return}
+    $('q').value=d.title;search(d.author||'');
+    say(`Reconocí: “${d.title}”${d.author?' de '+d.author:''}${d.confidence==='baja'?' (no estoy seguro)':''}. Buscando…`,'ok');
+  }catch(e){say('No se pudo reconocer: '+e.message,'err')}
 }
 let stream;
 async function openCam(){
