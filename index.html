@@ -17,7 +17,11 @@ button{padding:12px 16px;border:0;border-radius:10px;background:var(--acc);color
 button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
 button:disabled{opacity:.5}
 :focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
+.top{display:flex;gap:12px;align-items:center;justify-content:space-between}
+.det{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:.92rem}
+.det summary{color:var(--acc);font-weight:600}
+.det p{margin:6px 0}
 .item b{display:block;font-family:Georgia,serif}
 .item small{color:var(--mute)}
 .tag{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin:4px 4px 0 0;color:var(--mute)}
@@ -97,22 +101,36 @@ const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library']
 const SOURCES=[
  {name:'Project Gutenberg',async run(q){
    const d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q));
-   return d.results.filter(b=>b.formats['application/epub+zip']).map(b=>({title:b.title,author:(b.authors[0]||{}).name||'',url:async()=>b.formats['application/epub+zip']}));}},
+   return d.results.filter(b=>b.formats['application/epub+zip']).map(b=>({title:b.title,author:(b.authors[0]||{}).name||'',url:async()=>b.formats['application/epub+zip'],inf:async()=>({author:b.authors.map(a=>a.name+(a.birth_year?` (${a.birth_year}–${a.death_year||''})`:'')).join('; '),desc:(b.summaries||[])[0]||''})}));}},
  {name:'Internet Archive',async run(q){
    const e=q.replace(/["():\[\]]/g,' ').trim();
    const p=new URLSearchParams({q:`(title:(${e}) OR creator:(${e})) AND language:(spa OR Spanish OR es) AND mediatype:texts AND format:EPUB AND (licenseurl:* OR date:[* TO 1930-12-31]) AND -collection:inlibrary AND -access-restricted-item:true`,rows:30,output:'json'});
    ['identifier','title','creator'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
    const d=await j('https://archive.org/advancedsearch.php?'+p);
-   return d.response.docs.map(b=>({title:b.title,author:[].concat(b.creator||[])[0]||'',url:()=>iaEpub(b.identifier)}));}},
+   return d.response.docs.map(b=>({title:b.title,author:[].concat(b.creator||[])[0]||'',url:()=>iaEpub(b.identifier),inf:()=>iaInfo(b.identifier)}));}},
  {name:'Open Library',async run(q){
-   const p=new URLSearchParams({q:q+' ebook_access:public first_publish_year:[* TO 1930]',language:'spa',has_fulltext:'true',fields:'title,author_name,ia',limit:20});
+   const p=new URLSearchParams({q:q+' ebook_access:public first_publish_year:[* TO 1930]',language:'spa',has_fulltext:'true',fields:'title,author_name,ia,key,first_publish_year',limit:20});
    const d=await j('https://openlibrary.org/search.json?'+p);
-   return d.docs.filter(b=>b.ia&&b.ia.length).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',url:()=>iaEpub(b.ia[0])}));}},
+   return d.docs.filter(b=>b.ia&&b.ia.length).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',url:()=>iaEpub(b.ia[0]),inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key)})}));}},
  {name:'Wikisource',async run(q){
    const d=await j('https://es.wikisource.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=15&srnamespace=0&srsearch='+encodeURIComponent(q));
-   return d.query.search.map(b=>({title:b.title,author:'',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title)}));}}
+   return d.query.search.map(b=>({title:b.title,author:'',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||''}}}));}}
 ];
 
+const txt=h=>new DOMParser().parseFromString(String(h||''),'text/html').body.textContent.replace(/\s+/g,' ').trim();
+const cut=(s,n=600)=>s.length>n?s.slice(0,n).replace(/\s\S*$/,'')+'…':s;
+async function iaInfo(id){const m=(await j('https://archive.org/metadata/'+encodeURIComponent(id))).metadata||{};
+  return {author:txt([].concat(m.creator||[]).join('; ')),year:String(m.date||m.year||'').slice(0,4),desc:txt([].concat(m.description||[]).join(' '))}}
+async function olDesc(key){if(!key)return '';const w=await j('https://openlibrary.org'+key+'.json');return txt(w.description&&typeof w.description==='object'?w.description.value:w.description)}
+async function olLookup(title,author){const p=new URLSearchParams({title:title.split(/[:;(]/)[0],limit:1,fields:'key,first_publish_year'});if(author)p.set('author',author.split(',')[0]);
+  const d=(await j('https://openlibrary.org/search.json?'+p)).docs[0];return d?{year:d.first_publish_year,desc:await olDesc(d.key)}:{}}
+async function loadInfo(b){
+  if(b.info)return b.info;
+  const r={author:'',year:'',desc:''};
+  for(const o of [...b.opts].sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){try{const i=await o.inf();['author','year','desc'].forEach(k=>{if(!r[k]&&i[k])r[k]=String(i[k])})}catch(e){}}
+  if(!r.year||!r.desc){try{const i=await olLookup(b.title,b.author);if(!r.year&&i.year)r.year=String(i.year);if(!r.desc&&i.desc)r.desc=i.desc}catch(e){}}
+  return b.info=r;
+}
 let all=[],qt=[],qn='';
 function score(b){
   const t=norm(b.title),a=norm(b.author);let s=0;
@@ -122,18 +140,29 @@ function score(b){
   return s-Math.min(t.length/200,1);
 }
 function add(src,list){list.forEach(b=>{if(!b.title)return;
-  const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url},e=all.find(x=>x.k===k);
+  const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf},e=all.find(x=>x.k===k);
   if(e){if(!e.opts.some(p=>p.src===src))e.opts.push(o);if(!e.author&&b.author)e.author=b.author}
   else all.push({k,title:b.title,author:b.author||'',opts:[o]})})}
 function card(b){
   const el=document.createElement('div');el.className='item';
+  const top=document.createElement('div');top.className='top';
   const t=document.createElement('div');
   const h=document.createElement('b');h.textContent=b.title;
-  const s=document.createElement('small');s.textContent=b.author;
-  t.append(h,s,document.createElement('br'));
+  const sm=document.createElement('small');sm.textContent=b.author;
+  t.append(h,sm,document.createElement('br'));
   b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.src;t.append(g)});
   const btn=document.createElement('button');btn.textContent='Enviar';btn.onclick=()=>send(b,btn);
-  el.append(t,btn);$('res').append(el);
+  top.append(t,btn);
+  const dt=document.createElement('details');dt.className='det';
+  const su=document.createElement('summary');su.textContent='Ver detalles';
+  const body=document.createElement('div');dt.append(su,body);
+  dt.addEventListener('toggle',async()=>{
+    if(!dt.open||dt.dataset.l)return;dt.dataset.l=1;body.textContent='Cargando…';
+    try{const i=await loadInfo(b);body.textContent='';
+      [['Autor',i.author||b.author||'Sin datos'],['Año de publicación',i.year||'Sin datos'],['Sinopsis',cut(i.desc)||'Sin sinopsis disponible']].forEach(([k,v])=>{const p=document.createElement('p'),st=document.createElement('strong');st.textContent=k+': ';p.append(st,document.createTextNode(v));body.append(p)});
+    }catch(e){body.textContent='No se pudieron cargar los detalles'}
+  });
+  el.append(top,dt);$('res').append(el);
 }
 function render(){
   all.forEach(b=>b.s=score(b));
