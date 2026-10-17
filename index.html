@@ -4,72 +4,105 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kinderly</title>
+<meta name="theme-color" content="#0d1015">
 <style>
-:root{--bg:#f3f1ec;--card:#fff;--ink:#1c2a3a;--mute:#5d6b7a;--line:#d9d6cd;--acc:#1f4e79;--accInk:#fff;--ok:#2d7a4f;--err:#b3382c}
-@media(prefers-color-scheme:dark){:root{--bg:#141a21;--card:#1d2630;--ink:#e8ecf0;--mute:#9aa7b4;--line:#2e3a47;--acc:#6fa8dc;--accInk:#10202f;--ok:#6cc596;--err:#ff8a7a}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif;padding:16px;max-width:640px;margin-inline:auto}
-h1{font:700 1.7rem Georgia,serif;margin:4px 0 2px}
-.sub{color:var(--mute);margin:0 0 16px;font-size:.92rem}
-.row{display:flex;gap:8px;margin-bottom:10px}
-input[type=text],input[type=email]{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit}
-button{padding:12px 16px;border:0;border-radius:10px;background:var(--acc);color:var(--accInk);font:600 1rem system-ui;cursor:pointer;white-space:nowrap}
-button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}
-button:disabled{opacity:.5}
+:root{--bg:#f6f2ea;--bg2:#ece3d0;--card:#fffdf9;--ink:#1d1a14;--mute:#6f6759;--line:#e3dac9;--acc:#d9922e;--accInk:#1f1503;--ok:#1f7a4d;--err:#b3382c;--sh:0 1px 2px rgba(60,40,10,.06),0 10px 28px rgba(60,40,10,.09)}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1015;--bg2:#171d29;--card:#161b24;--ink:#eee9df;--mute:#98a0ad;--line:#262d3a;--acc:#e8a63c;--ok:#6cc596;--err:#ff8a7a;--sh:0 1px 2px rgba(0,0,0,.4),0 12px 32px rgba(0,0,0,.4)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(900px 420px at 50% -140px,var(--bg2),transparent) var(--bg);padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(110px + env(safe-area-inset-bottom,0px))}
+.app{max-width:680px;margin:0 auto}
+header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--acc),#b9701a);display:grid;place-items:center;box-shadow:var(--sh)}
+.logo svg{width:26px;height:26px}
+h1{font:700 1.7rem/1 "Iowan Old Style",Palatino,Georgia,serif;margin:0;letter-spacing:-.02em}
+.beta{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--mute);margin-left:auto}
+.lead{font:600 1.35rem/1.25 "Iowan Old Style",Palatino,Georgia,serif;margin:0 0 14px;letter-spacing:-.01em}
+.lead span{color:var(--acc)}
+.search{display:flex;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px;box-shadow:var(--sh)}
+.search:focus-within{border-color:var(--acc)}
+input[type=text],input[type=email]{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;padding:12px 12px;outline:0}
+input::placeholder{color:var(--mute)}
+button{font:600 .95rem system-ui,sans-serif;border:0;border-radius:13px;padding:12px 18px;background:var(--acc);color:var(--accInk);cursor:pointer;white-space:nowrap;transition:transform .12s,filter .12s}
+button:active{transform:scale(.97)}button:hover{filter:brightness(1.06)}button:disabled{opacity:.5}
+button.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
 :focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-.item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
-.top{display:flex;gap:12px;align-items:center;justify-content:space-between}
-.det{margin-top:8px;border-top:1px solid var(--line);padding-top:8px;font-size:.92rem}
-.det summary{color:var(--acc);font-weight:600}
-.det p{margin:6px 0}
-.item b{display:block;font-family:Georgia,serif}
-.item small{color:var(--mute)}
-.tag{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin:4px 4px 0 0;color:var(--mute)}
-#status{position:sticky;bottom:8px;margin-top:12px;padding:12px;border-radius:10px;background:var(--card);border:1px solid var(--line);display:none}
-#status.ok{color:var(--ok)}#status.err{color:var(--err)}
-details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:14px 0}
-summary{font-weight:600;cursor:pointer}
-label{display:block;margin:10px 0 4px;font-size:.9rem;color:var(--mute)}
-.src{margin:6px 0 0;font-size:.85rem}.src a{color:var(--acc);margin-right:10px}
+.chips{display:flex;gap:8px;margin:12px 0 22px}
+.chips button{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:99px;font-size:.88rem}
+.chips svg{width:18px;height:18px;flex:none}
+.item{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px;margin:10px 0;box-shadow:var(--sh);animation:in .35s ease both}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+@media(prefers-reduced-motion:reduce){.item{animation:none}button{transition:none}}
+.top{display:flex;gap:12px;align-items:center}
+.top>div:nth-child(2){flex:1;min-width:0}
+.top b{display:block;font:600 1.02rem/1.25 "Iowan Old Style",Palatino,Georgia,serif;overflow-wrap:anywhere}
+.top small{color:var(--mute);display:block;margin-top:2px}
+.cov{flex:none;width:52px;height:72px;border-radius:5px 9px 9px 5px;display:grid;place-items:center;color:#fff;font:700 1.15rem Georgia,serif;box-shadow:inset 4px 0 0 rgba(0,0,0,.22),0 4px 10px rgba(0,0,0,.2);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.tag{display:inline-block;font-size:.7rem;font-weight:600;border-radius:99px;padding:1px 9px;margin:6px 4px 0 0;background:var(--bg2);color:var(--mute)}
+.det{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;font-size:.92rem}
+.det summary{cursor:pointer;color:var(--acc);font-weight:600;list-style:none;display:flex;align-items:center;gap:6px}
+.det summary::-webkit-details-marker{display:none}
+.det summary::after{content:"";width:8px;height:8px;border:solid var(--acc);border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .2s;margin-top:-3px}
+.det[open] summary::after{transform:rotate(-135deg);margin-top:3px}
+.det p{margin:8px 0 0}
+#empty{text-align:center;color:var(--mute);padding:26px 10px}
+#empty svg{width:64px;height:64px;opacity:.55;margin-bottom:6px}
+#res:not(:empty)+#empty{display:none}
+.src{margin:14px 0 0;font-size:.85rem;color:var(--mute);line-height:2}
+.src a{color:var(--ink);text-decoration:none;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:4px 11px;margin-right:6px;white-space:nowrap}
+details#cfg{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 16px;margin:22px 0 0;box-shadow:var(--sh)}
+#cfg summary{font-weight:600;cursor:pointer}
+#cfg label{display:block;margin:12px 0 6px;font-size:.88rem;color:var(--mute)}
+#cfg input{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);flex:none}
+.hint2{color:var(--mute);font-size:.82rem;margin:10px 0 0}
+#status{display:none;position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:648px;margin:0 auto;padding:13px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--acc);box-shadow:var(--sh);z-index:5;font-size:.93rem}
+#status.ok{border-left-color:var(--ok)}#status.err{border-left-color:var(--err);color:var(--err)}
 #file{display:none}
 #cam{position:fixed;inset:0;background:#000;display:none;flex-direction:column;z-index:9}
 #cam video{flex:1;min-height:0;width:100%;object-fit:cover}
-.frame{position:absolute;inset:8% 10% 22%;border:3px dashed rgba(255,255,255,.8);border-radius:12px;pointer-events:none}
-.camBar{display:flex;gap:8px;justify-content:center;padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));background:#000}
-.camBar .ghost{color:#fff;border-color:#fff}
-.hint{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;color:#fff;font-size:.9rem;text-shadow:0 1px 3px #000}
+.frame{position:absolute;inset:14% 12% 26%;border-radius:16px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45);border:2px solid rgba(255,255,255,.85);pointer-events:none}
+.hint{position:absolute;top:calc(16px + env(safe-area-inset-top,0px));left:16px;right:16px;text-align:center;color:#fff;font-size:.9rem;text-shadow:0 1px 4px #000}
+.camBar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px calc(18px + env(safe-area-inset-bottom,0px));background:#000}
+.camBar .ghost{background:transparent;color:#fff;border-color:#555}
+#snap{width:72px;height:72px;padding:0;border-radius:50%;background:#fff;border:5px solid var(--acc);font-size:0}
 </style>
 </head>
 <body>
-<h1>Kinderly</h1>
-<p class="sub">Epubs legales en español, directo a tu mail. Beta.</p>
+<div class="app">
+<header>
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#1f1503" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.5 5 8 4.5 4 4.5v13c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-13c-4 0-6.5.5-8 2z"/><path d="M12 6.5v13"/></svg></div>
+  <h1>Kinderly</h1><span class="beta">Beta</span>
+</header>
 
-<div class="row">
-  <input type="text" id="q" placeholder="Título o autor" enterkeyhint="search">
+<p class="lead">Encontrá tu próximo libro y <span>recibilo en tu Kindle</span>.</p>
+<div class="search">
+  <input type="text" id="q" placeholder="Título o autor…" enterkeyhint="search" aria-label="Buscar libro">
   <button id="go">Buscar</button>
 </div>
-<div class="row">
-  <button class="ghost" id="scan" style="flex:1">Escanear tapa con la cámara</button>
-  <button class="ghost" id="gal0">Galería</button>
+<div class="chips">
+  <button class="ghost" id="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Escanear tapa</button>
+  <button class="ghost" id="gal0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 9"/></svg>Desde galería</button>
 </div>
 <input type="file" id="file" accept="image/*">
 
 <div id="res"></div>
+<div id="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10.5 5 8 4.5 4 4.5v13c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-13c-4 0-6.5.5-8 2z"/><path d="M12 6.5v13"/></svg><br>Buscá un título o escaneá una tapa.<br>Clásicos y obras de dominio público, gratis y legales.</div>
 <div class="src" id="ext"></div>
-<div id="status" role="status"></div>
 
 <details id="cfg">
   <summary>Mi mail</summary>
-  <label for="mail">Mail donde recibís los libros (o tu Kindle: usuario@kindle.com)</label>
+  <label for="mail">Dónde recibís los libros (o tu Kindle: usuario@kindle.com)</label>
   <input type="email" id="mail" placeholder="vos@gmail.com" autocomplete="email">
-  <div class="row" style="margin-top:12px"><button id="save">Guardar</button></div>
-  <p class="sub">Si usás Kindle, aprobá el mail remitente en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).</p>
+  <div style="margin-top:12px"><button id="save">Guardar</button></div>
+  <p class="hint2">Si usás Kindle, aprobá el mail remitente en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).</p>
 </details>
+</div>
+<div id="status" role="status"></div>
 
 <div id="cam">
   <video id="vid" playsinline muted autoplay></video>
-  <div class="frame"></div><div class="hint">Encuadrá la tapa y que se lea bien el título</div>
-  <div class="camBar"><button class="ghost" id="cx">Cancelar</button><button id="snap">Sacar foto</button><button class="ghost" id="gal">Galería</button></div>
+  <div class="frame"></div><div class="hint">Encuadrá la tapa completa, con buena luz</div>
+  <div class="camBar"><button class="ghost" id="cx">Cancelar</button><button id="snap" aria-label="Sacar foto">Sacar foto</button><button class="ghost" id="gal">Galería</button></div>
 </div>
 
 <script>
@@ -157,7 +190,11 @@ function card(b){
   t.append(h,sm,document.createElement('br'));
   b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.src;t.append(g)});
   const btn=document.createElement('button');btn.textContent='Enviar';btn.onclick=()=>send(b,btn);
-  top.append(t,btn);
+  const cv=document.createElement('div');cv.className='cov';
+  const hh=[...b.title].reduce((x,c)=>(x*31+c.charCodeAt(0))%360,7);
+  cv.style.background=`linear-gradient(145deg,hsl(${hh} 42% 38%),hsl(${(hh+45)%360} 48% 22%))`;
+  cv.textContent=(norm(b.title).split(' ').filter(w=>!STOP.has(w)).slice(0,2).map(w=>w[0]||'').join('')||'L').toUpperCase();
+  top.append(cv,t,btn);
   const dt=document.createElement('details');dt.className='det';
   const su=document.createElement('summary');su.textContent='Ver detalles';
   const body=document.createElement('div');dt.append(su,body);
