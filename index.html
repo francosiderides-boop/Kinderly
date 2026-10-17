@@ -75,7 +75,7 @@ label{display:block;margin:10px 0 4px;font-size:.9rem;color:var(--mute)}
 <script>
 const $=id=>document.getElementById(id);
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-const SCRIPT_URL='https://script.google.com/macros/s/AKfycbwbbWJm21zYRNPlSWiJPw13nEm-sa85SFdO-CImEJsMy-QA0DSO-efSJ_6JbYXRhZ_UEQ/exec';
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycby9hkzd8jGMz4DYNJIiwvL0CH6eIebK6l7V--8CNEtJRZSDN-MlW0IyDjsTpp3q8ytlxw/exec';
 $('mail').value=store.get('mail');
 $('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
 if(!store.get('mail'))$('cfg').open=true;
