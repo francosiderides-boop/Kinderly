@@ -49,42 +49,21 @@ pre{white-space:pre-wrap;font-size:.75rem;background:var(--bg);padding:10px;bord
 <div id="status" role="status"></div>
 
 <details id="cfg">
-  <summary>Configuración del envío</summary>
-  <label for="mail">Mail de destino (o tu Kindle: usuario@kindle.com)</label>
-  <input type="email" id="mail" placeholder="vos@gmail.com">
-  <label for="url">URL de tu Apps Script</label>
-  <input type="url" id="url" placeholder="https://script.google.com/macros/s/.../exec">
-  <label for="key">Clave secreta (la misma del script)</label>
-  <input type="text" id="key" placeholder="una-clave-que-inventes">
+  <summary>Mi mail</summary>
+  <label for="mail">Mail donde recibís los libros (o tu Kindle: usuario@kindle.com)</label>
+  <input type="email" id="mail" placeholder="vos@gmail.com" autocomplete="email">
   <div class="row" style="margin-top:12px"><button id="save">Guardar</button></div>
-  <p class="sub">Código para pegar en script.google.com (Nuevo proyecto → Implementar → Aplicación web, acceso: Cualquier usuario):</p>
-  <pre id="code"></pre>
-  <button class="ghost" id="copy">Copiar código</button>
+  <p class="sub">Si usás Kindle, aprobá en Amazon (Contenido y dispositivos → Preferencias → Documentos personales) el mail remitente que te indique quien te compartió la app.</p>
 </details>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-const GS=`const CLAVE = 'una-clave-que-inventes';
-
-function doPost(e) {
-  try {
-    const d = JSON.parse(e.postData.contents);
-    if (d.key !== CLAVE) return out({ok:false, error:'Clave incorrecta'});
-    const r = UrlFetchApp.fetch(d.url, {followRedirects:true, muteHttpExceptions:true});
-    if (r.getResponseCode() !== 200) return out({ok:false, error:'No se pudo descargar ('+r.getResponseCode()+')'});
-    const blob = r.getBlob().setName(d.filename);
-    MailApp.sendEmail({to:d.to, subject:d.title, body:'Tu libro: '+d.title, attachments:[blob]});
-    return out({ok:true});
-  } catch (err) { return out({ok:false, error:String(err)}); }
-}
-function out(o){ return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }`;
-$('code').textContent=GS;
-$('copy').onclick=async()=>{try{await navigator.clipboard.writeText(GS);say('Código copiado','ok')}catch(e){say('Copialo manualmente','err')}};
-['mail','url','key'].forEach(k=>$(k).value=store.get(k));
-$('save').onclick=()=>{['mail','url','key'].forEach(k=>store.set(k,$(k).value.trim()));say('Configuración guardada','ok')};
-if(!store.get('url'))$('cfg').open=true;
+const SCRIPT_URL='https://script.google.com/macros/s/AKfycbxbSgqoD7g3KplozKTDAsNn95DoehLYHNdMnBbj8_Kb9N9m2cGjKWWFaINtdt9X12GPmw/exec'; // <- pegá acá la URL de tu Apps Script (entre las comillas)
+$('mail').value=store.get('mail');
+$('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
+if(!store.get('mail'))$('cfg').open=true;
 
 function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
@@ -143,12 +122,13 @@ async function search(){
   $('ext').innerHTML=`También podés mirar: <a target="_blank" rel="noopener" href="https://www.cervantesvirtual.com/buscador/?q=${e}">Cervantes Virtual</a><a target="_blank" rel="noopener" href="https://bibliotecadigital.bne.es/bdh/es/results/index.do?text=${e}">Biblioteca Digital Hispánica</a><a target="_blank" rel="noopener" href="https://www.educ.ar/recursos/buscar?q=${e}">Educ.ar</a>`;
 }
 async function send(b,btn){
-  const to=store.get('mail'),url=store.get('url'),key=store.get('key');
-  if(!to||!url){$('cfg').open=true;say('Primero completá la configuración del envío','err');return}
+  const to=store.get('mail'),url=SCRIPT_URL;
+  if(!to){$('cfg').open=true;say('Primero guardá tu mail','err');return}
+  if(!url){say('Falta configurar la URL del script en la app','err');return}
   btn.disabled=true;say('Preparando envío de “'+b.title+'”…');
   try{
     const file=await b.url();
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({to,key,url:file,title:b.title,filename:slug(b.title)+'.epub'})});
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({to,url:file,title:b.title,filename:slug(b.title)+'.epub'})});
     const d=await r.json();
     if(!d.ok)throw new Error(d.error);
     say('Enviado a '+to,'ok');
