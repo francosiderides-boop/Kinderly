@@ -49,7 +49,7 @@ button.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line
 .cov span{border:1px solid rgba(232,185,74,.55);border-radius:3px;padding:6px 5px;line-height:1}
 .cov.has{background:none}
 .cov img{width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block}
-.tag{display:inline-block;font-size:.68rem;font-weight:600;border-radius:99px;padding:1px 9px;margin:7px 4px 0 0;background:var(--soft);color:var(--mute)}
+.tag{display:inline-block;font-size:.68rem;font-weight:600;border-radius:99px;padding:1px 9px;margin:7px 4px 0 0;background:var(--soft);color:var(--mute)}a.tag[href]{text-decoration:none;color:var(--green)}
 .det{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;font-size:.92rem}
 .det summary{cursor:pointer;color:var(--acc);font-weight:600;list-style:none;display:flex;align-items:center;gap:6px}
 .det summary::-webkit-details-marker{display:none}
@@ -124,7 +124,7 @@ const $=id=>document.getElementById(id);
 const ANNA_API_BASE=(document.querySelector('meta[name="kinderly-api-base"]')?.content||'').trim().replace(/\/+$/,'');
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 const SCRIPT_URLS=['https://script.google.com/macros/s/AKfycbwhRlwAlFh1VdroyXcpxVdl6cf2yzDuou4t0MnaTo9pK5KUFk7NZnfdXNesi8RONMv5jQ/exec']; // si agregás otro remitente, sumá su URL acá separada por coma
-async function api(p){let last={ok:false,error:'Sin conexión'};for(const u of SCRIPT_URLS){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p)});const d=await r.json();if(d.ok||!/límite/i.test(d.error||''))return d;last=d}return last}
+async function api(p){let last={ok:false,error:'No se pudo conectar con el servicio'};for(const u of SCRIPT_URLS){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),signal:AbortSignal.timeout(25000)});if(!r.ok)throw new Error(`El servicio respondió HTTP ${r.status}`);const d=await r.json();if(d.ok||!/límite/i.test(d.error||''))return d;last=d}catch(e){last={ok:false,error:e.name==='TimeoutError'?'El servicio tardó demasiado en responder':e.message||'Error de conexión'}}}return last}
 $('mail').value=store.get('mail');
 $('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
 if(!store.get('mail'))$('cfg').open=true;
@@ -132,20 +132,24 @@ if(!store.get('mail'))$('cfg').open=true;
 function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
 const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
-const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');return r.json()};
+const j=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout(15000)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');return r.json()};
 const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
 const STOP=new Set('de la el los las y del un una en con por a al lo e o'.split(' '));
 const toks=q=>{const t=norm(q).split(' ').filter(Boolean);const k=t.filter(w=>!STOP.has(w)&&w.length>1);return k.length?k:t};
 function variants(q){const t=toks(q),v=[q.trim()],n=norm(q);if(n&&n!==q.toLowerCase().trim())v.push(n);
   if(t.length>1)[...t].sort((a,b)=>b.length-a.length).slice(0,3).filter(w=>w.length>3).forEach(w=>v.push(w));return [...new Set(v)]}
 
-async function iaEpub(id){
+const hasOpenLicense=value=>/creativecommons\.org\/(publicdomain|licenses\/(by(?:-sa)?|zero))/i.test(String(value||''));
+async function iaEpub(id,verifiedPublicScan=false){
   const m=await j('https://archive.org/metadata/'+encodeURIComponent(id));
-  const f=(m.files||[]).find(f=>/\.epub$/i.test(f.name));
+  const md=m.metadata||{},restricted=String(md['access-restricted-item']||'').toLowerCase()==='true';
+  if(restricted)throw new Error('Internet Archive marca este libro como restringido');
+  if(!hasOpenLicense(md.licenseurl||md.rights)&&!verifiedPublicScan)throw new Error('La ficha no declara una licencia abierta verificable');
+  const f=(m.files||[]).find(f=>/\.epub$/i.test(f.name)&&String(f.private||'').toLowerCase()!=='true');
   if(!f)throw new Error('Este título no tiene epub');
   return 'https://archive.org/download/'+encodeURIComponent(id)+'/'+f.name.split('/').map(encodeURIComponent).join('/');
 }
-const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books','OAPEN','Anna’s Archive · metadatos'];
+const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books','OAPEN','DOAB','dBooks','Anna’s Archive · metadatos'];
 const SOURCES=[
  {name:'Project Gutenberg',async run(q){
    const d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q));
@@ -153,13 +157,13 @@ const SOURCES=[
  {name:'Internet Archive',async run(q){
    const e=q.replace(/["():\[\]]/g,' ').trim();
    const p=new URLSearchParams({q:`(title:(${e}) OR creator:(${e})) AND language:(spa OR Spanish OR es) AND mediatype:texts AND format:EPUB AND (licenseurl:* OR date:[* TO 1930-12-31]) AND -collection:inlibrary AND -access-restricted-item:true`,rows:30,output:'json'});
-   ['identifier','title','creator'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
+   ['identifier','title','creator','licenseurl','rights','date'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
    const d=await j('https://archive.org/advancedsearch.php?'+p);
-   return d.response.docs.map(b=>({title:b.title,author:[].concat(b.creator||[])[0]||'',img:'https://archive.org/services/img/'+b.identifier,url:()=>iaEpub(b.identifier),inf:()=>iaInfo(b.identifier)}));}},
+   return d.response.docs.map(b=>({title:b.title,author:[].concat(b.creator||[])[0]||'',img:'https://archive.org/services/img/'+b.identifier,sendable:hasOpenLicense(b.licenseurl||b.rights),page:'https://archive.org/details/'+encodeURIComponent(b.identifier),url:()=>iaEpub(b.identifier),inf:()=>iaInfo(b.identifier)}));}},
  {name:'Open Library',async run(q){
    const p=new URLSearchParams({q:q+' ebook_access:public first_publish_year:[* TO 1930]',language:'spa',has_fulltext:'true',fields:'title,author_name,ia,key,first_publish_year,publisher,number_of_pages_median,cover_i',limit:20});
    const d=await j('https://openlibrary.org/search.json?'+p);
-   return d.docs.filter(b=>b.ia&&b.ia.length).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',img:b.cover_i?'https://covers.openlibrary.org/b/id/'+b.cover_i+'-M.jpg?default=false':'',url:()=>iaEpub(b.ia[0]),inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key),pages:b.number_of_pages_median,edition:(b.publisher||[])[0]})}));}},
+   return d.docs.filter(b=>b.ia&&b.ia.length).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',img:b.cover_i?'https://covers.openlibrary.org/b/id/'+b.cover_i+'-M.jpg?default=false':'',page:'https://openlibrary.org'+b.key,sendable:true,url:()=>iaEpub(b.ia[0],true),inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key),pages:b.number_of_pages_median,edition:(b.publisher||[])[0]})}));}},
  {name:'Google Books',async run(q){
    const p=new URLSearchParams({q,filter:'free-ebooks',download:'epub',langRestrict:'es',printType:'books',maxResults:20});
    const d=await j('https://www.googleapis.com/books/v1/volumes?'+p);
@@ -171,6 +175,13 @@ const SOURCES=[
    return (Array.isArray(d)?d:[]).filter(it=>md(it,'dc.language').some(v=>/^(spa|es|span)/i.test(v))).map(it=>{
      const f=(it.bitstreams||[]).find(x=>/epub/i.test(x.mimeType||'')||/\.epub$/i.test(x.name||''));
      return f?{title:it.name,author:(md(it,'dc.contributor.author')[0]||'').replace(/,\s*$/,''),img:(()=>{const t=(it.bitstreams||[]).find(x=>x.bundleName==='THUMBNAIL');return t?'https://library.oapen.org'+t.retrieveLink:''})(),url:async()=>'https://library.oapen.org'+f.retrieveLink,inf:async()=>({year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:txt(md(it,'dc.description.abstract')[0]),edition:md(it,'publisher.name')[0]||md(it,'dc.publisher')[0],pages:md(it,'oapen.pages')[0]})}:null}).filter(Boolean);}},
+ {name:'DOAB',async run(q){
+   const d=await j('https://directory.doabooks.org/rest/search?expand=metadata&query='+encodeURIComponent(q));
+   const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
+   return (Array.isArray(d)?d:[]).map(it=>({title:it.name||md(it,'dc.title')[0]||'',author:md(it,'dc.contributor.author')[0]||md(it,'dc.creator')[0]||'',img:'',sendable:false,page:it.handle?'https://directory.doabooks.org/handle/'+encodeURIComponent(it.handle):'',url:async()=>{throw new Error('DOAB muestra libros de acceso abierto; abrí el registro para elegir el formato disponible.')},inf:async()=>({author:md(it,'dc.contributor.author')[0]||md(it,'dc.creator')[0]||'',year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:md(it,'dc.description.abstract')[0]||'',edition:md(it,'dc.publisher')[0]||'Directory of Open Access Books'})}));}},
+ {name:'dBooks',async run(q){
+   const d=await j('https://www.dbooks.org/api/search/'+encodeURIComponent(q));
+   return (d.books||[]).map(b=>({title:[b.title,b.subtitle].filter(Boolean).join(': '),author:b.authors||'',img:b.image||'',sendable:false,page:b.url||'',url:async()=>{throw new Error('Abrí el registro de dBooks para revisar sus condiciones y formatos disponibles.')},inf:async()=>({author:b.authors||'',desc:b.subtitle||'',edition:'dBooks · ficha bibliográfica',pages:''})}));}},
   {name:'Anna’s Archive · metadatos',async run(q){
    // La búsqueda se ejecuta en el backend Dart con annas_archive_api.
    // Este origen aporta metadatos; Kinderly no obtiene ni envía copias sin autorización.
@@ -199,7 +210,7 @@ async function loadInfo(b){
   for(const o of [...b.opts].sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){try{fill(await o.inf())}catch(e){}}
   if(!r.year||!r.desc||!r.pages){try{fill(await olLookup(b.title,b.author))}catch(e){}}
   const sy=await resumir(b,r);r.syn=sy.text;r.synErr=sy.err;
-  if(r.syn)b.info=r;
+  b.info=r;
   return r;
 }
 async function resumir(b,r){
@@ -210,7 +221,7 @@ async function resumir(b,r){
     return {text:'',err:d.error||'sin respuesta'};
   }catch(e){return {text:'',err:e.message}}
 }
-let all=[],qt=[],qa=[],qn='';
+let all=[],qt=[],qa=[],qn='',searchRun=0;
 function score(b){
   const t=norm(b.title),a=norm(b.author);let s=0;
   qt.forEach(w=>{if(t.includes(w))s+=3;else if(a.includes(w))s+=2});
@@ -220,7 +231,7 @@ function score(b){
   return s-Math.min(t.length/200,1);
 }
 function add(src,list){list.forEach(b=>{if(!b.title)return;
-  const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf},e=all.find(x=>x.k===k);
+  const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false},e=all.find(x=>x.k===k);
   if(e){if(!e.opts.some(p=>p.src===src))e.opts.push(o);if(!e.author&&b.author)e.author=b.author;if(!e.img&&b.img)e.img=b.img}
   else all.push({k,title:b.title,author:b.author||'',img:b.img||'',opts:[o]})})}
 function card(b){
@@ -231,12 +242,13 @@ function card(b){
   const sm=document.createElement('small');sm.textContent=b.author;
   t.append(h,sm,document.createElement('br'));
   b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.src;t.append(g)});
+  const record=b.opts.find(o=>o.page);if(record){const a=document.createElement('a');a.href=record.page;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Abrir ficha';a.className='tag';t.append(a)}
   const btn=document.createElement('button');
-  const hasAuthorizedSource=b.opts.some(o=>!o.src.startsWith('Anna’s Archive'));
+  const hasAuthorizedSource=b.opts.some(o=>o.sendable&&!o.src.startsWith('Anna’s Archive'));
   btn.textContent=hasAuthorizedSource?'Enviar':'Sin archivo autorizado';
   btn.disabled=!hasAuthorizedSource;
   if(hasAuthorizedSource)btn.onclick=()=>send(b,btn);
-  else btn.title='Este resultado solo contiene metadatos; buscá una fuente autorizada para enviar el archivo.';
+  else btn.title='Este resultado solo contiene metadatos; abrí el registro de la fuente o buscá un archivo con licencia abierta.';
   const cv=document.createElement('div');cv.className='cov';
   const hh=[...b.title].reduce((x,c)=>(x*31+c.charCodeAt(0))%997,7),CV=[['#14304f','#0b1f36'],['#1f5b3e','#103625'],['#14304f','#1f5b3e'],['#9a4a2c','#5e2a17']],pc=CV[hh%4];
   cv.style.background=`linear-gradient(145deg,${pc[0]},${pc[1]})`;
@@ -265,14 +277,20 @@ function render(){
 }
 async function search(author=''){
   const q=$('q').value.trim();if(!q)return;
-  all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando…');let done=0;const sourceFailures=[];
-  SOURCES.forEach(async s=>{
-    const rs=await Promise.allSettled(variants(q).map(v=>s.run(v)));
-    rs.forEach(r=>{if(r.status==='fulfilled')add(s.name,r.value);else if(s.name==='Anna’s Archive · metadatos')sourceFailures.push(r.reason?.message||'falló la solicitud')});
-    const n=render();
-    if(++done===SOURCES.length){const anna=sourceFailures.length?` Anna’s Archive no respondió: ${sourceFailures[0]}. Revisá que el backend esté desplegado y configurado.`:'';say((n?`${n} resultados, los más parecidos primero`:'Sin resultados. Probá con otra grafía o solo con el apellido del autor.')+anna,n?'ok':'err')}
-    else say(`Buscando… (${n} hasta ahora)`);
-  });
+  const run=++searchRun;all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando en todas las fuentes…');let done=0;const failed=[];
+  await Promise.all(SOURCES.map(async s=>{
+    try{
+      let results=await s.run(q);
+      // Use one request per source on the common path. Retry with a shorter
+      // normalized term only when that catalog returns no matches.
+      if(!results.length){const alt=variants(q).find(v=>norm(v)!==norm(q));if(alt)results=await s.run(alt)}
+      if(run!==searchRun)return;
+      add(s.name,results);
+    }catch(e){if(run===searchRun)failed.push(`${s.name}: ${e.message||'no respondió'}`)}
+    if(run!==searchRun)return;
+    done++;const n=render();say(`Buscando… (${done}/${SOURCES.length} fuentes · ${n} resultados)`,n?'ok':'');
+  }));
+  if(run===searchRun){const n=render();const details=failed.length?` Fuentes sin respuesta: ${failed.join(' · ')}`:'';say((n?`${n} resultados. Algunas fuentes pueden tardar.`:'No hubo resultados. Probá con título, autor o una búsqueda más corta.')+details,n?'ok':'err')}
   const e=encodeURIComponent(q);
   $('ext').innerHTML=`También podés mirar: <a target="_blank" rel="noopener" href="https://www.cervantesvirtual.com/buscador/?q=${e}">Cervantes Virtual</a><a target="_blank" rel="noopener" href="https://bibliotecadigital.bne.es/bdh/es/results/index.do?text=${e}">Biblioteca Digital Hispánica</a><a target="_blank" rel="noopener" href="https://www.educ.ar/recursos/buscar?q=${e}">Educ.ar</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:elejandria.com">Elejandría</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.org.ar">Biblioteca Virtual Universal</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:trapalanda.bn.gov.ar">Biblioteca Nacional (AR)</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:sedici.unlp.edu.ar">SEDICI UNLP</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.clacso.edu.ar">CLACSO</a>`;
 }
@@ -280,7 +298,7 @@ async function send(b,btn){
   const to=store.get('mail');
   if(!to){$('cfg').open=true;say('Primero guardá tu mail','err');return}
   btn.disabled=true;let err='';
-  for(const o of [...b.opts].sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){
+  for(const o of b.opts.filter(o=>o.sendable&&!o.src.startsWith('Anna’s Archive')).sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){
     try{
       say(`Enviando “${b.title}” desde ${o.src}…`);
       const file=await o.url();
@@ -295,42 +313,54 @@ $('go').onclick=()=>search();
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
 
 // ---- Tapa: cámara + reconocimiento con IA (vía tu script) ----
-function shrink(src){
-  const w0=src.videoWidth||src.naturalWidth||src.width,h0=src.videoHeight||src.naturalHeight||src.height,k=Math.min(1,1024/Math.max(w0,h0));
-  const c=document.createElement('canvas');c.width=Math.round(w0*k);c.height=Math.round(h0*k);
-  c.getContext('2d').drawImage(src,0,0,c.width,c.height);
-  return c.toDataURL('image/jpeg',.8).split(',')[1];
+function shrink(src,crop=false){
+  const w0=src.videoWidth||src.naturalWidth||src.width,h0=src.videoHeight||src.naturalHeight||src.height;
+  if(!w0||!h0)throw new Error('La imagen todavía no está lista');
+  let sx=0,sy=0,sw=w0,sh=h0;
+  if(crop&&src.videoWidth){
+    const video=$('vid'),vr=video.getBoundingClientRect(),fr=$('.frame').getBoundingClientRect(),scale=Math.max(vr.width/w0,vr.height/h0),rw=w0*scale,rh=h0*scale,ox=(vr.width-rw)/2,oy=(vr.height-rh)/2;
+    sx=Math.max(0,(fr.left-vr.left-ox)/scale);sy=Math.max(0,(fr.top-vr.top-oy)/scale);sw=Math.min(w0-sx,fr.width/scale);sh=Math.min(h0-sy,fr.height/scale);
+  }
+  const k=Math.min(1,1400/Math.max(sw,sh)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(sw*k));c.height=Math.max(1,Math.round(sh*k));
+  const cx=c.getContext('2d');if(!cx)throw new Error('No pude preparar la imagen');cx.drawImage(src,sx,sy,sw,sh,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.84).split(',')[1];
 }
-async function readCover(el){
-  say('Reconociendo el libro…');
+async function readCoverData(image,fallbackImage=''){
   try{
-    const d=await api({action:'identify',image:shrink(el)});
+    say('Reconociendo título y autor…');let d=await api({action:'identify',image});
+    if((!d.ok||!d.title)&&fallbackImage){say('Probando de nuevo con la imagen completa…');d=await api({action:'identify',image:fallbackImage})}
     if(!d.ok)throw new Error(d.error);
-    if(!d.title){say('No pude reconocer el libro. Probá con la tapa completa y buena luz, o escribí el título.','err');return}
+    if(!d.title){say('No pude leer el título. Centrá la tapa dentro del marco, acercá un poco y evitá reflejos; también podés escribir el título.','err');return}
     $('q').value=d.title;search(d.author||'');
     say(`Reconocí: “${d.title}”${d.author?' de '+d.author:''}${d.confidence==='baja'?' (no estoy seguro)':''}. Buscando…`,'ok');
   }catch(e){say('No se pudo reconocer: '+e.message,'err')}
 }
+async function readCover(el,crop=false){
+  say('Preparando tapa para reconocerla…');
+  try{return await readCoverData(shrink(el,crop))}catch(e){say('No pude preparar esa imagen: '+e.message,'err')}
+}
 let stream;
 async function openCam(){
+  if(!navigator.mediaDevices?.getUserMedia){say('Este navegador no permite abrir la cámara. Elegí una imagen de la galería.','err');$('file').click();return}
   try{
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920}},audio:false});
-    $('vid').srcObject=stream;$('cam').style.display='flex';
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});
+    $('vid').srcObject=stream;$('cam').style.display='flex';await $('vid').play();
   }catch(e){say('No pude abrir la cámara (¿diste permiso?). Elegí una foto de la galería.','err');$('file').click()}
 }
-function closeCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('cam').style.display='none'}
+function closeCam(){if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('vid').srcObject=null;$('cam').style.display='none'}
 $('scan').onclick=openCam;
 $('cx').onclick=closeCam;
 $('gal').onclick=()=>{closeCam();$('file').click()};
 $('gal0').onclick=()=>$('file').click();
 $('snap').onclick=()=>{
-  const v=$('vid');if(!v.videoWidth)return;
-  const f=document.createElement('canvas');f.width=v.videoWidth;f.height=v.videoHeight;f.getContext('2d').drawImage(v,0,0);
-  closeCam();readCover(f);
+  const v=$('vid');if(!v.videoWidth){say('La cámara todavía está enfocando. Esperá un segundo y volvé a sacar la foto.','err');return}
+  try{const cropped=shrink(v,true),full=shrink(v);closeCam();readCoverData(cropped,full)}catch(e){closeCam();say('No pude preparar la foto: '+e.message,'err')}
 };
 $('file').onchange=e=>{
   const f=e.target.files[0];if(!f)return;
-  const img=new Image();img.onload=()=>readCover(img);img.src=URL.createObjectURL(f);e.target.value='';
+  if(!f.type.startsWith('image/')){say('Elegí una imagen JPG, PNG o HEIC.','err');e.target.value='';return}
+  if(f.size>15*1024*1024){say('La foto supera 15 MB. Elegí una imagen más liviana.','err');e.target.value='';return}
+  const img=new Image(),url=URL.createObjectURL(f);img.onload=()=>{readCover(img).finally(()=>URL.revokeObjectURL(url))};img.onerror=()=>{URL.revokeObjectURL(url);say('No pude abrir esa imagen. Probá con JPG o PNG.','err')};img.src=url;e.target.value='';
 };
 </script>
 </body>
