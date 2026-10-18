@@ -130,7 +130,7 @@ if(!store.get('mail'))$('cfg').open=true;
 function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
 const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
-const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()};
+const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');return r.json()};
 const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
 const STOP=new Set('de la el los las y del un una en con por a al lo e o'.split(' '));
 const toks=q=>{const t=norm(q).split(' ').filter(Boolean);const k=t.filter(w=>!STOP.has(w)&&w.length>1);return k.length?k:t};
@@ -143,7 +143,7 @@ async function iaEpub(id){
   if(!f)throw new Error('Este título no tiene epub');
   return 'https://archive.org/download/'+encodeURIComponent(id)+'/'+f.name.split('/').map(encodeURIComponent).join('/');
 }
-const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books','OAPEN'];
+const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books','OAPEN','Anna’s Archive · metadatos'];
 const SOURCES=[
  {name:'Project Gutenberg',async run(q){
    const d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q));
@@ -169,7 +169,16 @@ const SOURCES=[
    return (Array.isArray(d)?d:[]).filter(it=>md(it,'dc.language').some(v=>/^(spa|es|span)/i.test(v))).map(it=>{
      const f=(it.bitstreams||[]).find(x=>/epub/i.test(x.mimeType||'')||/\.epub$/i.test(x.name||''));
      return f?{title:it.name,author:(md(it,'dc.contributor.author')[0]||'').replace(/,\s*$/,''),img:(()=>{const t=(it.bitstreams||[]).find(x=>x.bundleName==='THUMBNAIL');return t?'https://library.oapen.org'+t.retrieveLink:''})(),url:async()=>'https://library.oapen.org'+f.retrieveLink,inf:async()=>({year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:txt(md(it,'dc.description.abstract')[0]),edition:md(it,'publisher.name')[0]||md(it,'dc.publisher')[0],pages:md(it,'oapen.pages')[0]})}:null}).filter(Boolean);}},
- {name:'Wikisource',async run(q){
+  {name:'Anna’s Archive · metadatos',async run(q){
+   // La búsqueda se ejecuta en el backend Dart con annas_archive_api.
+   // Este origen aporta metadatos; Kinderly no obtiene ni envía copias sin autorización.
+   const d=await j('/api/annas-search?q='+encodeURIComponent(q));
+   return (d.results||[]).map(b=>({
+     title:b.title||'', author:b.author||'', img:b.cover||'',
+     url:async()=>{throw new Error('Anna’s Archive aporta metadatos. Para enviar el libro, Kinderly necesita una copia o enlace de descarga autorizado de otra fuente.')},
+     inf:async()=>({author:b.author||'',year:b.year||'',desc:b.description||'',edition:[b.format,b.size,b.sources].filter(Boolean).join(' · ')||'Anna’s Archive (metadatos)',pages:''})
+   }));}},
+  {name:'Wikisource',async run(q){
    const d=await j('https://es.wikisource.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=15&srnamespace=0&srsearch='+encodeURIComponent(q));
    return d.query.search.map(b=>({title:b.title,author:'',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||'',edition:'Wikisource'}}}));}}
 ];
@@ -220,7 +229,12 @@ function card(b){
   const sm=document.createElement('small');sm.textContent=b.author;
   t.append(h,sm,document.createElement('br'));
   b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.src;t.append(g)});
-  const btn=document.createElement('button');btn.textContent='Enviar';btn.onclick=()=>send(b,btn);
+  const btn=document.createElement('button');
+  const hasAuthorizedSource=b.opts.some(o=>!o.src.startsWith('Anna’s Archive'));
+  btn.textContent=hasAuthorizedSource?'Enviar':'Sin archivo autorizado';
+  btn.disabled=!hasAuthorizedSource;
+  if(hasAuthorizedSource)btn.onclick=()=>send(b,btn);
+  else btn.title='Este resultado solo contiene metadatos; buscá una fuente autorizada para enviar el archivo.';
   const cv=document.createElement('div');cv.className='cov';
   const hh=[...b.title].reduce((x,c)=>(x*31+c.charCodeAt(0))%997,7),CV=[['#14304f','#0b1f36'],['#1f5b3e','#103625'],['#14304f','#1f5b3e'],['#9a4a2c','#5e2a17']],pc=CV[hh%4];
   cv.style.background=`linear-gradient(145deg,${pc[0]},${pc[1]})`;
