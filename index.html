@@ -119,7 +119,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 <script>
 const $=id=>document.getElementById(id);
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
-const SCRIPT_URLS=['https://script.google.com/macros/s/AKfycbwH6IzwDdTNtO2KDGYTVBPPm8kWu88opqOucWv71p4D3LvY1bVfgOYu3KmMPRs2dC3PVQ/exec']; // si agregás otro remitente, sumá su URL acá separada por coma
+const SCRIPT_URLS=['https://script.google.com/macros/s/AKfycbz2WyfkopjpQgy-vlZ_fWHQotzJk_LgpSjY1bGcCaFS9kf0Uz5mLXrr1ho-UHan9V1a0w/exec']; // si agregás otro remitente, sumá su URL acá separada por coma
 async function api(p){let last={ok:false,error:'Sin conexión'};for(const u of SCRIPT_URLS){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p)});const d=await r.json();if(d.ok||!/límite/i.test(d.error||''))return d;last=d}return last}
 $('mail').value=store.get('mail');
 $('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
