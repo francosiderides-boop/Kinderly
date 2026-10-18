@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="kinderly-api-base" content="">
 <title>Kinderly</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2216%22%20fill%3D%22%231f5b3e%22/%3E%3Cpath%20d%3D%22M31%2025C26%2021%2018%2020%2011%2021.5V46c7-1.2%2015-.5%2020%203.5z%22%20fill%3D%22%23fbf7ef%22/%3E%3Cpath%20d%3D%22M33%2025c5-4%2013-5%2020-3.5V46c-7-1.2-15-.5-20%203.5z%22%20fill%3D%22%23fbf7ef%22/%3E%3Cpath%20d%3D%22M8%2049c8-1.5%2017-.8%2024%204%207-4.8%2016-5.5%2024-4%22%20fill%3D%22none%22%20stroke%3D%22%23e8b94a%22%20stroke-width%3D%222.5%22%20stroke-linecap%3D%22round%22/%3E%3Cpath%20d%3D%22M32%2026.5C26%2022.5%2024%2019.5%2024%2016.8a4.8%204.8%200%200%201%208-3.5%204.8%204.8%200%200%201%208%203.5c0%202.7-2%205.7-8%209.7z%22%20fill%3D%22%23d2603a%22%20stroke%3D%22%231f5b3e%22%20stroke-width%3D%222%22/%3E%3C/svg%3E">
 <meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0f2238" media="(prefers-color-scheme: dark)">
@@ -120,6 +121,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 
 <script>
 const $=id=>document.getElementById(id);
+const ANNA_API_BASE=(document.querySelector('meta[name="kinderly-api-base"]')?.content||'').trim().replace(/\/+$/,'');
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 const SCRIPT_URLS=['https://script.google.com/macros/s/AKfycbwhRlwAlFh1VdroyXcpxVdl6cf2yzDuou4t0MnaTo9pK5KUFk7NZnfdXNesi8RONMv5jQ/exec']; // si agregás otro remitente, sumá su URL acá separada por coma
 async function api(p){let last={ok:false,error:'Sin conexión'};for(const u of SCRIPT_URLS){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p)});const d=await r.json();if(d.ok||!/límite/i.test(d.error||''))return d;last=d}return last}
@@ -172,7 +174,7 @@ const SOURCES=[
   {name:'Anna’s Archive · metadatos',async run(q){
    // La búsqueda se ejecuta en el backend Dart con annas_archive_api.
    // Este origen aporta metadatos; Kinderly no obtiene ni envía copias sin autorización.
-   const d=await j('/api/annas-search?q='+encodeURIComponent(q));
+   const d=await j((ANNA_API_BASE||'')+'/api/annas-search?q='+encodeURIComponent(q));
    return (d.results||[]).map(b=>({
      title:b.title||'', author:b.author||'', img:b.cover||'',
      url:async()=>{throw new Error('Anna’s Archive aporta metadatos. Para enviar el libro, Kinderly necesita una copia o enlace de descarga autorizado de otra fuente.')},
@@ -263,12 +265,12 @@ function render(){
 }
 async function search(author=''){
   const q=$('q').value.trim();if(!q)return;
-  all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando…');let done=0;
+  all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando…');let done=0;const sourceFailures=[];
   SOURCES.forEach(async s=>{
     const rs=await Promise.allSettled(variants(q).map(v=>s.run(v)));
-    rs.forEach(r=>{if(r.status==='fulfilled')add(s.name,r.value)});
+    rs.forEach(r=>{if(r.status==='fulfilled')add(s.name,r.value);else if(s.name==='Anna’s Archive · metadatos')sourceFailures.push(r.reason?.message||'falló la solicitud')});
     const n=render();
-    if(++done===SOURCES.length)say(n?`${n} resultados, los más parecidos primero`:'Sin resultados. Probá con otra grafía o solo con el apellido del autor.',n?'ok':'err');
+    if(++done===SOURCES.length){const anna=sourceFailures.length?` Anna’s Archive no respondió: ${sourceFailures[0]}. Revisá que el backend esté desplegado y configurado.`:'';say((n?`${n} resultados, los más parecidos primero`:'Sin resultados. Probá con otra grafía o solo con el apellido del autor.')+anna,n?'ok':'err')}
     else say(`Buscando… (${n} hasta ahora)`);
   });
   const e=encodeURIComponent(q);
