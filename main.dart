@@ -26,7 +26,9 @@ Future<void> main() async {
         await request.response.close();
         continue;
       }
-      if (request.uri.path == '/api/annas-search') {
+      if (request.uri.path == '/api/catalog-search') {
+        await _catalogSearch(request);
+      } else if (request.uri.path == '/api/annas-search') {
         await _search(request);
       } else if (request.uri.path == '/' || request.uri.path == '/index.html') {
         await _serveIndex(request);
@@ -39,10 +41,10 @@ Future<void> main() async {
     } catch (error, stack) {
       stderr.writeln('Error atendiendo solicitud: $error');
       stderr.writeln(stack);
-      if (!request.response.headersSent) {
+      try {
         await _json(request.response, HttpStatus.internalServerError,
             {'ok': false, 'error': 'Error interno del servidor'});
-      } else {
+      } catch (_) {
         await request.response.close();
       }
     }
@@ -50,13 +52,70 @@ Future<void> main() async {
 }
 
 void _setCors(HttpRequest request, HttpResponse response) {
-  final origin = request.headers.value(HttpHeaders.originHeader);
+  final origin = request.headers.value('origin');
   if (origin != null && allowedOrigins.contains(origin)) {
     response.headers.set(HttpHeaders.accessControlAllowOriginHeader, origin);
     response.headers.set(HttpHeaders.varyHeader, 'Origin');
   }
-  response.headers.set(HttpHeaders.accessControlAllowMethodsHeader, 'GET, OPTIONS');
-  response.headers.set(HttpHeaders.accessControlAllowHeadersHeader, 'Accept');
+  response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  response.headers.set('Access-Control-Allow-Headers', 'Accept');
+}
+
+
+
+Future<void> _catalogSearch(HttpRequest request) async {
+  final response = request.response;
+  response.headers.set(HttpHeaders.cacheControlHeader, 'public, max-age=300');
+  final source = (request.uri.queryParameters['source'] ?? '').trim();
+  final query = (request.uri.queryParameters['q'] ?? '').trim();
+  if (query.isEmpty || query.length > 160) {
+    await _json(response, HttpStatus.badRequest, {'ok': false, 'error': 'Consulta vacía o demasiado larga'});
+    return;
+  }
+  final encoded = Uri.encodeComponent(query);
+  late final Uri upstream;
+  switch (source) {
+    case 'gutenberg':
+      upstream = Uri.https('gutendex.com', '/books/', {'languages': 'es', 'search': query});
+      break;
+    case 'google-books':
+      upstream = Uri.https('www.googleapis.com', '/books/v1/volumes', {
+        'q': query, 'filter': 'free-ebooks', 'download': 'epub',
+        'langRestrict': 'es', 'printType': 'books', 'maxResults': '20'
+      });
+      break;
+    case 'dbooks':
+      upstream = Uri.parse('https://www.dbooks.org/api/search/$encoded');
+      break;
+    case 'oapen':
+      upstream = Uri.https('library.oapen.org', '/rest/search', {'expand': 'metadata,bitstreams', 'query': query});
+      break;
+    case 'doab':
+      upstream = Uri.https('directory.doabooks.org', '/rest/search', {'expand': 'metadata', 'query': query});
+      break;
+    default:
+      await _json(response, HttpStatus.badRequest, {'ok': false, 'error': 'Catálogo no habilitado'});
+      return;
+  }
+  final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+  try {
+    final req = await client.getUrl(upstream).timeout(const Duration(seconds: 8));
+    req.headers.set(HttpHeaders.acceptHeader, 'application/json');
+    final res = await req.close().timeout(const Duration(seconds: 8));
+    final text = await utf8.decoder.bind(res).join().timeout(const Duration(seconds: 8));
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      await _json(response, HttpStatus.badGateway, {'ok': false, 'error': source + ' devolvió HTTP ' + res.statusCode.toString()});
+      return;
+    }
+    await _json(response, HttpStatus.ok, jsonDecode(text));
+  } on TimeoutException {
+    await _json(response, HttpStatus.gatewayTimeout, {'ok': false, 'error': 'El catálogo tardó demasiado', 'source': source});
+  } catch (error) {
+    stderr.writeln('Error consultando catálogo ' + source + ': ' + error.toString());
+    await _json(response, HttpStatus.badGateway, {'ok': false, 'error': 'No se pudo consultar ' + source});
+  } finally {
+    client.close(force: true);
+  }
 }
 
 Future<void> _search(HttpRequest request) async {
@@ -134,7 +193,7 @@ Future<void> _serveIndex(HttpRequest request) async {
     return;
   }
   request.response.headers.contentType = ContentType.html;
-  request.response.headers.set(HttpHeaders.xContentTypeOptionsHeader, 'nosniff');
+  request.response.headers.set('X-Content-Type-Options', 'nosniff');
   await request.response.addStream(file.openRead());
   await request.response.close();
 }
@@ -142,7 +201,7 @@ Future<void> _serveIndex(HttpRequest request) async {
 Future<void> _json(HttpResponse response, int status, Object body) async {
   response.statusCode = status;
   response.headers.contentType = ContentType.json;
-  response.headers.set(HttpHeaders.xContentTypeOptionsHeader, 'nosniff');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set(HttpHeaders.cacheControlHeader, 'no-store');
   response.write(jsonEncode(body));
   await response.close();
