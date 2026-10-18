@@ -84,7 +84,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta">Beta</span>
+  <span class="beta" title="Versión de prueba">Beta 0.3.0</span>
 </header>
 
 <p class="lead">Buscá un libro. <em>Recibilo donde leés.</em></p>
@@ -100,7 +100,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 <input type="file" id="file" accept="image/*">
 
 <div id="res"></div>
-<div id="empty"><svg aria-hidden="true"><use href="#lg"/></svg><br>Buscá un título o escaneá una tapa.<br>Clásicos y obras de dominio público, gratis y legales.</div>
+<div id="empty"><svg aria-hidden="true"><use href="#lg"/></svg><br>Buscá un título o escaneá una tapa.<br>Fichas bibliográficas y EPUB con licencia abierta o de dominio público.</div>
 <div class="src" id="ext"></div>
 
 <details id="cfg">
@@ -287,7 +287,7 @@ async function search(author=''){
     if(run!==searchRun)return;
     done++;const n=render();say(`Buscando… (${done}/${SOURCES.length} fuentes · ${n} resultados)`,n?'ok':'');
   }));
-  if(run===searchRun){const n=render();const details=failed.length?` Fuentes sin respuesta: ${failed.join(' · ')}`:'';say((n?`${n} resultados. Algunas fuentes pueden tardar.`:'No hubo resultados. Probá con título, autor o una búsqueda más corta.')+details,n?'ok':'err')}
+  if(run===searchRun){const n=render();const details=failed.length?` Fuentes sin respuesta: ${failed.join(' · ')}`:'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):'No hubo resultados. Probá con título, autor o una búsqueda más corta.')+details,n?'ok':'err')}
   const e=encodeURIComponent(q);
   $('ext').innerHTML=`También podés mirar: <a target="_blank" rel="noopener" href="https://es.annas-archive.gl/search?q=${e}">Anna’s Archive</a><a target="_blank" rel="noopener" href="https://www.cervantesvirtual.com/buscador/?q=${e}">Cervantes Virtual</a><a target="_blank" rel="noopener" href="https://bibliotecadigital.bne.es/bdh/es/results/index.do?text=${e}">Biblioteca Digital Hispánica</a><a target="_blank" rel="noopener" href="https://www.educ.ar/recursos/buscar?q=${e}">Educ.ar</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:elejandria.com">Elejandría</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.org.ar">Biblioteca Virtual Universal</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:trapalanda.bn.gov.ar">Biblioteca Nacional (AR)</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:sedici.unlp.edu.ar">SEDICI UNLP</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.clacso.edu.ar">CLACSO</a>`;
 }
