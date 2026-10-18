@@ -225,7 +225,7 @@ function score(b){
   const authorOnlyQuery=queryTokens.length>=2&&authorHits>=Math.ceil(queryTokens.length*.8);
   const relevant=fullTitle||titlePrefix||authorPhrase||authorOnlyQuery||(titleHits===queryTokens.length&&t.length-query.length<=36)||(authorHits>=Math.ceil(queryTokens.length*.8)&&titleHits>0);
   if(!relevant)return -100;
-  return (fullTitle?100:titlePrefix?80:authorPhrase?75:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+coverage*10-Math.max(0,t.length-query.length)*.12;
+  return (authorPhrase?120:fullTitle?100:titlePrefix?80:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+coverage*10-Math.max(0,t.length-query.length)*.12;
 }
 function add(src,list){list.forEach(b=>{if(!b.title)return;
   const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false},e=all.find(x=>x.k===k);
