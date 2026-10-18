@@ -1,0 +1,10 @@
+name: kinderly_annas_archive_integration
+description: Backend local de Kinderly con annas_archive_api para búsqueda de metadatos.
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: '>=3.8.0 <4.0.0'
+
+dependencies:
+  annas_archive_api: ^1.2.0
