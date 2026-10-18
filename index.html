@@ -132,7 +132,7 @@ if(!store.get('mail'))$('cfg').open=true;
 function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
 const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
-const j=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout(15000)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');return r.json()};
+const j=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');const d=await r.json();if(d&&d.ok===false)throw new Error(d.error||'La fuente no respondió');return d};
 const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
 const STOP=new Set('de la el los las y del un una en con por a al lo e o'.split(' '));
 const toks=q=>{const t=norm(q).split(' ').filter(Boolean);const k=t.filter(w=>!STOP.has(w)&&w.length>1);return k.length?k:t};
@@ -140,58 +140,50 @@ function variants(q){const t=toks(q),v=[q.trim()],n=norm(q);if(n&&n!==q.toLowerC
   if(t.length>1)[...t].sort((a,b)=>b.length-a.length).slice(0,3).filter(w=>w.length>3).forEach(w=>v.push(w));return [...new Set(v)]}
 
 const hasOpenLicense=value=>/creativecommons\.org\/(publicdomain|licenses\/(by(?:-sa)?|zero))/i.test(String(value||''));
-async function iaEpub(id,verifiedPublicScan=false){
+async function iaEpub(id){
   const m=await j('https://archive.org/metadata/'+encodeURIComponent(id));
   const md=m.metadata||{},restricted=String(md['access-restricted-item']||'').toLowerCase()==='true';
   if(restricted)throw new Error('Internet Archive marca este libro como restringido');
-  if(!hasOpenLicense(md.licenseurl||md.rights)&&!verifiedPublicScan)throw new Error('La ficha no declara una licencia abierta verificable');
+  if(!hasOpenLicense(md.licenseurl||md.rights))throw new Error('No hay una licencia abierta verificable para enviar este archivo');
   const f=(m.files||[]).find(f=>/\.epub$/i.test(f.name)&&String(f.private||'').toLowerCase()!=='true');
   if(!f)throw new Error('Este título no tiene epub');
   return 'https://archive.org/download/'+encodeURIComponent(id)+'/'+f.name.split('/').map(encodeURIComponent).join('/');
 }
-const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books','OAPEN','DOAB','dBooks','Anna’s Archive · metadatos'];
+const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books','OAPEN','DOAB','dBooks'];
 const SOURCES=[
  {name:'Project Gutenberg',async run(q){
-   const d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q));
+   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=gutenberg&q='+encodeURIComponent(q));
    return d.results.filter(b=>b.formats['application/epub+zip']).map(b=>({title:b.title,author:(b.authors[0]||{}).name||'',img:b.formats['image/jpeg']||'',url:async()=>b.formats['application/epub+zip'],inf:async()=>({author:b.authors.map(a=>a.name+(a.birth_year?` (${a.birth_year}–${a.death_year||''})`:'')).join('; '),desc:(b.summaries||[])[0]||'',edition:'Project Gutenberg, dominio público'})}));}},
  {name:'Internet Archive',async run(q){
    const e=q.replace(/["():\[\]]/g,' ').trim();
-   const p=new URLSearchParams({q:`(title:(${e}) OR creator:(${e})) AND language:(spa OR Spanish OR es) AND mediatype:texts AND format:EPUB AND (licenseurl:* OR date:[* TO 1930-12-31]) AND -collection:inlibrary AND -access-restricted-item:true`,rows:30,output:'json'});
+   const p=new URLSearchParams({q:`(title:(\"${e}\") OR creator:(\"${e}\")) AND mediatype:texts AND format:EPUB AND -collection:inlibrary AND -access-restricted-item:true`,rows:50,output:'json'});
    ['identifier','title','creator','licenseurl','rights','date'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
    const d=await j('https://archive.org/advancedsearch.php?'+p);
    return d.response.docs.map(b=>({title:b.title,author:[].concat(b.creator||[])[0]||'',img:'https://archive.org/services/img/'+b.identifier,sendable:hasOpenLicense(b.licenseurl||b.rights),page:'https://archive.org/details/'+encodeURIComponent(b.identifier),url:()=>iaEpub(b.identifier),inf:()=>iaInfo(b.identifier)}));}},
  {name:'Open Library',async run(q){
-   const p=new URLSearchParams({q:q+' ebook_access:public first_publish_year:[* TO 1930]',language:'spa',has_fulltext:'true',fields:'title,author_name,ia,key,first_publish_year,publisher,number_of_pages_median,cover_i',limit:20});
+   const p=new URLSearchParams({q:q,fields:'title,author_name,ia,key,first_publish_year,publisher,number_of_pages_median,cover_i,ebook_access',limit:30});
    const d=await j('https://openlibrary.org/search.json?'+p);
-   return d.docs.filter(b=>b.ia&&b.ia.length).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',img:b.cover_i?'https://covers.openlibrary.org/b/id/'+b.cover_i+'-M.jpg?default=false':'',page:'https://openlibrary.org'+b.key,sendable:true,url:()=>iaEpub(b.ia[0],true),inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key),pages:b.number_of_pages_median,edition:(b.publisher||[])[0]})}));}},
+   return (d.docs||[]).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',img:b.cover_i?'https://covers.openlibrary.org/b/id/'+b.cover_i+'-M.jpg?default=false':'',page:'https://openlibrary.org'+b.key,sendable:false,url:async()=>{throw new Error('Open Library ofrece la ficha; revisá allí la disponibilidad y los derechos del archivo.')},inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key),pages:b.number_of_pages_median,edition:(b.publisher||[])[0]})}));}},
  {name:'Google Books',async run(q){
-   const p=new URLSearchParams({q,filter:'free-ebooks',download:'epub',langRestrict:'es',printType:'books',maxResults:20});
-   const d=await j('https://www.googleapis.com/books/v1/volumes?'+p);
-   return (d.items||[]).filter(v=>v.accessInfo&&v.accessInfo.publicDomain&&v.accessInfo.epub&&v.accessInfo.epub.isAvailable&&v.accessInfo.epub.downloadLink).map(v=>{const i=v.volumeInfo||{};
-     return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',img:((i.imageLinks||{}).thumbnail||'').replace('http:','https:'),url:async()=>v.accessInfo.epub.downloadLink,inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description),pages:i.pageCount,edition:[i.publisher,(i.publishedDate||'').slice(0,4)].filter(Boolean).join(', ')})}});}},
+   const p=new URLSearchParams({q,filter:'free-ebooks',download:'epub',printType:'books',maxResults:20});
+   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=google-books&q='+encodeURIComponent(q));
+   return (d.items||[]).map(v=>{const i=v.volumeInfo||{},ai=v.accessInfo||{},ep=ai.epub||{},legal=!!(ai.publicDomain&&ep.isAvailable&&ep.downloadLink);
+     return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',img:((i.imageLinks||{}).thumbnail||'').replace('http:','https:'),page:i.infoLink||'',sendable:legal,url:async()=>{if(!legal)throw new Error('Google Books muestra la ficha; solo se envían EPUB descargables de dominio público.');return ep.downloadLink},inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description),pages:i.pageCount,edition:[i.publisher,(i.publishedDate||'').slice(0,4)].filter(Boolean).join(', ')})}});}},
  {name:'OAPEN',async run(q){
-   const d=await j('https://library.oapen.org/rest/search?expand=metadata,bitstreams&query='+encodeURIComponent(q));
+   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=oapen&q='+encodeURIComponent(q));
    const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
-   return (Array.isArray(d)?d:[]).filter(it=>md(it,'dc.language').some(v=>/^(spa|es|span)/i.test(v))).map(it=>{
+   return (Array.isArray(d)?d:[]).map(it=>{
      const f=(it.bitstreams||[]).find(x=>/epub/i.test(x.mimeType||'')||/\.epub$/i.test(x.name||''));
-     return f?{title:it.name,author:(md(it,'dc.contributor.author')[0]||'').replace(/,\s*$/,''),img:(()=>{const t=(it.bitstreams||[]).find(x=>x.bundleName==='THUMBNAIL');return t?'https://library.oapen.org'+t.retrieveLink:''})(),url:async()=>'https://library.oapen.org'+f.retrieveLink,inf:async()=>({year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:txt(md(it,'dc.description.abstract')[0]),edition:md(it,'publisher.name')[0]||md(it,'dc.publisher')[0],pages:md(it,'oapen.pages')[0]})}:null}).filter(Boolean);}},
+     const rights=[...md(it,'dc.rights.uri'),...md(it,'dc.rights')].join(' '),licensed=hasOpenLicense(rights);
+      return f?{title:it.name,author:(md(it,'dc.contributor.author')[0]||'').replace(/,\s*$/,''),img:(()=>{const t=(it.bitstreams||[]).find(x=>x.bundleName==='THUMBNAIL');return t?'https://library.oapen.org'+t.retrieveLink:''})(),sendable:licensed,url:async()=>{if(!licensed)throw new Error('OAPEN no declara una licencia abierta verificable para este archivo.');return 'https://library.oapen.org'+f.retrieveLink},inf:async()=>({year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:txt(md(it,'dc.description.abstract')[0]),edition:md(it,'publisher.name')[0]||md(it,'dc.publisher')[0],pages:md(it,'oapen.pages')[0]})}:null}).filter(Boolean);}},
  {name:'DOAB',async run(q){
-   const d=await j('https://directory.doabooks.org/rest/search?expand=metadata&query='+encodeURIComponent(q));
+   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=doab&q='+encodeURIComponent(q));
    const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
    return (Array.isArray(d)?d:[]).map(it=>({title:it.name||md(it,'dc.title')[0]||'',author:md(it,'dc.contributor.author')[0]||md(it,'dc.creator')[0]||'',img:'',sendable:false,page:it.handle?'https://directory.doabooks.org/handle/'+encodeURIComponent(it.handle):'',url:async()=>{throw new Error('DOAB muestra libros de acceso abierto; abrí el registro para elegir el formato disponible.')},inf:async()=>({author:md(it,'dc.contributor.author')[0]||md(it,'dc.creator')[0]||'',year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:md(it,'dc.description.abstract')[0]||'',edition:md(it,'dc.publisher')[0]||'Directory of Open Access Books'})}));}},
  {name:'dBooks',async run(q){
-   const d=await j('https://www.dbooks.org/api/search/'+encodeURIComponent(q));
+   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=dbooks&q='+encodeURIComponent(q));
    return (d.books||[]).map(b=>({title:[b.title,b.subtitle].filter(Boolean).join(': '),author:b.authors||'',img:b.image||'',sendable:false,page:b.url||'',url:async()=>{throw new Error('Abrí el registro de dBooks para revisar sus condiciones y formatos disponibles.')},inf:async()=>({author:b.authors||'',desc:b.subtitle||'',edition:'dBooks · ficha bibliográfica',pages:''})}));}},
-  {name:'Anna’s Archive · metadatos',async run(q){
-   // La búsqueda se ejecuta en el backend Dart con annas_archive_api.
-   // Este origen aporta metadatos; Kinderly no obtiene ni envía copias sin autorización.
-   const d=await j((ANNA_API_BASE||'')+'/api/annas-search?q='+encodeURIComponent(q));
-   return (d.results||[]).map(b=>({
-     title:b.title||'', author:b.author||'', img:b.cover||'',
-     url:async()=>{throw new Error('Anna’s Archive aporta metadatos. Para enviar el libro, Kinderly necesita una copia o enlace de descarga autorizado de otra fuente.')},
-     inf:async()=>({author:b.author||'',year:b.year||'',desc:b.description||'',edition:[b.format,b.size,b.sources].filter(Boolean).join(' · ')||'Anna’s Archive (metadatos)',pages:''})
-   }));}},
-  {name:'Wikisource',async run(q){
+   {name:'Wikisource',async run(q){
    const d=await j('https://es.wikisource.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=15&srnamespace=0&srsearch='+encodeURIComponent(q));
    return d.query.search.map(b=>({title:b.title,author:'',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||'',edition:'Wikisource'}}}));}}
 ];
@@ -223,12 +215,16 @@ async function resumir(b,r){
 }
 let all=[],qt=[],qa=[],qn='',searchRun=0;
 function score(b){
-  const t=norm(b.title),a=norm(b.author);let s=0;
-  qt.forEach(w=>{if(t.includes(w))s+=3;else if(a.includes(w))s+=2});
-  s=s/(qt.length*3)*10;
-  if(t===qn)s+=5;else if(t.startsWith(qn))s+=2.5;else if(t.includes(qn))s+=1.5;
-  qa.forEach(w=>{if(a.includes(w))s+=1.5});
-  return s-Math.min(t.length/200,1);
+  const t=norm(b.title),a=norm(b.author),query=qn;
+  const queryTokens=toks($('q').value), titleTokens=new Set(t.split(' ').filter(Boolean)), authorTokens=new Set(a.split(' ').filter(Boolean));
+  const titleHits=queryTokens.filter(w=>titleTokens.has(w)).length, authorHits=queryTokens.filter(w=>authorTokens.has(w)).length;
+  const fullTitle=t===query, titlePrefix=t.startsWith(query), authorPhrase=a.includes(query);
+  let coverage=queryTokens.length? (titleHits+authorHits)/queryTokens.length:0;
+  // Keep exact title/author matches and close variants; discard incidental phrase mentions.
+  const authorOnlyQuery=queryTokens.length>=2&&authorHits>=Math.ceil(queryTokens.length*.8);
+  const relevant=fullTitle||titlePrefix||authorPhrase||authorOnlyQuery||(titleHits===queryTokens.length&&t.length-query.length<=36)||(authorHits>=Math.ceil(queryTokens.length*.8)&&titleHits>0);
+  if(!relevant)return -100;
+  return (fullTitle?100:titlePrefix?80:authorPhrase?75:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+coverage*10-Math.max(0,t.length-query.length)*.12;
 }
 function add(src,list){list.forEach(b=>{if(!b.title)return;
   const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false},e=all.find(x=>x.k===k);
@@ -271,7 +267,7 @@ function card(b){
 }
 function render(){
   all.forEach(b=>b.s=score(b));
-  let l=all.filter(b=>b.s>0);if(!l.length)l=all;
+  let l=all.filter(b=>b.s>0);
   l.sort((a,b)=>b.s-a.s);$('res').textContent='';
   l.slice(0,40).forEach(card);return l.length;
 }
@@ -283,7 +279,7 @@ async function search(author=''){
       let results=await s.run(q);
       // Use one request per source on the common path. Retry with a shorter
       // normalized term only when that catalog returns no matches.
-      if(!results.length){const alt=variants(q).find(v=>norm(v)!==norm(q));if(alt)results=await s.run(alt)}
+      // Preserve the exact query; broad single-word retries caused unrelated matches.
       if(run!==searchRun)return;
       add(s.name,results);
     }catch(e){if(run===searchRun)failed.push(`${s.name}: ${e.message||'no respondió'}`)}
@@ -292,7 +288,7 @@ async function search(author=''){
   }));
   if(run===searchRun){const n=render();const details=failed.length?` Fuentes sin respuesta: ${failed.join(' · ')}`:'';say((n?`${n} resultados. Algunas fuentes pueden tardar.`:'No hubo resultados. Probá con título, autor o una búsqueda más corta.')+details,n?'ok':'err')}
   const e=encodeURIComponent(q);
-  $('ext').innerHTML=`También podés mirar: <a target="_blank" rel="noopener" href="https://www.cervantesvirtual.com/buscador/?q=${e}">Cervantes Virtual</a><a target="_blank" rel="noopener" href="https://bibliotecadigital.bne.es/bdh/es/results/index.do?text=${e}">Biblioteca Digital Hispánica</a><a target="_blank" rel="noopener" href="https://www.educ.ar/recursos/buscar?q=${e}">Educ.ar</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:elejandria.com">Elejandría</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.org.ar">Biblioteca Virtual Universal</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:trapalanda.bn.gov.ar">Biblioteca Nacional (AR)</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:sedici.unlp.edu.ar">SEDICI UNLP</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.clacso.edu.ar">CLACSO</a>`;
+  $('ext').innerHTML=`También podés mirar: <a target="_blank" rel="noopener" href="https://es.annas-archive.gl/search?q=${e}">Anna’s Archive</a><a target="_blank" rel="noopener" href="https://www.cervantesvirtual.com/buscador/?q=${e}">Cervantes Virtual</a><a target="_blank" rel="noopener" href="https://bibliotecadigital.bne.es/bdh/es/results/index.do?text=${e}">Biblioteca Digital Hispánica</a><a target="_blank" rel="noopener" href="https://www.educ.ar/recursos/buscar?q=${e}">Educ.ar</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:elejandria.com">Elejandría</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.org.ar">Biblioteca Virtual Universal</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:trapalanda.bn.gov.ar">Biblioteca Nacional (AR)</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:sedici.unlp.edu.ar">SEDICI UNLP</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${e}+site:biblioteca.clacso.edu.ar">CLACSO</a>`;
 }
 async function send(b,btn){
   const to=store.get('mail');
