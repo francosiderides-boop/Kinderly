@@ -76,12 +76,11 @@ Future<void> _catalogSearch(HttpRequest request) async {
   late final Uri upstream;
   switch (source) {
     case 'gutenberg':
-      upstream = Uri.https('gutendex.com', '/books/', {'languages': 'es', 'search': query});
+      upstream = Uri.https('gutendex.com', '/books/', {'search': query});
       break;
     case 'google-books':
       upstream = Uri.https('www.googleapis.com', '/books/v1/volumes', {
-        'q': query, 'filter': 'free-ebooks', 'download': 'epub',
-        'langRestrict': 'es', 'printType': 'books', 'maxResults': '20'
+        'q': query, 'printType': 'books', 'maxResults': '20'
       });
       break;
     case 'dbooks':
