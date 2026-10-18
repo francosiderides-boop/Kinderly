@@ -1,6 +1,15 @@
-# Kinderly: búsqueda de metadatos de Anna’s Archive
+# Kinderly: búsqueda federada y envío de EPUB autorizados
 
-Este proyecto añade resultados de Anna’s Archive a Kinderly mediante el paquete Dart de terceros [`annas_archive_api`](https://pub.dev/packages/annas_archive_api). La integración consulta metadatos; no obtiene archivos de Anna’s Archive.
+Kinderly busca libros en varios catálogos abiertos y reúne resultados duplicados. Anna’s Archive se consulta solo para metadatos mediante el paquete Dart de terceros [`annas_archive_api`](https://pub.dev/packages/annas_archive_api); no obtiene archivos de esa fuente.
+
+## Fuentes integradas
+
+- Project Gutenberg, Wikisource, Internet Archive, Open Library, Google Books y OAPEN.
+- DOAB y dBooks para descubrimiento bibliográfico; sus fichas no habilitan el envío automático.
+- Anna’s Archive para metadatos cuando el sitio responde.
+- Enlaces de consulta externos a Cervantes Virtual, Biblioteca Digital Hispánica, Educ.ar, Biblioteca Virtual Universal, Elejandría, Biblioteca Nacional de Argentina, SEDICI y CLACSO.
+
+Solo se habilita el envío cuando Kinderly puede identificar un archivo EPUB de una fuente marcada como apta. En Internet Archive se exige una licencia abierta reconocible o que Open Library identifique el registro como acceso público; los registros sin permiso verificable quedan como metadatos.
 
 ## Estructura
 
@@ -50,8 +59,12 @@ GitHub Pages sirve `index.html`, pero no ejecuta el servidor Dart. El backend de
 
 La interfaz ahora muestra el error de Anna’s Archive en el estado de búsqueda, en vez de ocultarlo junto a los fallos de las demás fuentes.
 
+El filtro de idioma del paquete Anna está configurado en español; si se omite, `annas_archive_api` usa inglés por defecto. La búsqueda paralela consulta cada catálogo una vez y solo prueba una variante más cuando una fuente no encuentra resultados. Los errores y tiempos agotados se muestran por fuente.
+
+El escaneo recorta la zona marcada en la cámara y conserva más resolución. Si el reconocimiento con IA no devuelve un título, vuelve a intentar con la imagen completa. La imagen debe estar centrada, nítida y sin reflejos.
+
 ## Envío a Kindle y límites
 
 Los resultados de Anna’s Archive son solo metadatos y el botón de envío permanece desactivado si no hay otra fuente autorizada para ese mismo título. Si Kinderly encuentra el libro también en Gutenberg, Wikisource, Internet Archive u otra fuente que permita obtener legalmente el archivo, conserva el flujo de envío de esa fuente.
 
-Esto permite demostrar una búsqueda integrada y, con un EPUB de dominio público, licencia abierta o autorización explícita, probar la entrega a Kindle. No implementa ni habilita descargas de Anna’s Archive. La búsqueda depende de un paquete de terceros y de la disponibilidad del sitio; no es una API oficial de Anna’s Archive.
+Esto permite demostrar una búsqueda integrada y, con un EPUB de dominio público, licencia abierta o autorización explícita, probar la entrega a Kindle. El reconocimiento de portadas y la sinopsis dependen del Google Apps Script configurado en `index.html`; el código de ese script no está incluido en este proyecto, así que la disponibilidad y el modelo de IA deben verificarse con el servicio activo. No implementa ni habilita descargas de Anna’s Archive. La búsqueda depende de un paquete de terceros y de la disponibilidad del sitio; no es una API oficial de Anna’s Archive.
