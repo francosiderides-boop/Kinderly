@@ -39,29 +39,29 @@ Future<void> main() async {
     } catch (error, stack) {
       stderr.writeln('Error atendiendo solicitud: $error');
       stderr.writeln(stack);
-      // HttpResponse no expone un indicador portable de headers enviados.
-      // Intentamos cerrar la respuesta de error y toleramos que ya se haya cerrado.
-      try {
+      if (!request.response.headersSent) {
         await _json(request.response, HttpStatus.internalServerError,
             {'ok': false, 'error': 'Error interno del servidor'});
-      } catch (_) {}
+      } else {
+        await request.response.close();
+      }
     }
   }
 }
 
 void _setCors(HttpRequest request, HttpResponse response) {
-  final origin = request.headers.value('origin');
+  final origin = request.headers.value(HttpHeaders.originHeader);
   if (origin != null && allowedOrigins.contains(origin)) {
-    response.headers.set('Access-Control-Allow-Origin', origin);
-    response.headers.set('Vary', 'Origin');
+    response.headers.set(HttpHeaders.accessControlAllowOriginHeader, origin);
+    response.headers.set(HttpHeaders.varyHeader, 'Origin');
   }
-  response.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  response.headers.set('Access-Control-Allow-Headers', 'Accept');
+  response.headers.set(HttpHeaders.accessControlAllowMethodsHeader, 'GET, OPTIONS');
+  response.headers.set(HttpHeaders.accessControlAllowHeadersHeader, 'Accept');
 }
 
 Future<void> _search(HttpRequest request) async {
   final response = request.response;
-  response.headers.set('Cache-Control', 'no-store');
+  response.headers.set(HttpHeaders.cacheControlHeader, 'no-store');
   final query = (request.uri.queryParameters['q'] ?? '').trim();
   if (query.isEmpty) {
     await _json(response, HttpStatus.badRequest,
@@ -80,6 +80,9 @@ Future<void> _search(HttpRequest request) async {
     final result = await annaApi.find(SearchRequest(
       query: query,
       formats: const [Format.epub, Format.pdf],
+      // Kinderly is Spanish-first. annas_archive_api defaults to English,
+      // which silently filters out Spanish editions when omitted.
+      language: Language.spanish,
       page: 1,
     )).timeout(const Duration(seconds: 20));
 
@@ -131,7 +134,7 @@ Future<void> _serveIndex(HttpRequest request) async {
     return;
   }
   request.response.headers.contentType = ContentType.html;
-  request.response.headers.set('X-Content-Type-Options', 'nosniff');
+  request.response.headers.set(HttpHeaders.xContentTypeOptionsHeader, 'nosniff');
   await request.response.addStream(file.openRead());
   await request.response.close();
 }
@@ -139,8 +142,8 @@ Future<void> _serveIndex(HttpRequest request) async {
 Future<void> _json(HttpResponse response, int status, Object body) async {
   response.statusCode = status;
   response.headers.contentType = ContentType.json;
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('Cache-Control', 'no-store');
+  response.headers.set(HttpHeaders.xContentTypeOptionsHeader, 'nosniff');
+  response.headers.set(HttpHeaders.cacheControlHeader, 'no-store');
   response.write(jsonEncode(body));
   await response.close();
 }
