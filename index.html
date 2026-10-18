@@ -84,7 +84,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.3.0</span>
+  <span class="beta" title="Versión de prueba">Beta 0.3.1</span>
 </header>
 
 <p class="lead">Buscá un libro. <em>Recibilo donde leés.</em></p>
@@ -132,7 +132,8 @@ if(!store.get('mail'))$('cfg').open=true;
 function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
 const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
-const j=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');const d=await r.json();if(d&&d.ok===false)throw new Error(d.error||'La fuente no respondió');return d};
+const GET_CACHE=new Map();
+const j=async u=>{const hit=GET_CACHE.get(u);if(hit&&Date.now()-hit.at<30*60*1000)return hit.data;if(hit)GET_CACHE.delete(u);const r=await fetch(u,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');const d=await r.json();if(d&&d.ok===false)throw new Error(d.error||'La fuente no respondió');GET_CACHE.set(u,{at:Date.now(),data:d});if(GET_CACHE.size>80)GET_CACHE.delete(GET_CACHE.keys().next().value);return d};
 const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\b([a-z])\s+\1\b/g,'$1$1').replace(/\s+/g,' ').trim();
 function cleanQuery(s){return (s||'').trim().replace(/^(?:(?:books?|novels?|libros?|novelas?|obras?|epubs?|ebooks?)\s+(?:de|del|by|por)\s+|(?:autor(?:a)?|author)\s*:\s*)/i,'').replace(/\s+(?:epubs?|ebooks?)$/i,'').trim()}
 const STOP=new Set('de la el los las y del un una en con por a al lo e o'.split(' '));
