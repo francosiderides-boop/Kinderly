@@ -133,7 +133,8 @@ function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
 const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
 const j=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');const d=await r.json();if(d&&d.ok===false)throw new Error(d.error||'La fuente no respondió');return d};
-const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\b([a-z])\s+\1\b/g,'$1$1').replace(/\s+/g,' ').trim();
+function cleanQuery(s){return (s||'').trim().replace(/^(?:(?:books?|novels?|libros?|novelas?|obras?|epubs?|ebooks?)\s+(?:de|del|by|por)\s+|(?:autor(?:a)?|author)\s*:\s*)/i,'').replace(/\s+(?:epubs?|ebooks?)$/i,'').trim()}
 const STOP=new Set('de la el los las y del un una en con por a al lo e o'.split(' '));
 const toks=q=>{const t=norm(q).split(' ').filter(Boolean);const k=t.filter(w=>!STOP.has(w)&&w.length>1);return k.length?k:t};
 function variants(q){const t=toks(q),v=[q.trim()],n=norm(q);if(n&&n!==q.toLowerCase().trim())v.push(n);
@@ -272,7 +273,7 @@ function render(){
   l.slice(0,40).forEach(card);return l.length;
 }
 async function search(author=''){
-  const q=$('q').value.trim();if(!q)return;
+  const raw=$('q').value.trim();if(!raw)return;const q=cleanQuery(raw);if(!q)return;
   const run=++searchRun;all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando en todas las fuentes…');let done=0;const failed=[];
   await Promise.all(SOURCES.map(async s=>{
     try{
