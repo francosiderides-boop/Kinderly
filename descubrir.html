@@ -73,7 +73,7 @@ try{let pages=0;while(nextUrl&&shown<12&&pages<4){
   const r=await fetch(nextUrl,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error('catalog unavailable');const data=await r.json();nextUrl=data.next||'';pages++;scanned++;for(const b of data.results||[]){if(!b.languages?.includes('es')||b.copyright!==false||!safeEpub(b)||seen.has(b.id))continue;seen.add(b.id);card(b);shown++}
  }
 }countEl.textContent=shown?shown+' libros cargados':'';if(!shown&&!nextUrl)state.textContent='Todavía no hay títulos en esta categoría. Probá con otra.';else if(!shown&&nextUrl)state.textContent='Buscando más títulos…';else state.textContent=nextUrl?'Desplazate para seguir explorando.':'Llegaste al final de esta categoría.'}catch(e){state.textContent=shown?'No se pudieron cargar más libros. Desplazate o tocá aquí para reintentar.':'No pudimos conectar con el catálogo. Probá otra vez en un momento.'}finally{busy=false}}
-function openLicense(value){return /creativecommons\\.org\\/(publicdomain|licenses\\/(by(?:-sa)?|zero))/i.test(String(value||''))}
+function openLicense(value){const s=String(value||'').toLowerCase();return s.includes('creativecommons.org/publicdomain')||s.includes('creativecommons.org/licenses/by')||s.includes('creativecommons.org/licenses/zero')}
 function select(c){active=c;$('category-title').textContent=c.title;$('category-description').textContent=c.desc;document.querySelectorAll('.cat').forEach((b,i)=>b.setAttribute('aria-pressed',String(categories[i].id===c.id)));loadMore(true)}
 renderCategories();observer=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&nextUrl&&!busy)loadMore()},{rootMargin:'650px'});observer.observe($('sentinel'));state.onclick=()=>loadMore();loadMore(true);
 </script>
