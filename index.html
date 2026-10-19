@@ -133,7 +133,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.4.5</span>
+  <span class="beta" title="Versión de prueba">Beta 0.4.6</span>
 </header>
 <div class="app-links"><button id="install-app" type="button">Instalar Kinderly gratis</button><span class="hint2">Se agrega a tu pantalla de inicio con su propio icono.</span></div>
 
@@ -218,7 +218,7 @@ const SOURCES=[
    const d=await j('https://openlibrary.org/search.json?'+p);
    return (d.docs||[]).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',language:b.language,img:b.cover_i?'https://covers.openlibrary.org/b/id/'+b.cover_i+'-M.jpg?default=false':'',page:'https://openlibrary.org'+b.key,sendable:false,url:async()=>{throw new Error('Open Library ofrece la ficha; revisá allí la disponibilidad y los derechos del archivo.')},inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key),pages:b.number_of_pages_median,edition:(b.publisher||[])[0]})}));}},
  {name:'Google Books',async run(q){
-   const p=new URLSearchParams({q,printType:'books',maxResults:40,langRestrict:'es',country:'AR'});
+   const p=new URLSearchParams({q,printType:'books',maxResults:40,langRestrict:'es'});
    const d=await j('https://www.googleapis.com/books/v1/volumes?'+p);
    return (d.items||[]).map(v=>{const i=v.volumeInfo||{},ai=v.accessInfo||{},ep=ai.epub||{},legal=!!(ai.publicDomain&&ep.isAvailable&&ep.downloadLink),sale=v.saleInfo||{};
      let buyUrl='';try{const u=new URL(sale.buyLink||'');if(u.protocol==='https:'&&['books.google.com','play.google.com'].includes(u.hostname))buyUrl=u.href}catch(e){}
