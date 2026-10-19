@@ -133,9 +133,9 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.4.3</span>
+  <span class="beta" title="Versión de prueba">Beta 0.4.4</span>
 </header>
-<div class="app-links"><button id="install-app" type="button">Instalar gratis</button><a href="https://github.com/francosiderides-boop/Kinderly/archive/refs/heads/main.zip" download>Descargar proyecto (.zip)</a></div>
+<div class="app-links"><button id="install-app" type="button">Instalar Kinderly gratis</button><span class="hint2">Se agrega a tu pantalla de inicio con su propio icono.</span></div>
 
 <p class="lead">Buscá un libro. <em>Recibilo donde leés.</em></p>
 <div class="search">
@@ -444,7 +444,7 @@ $('file').onchange=e=>{
 </script>
 
 <script>
-let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){alert('Para instalar Kinderly gratis: en iPhone/iPad, tocá Compartir y luego “Agregar a pantalla de inicio”. En Android, abrí el menú del navegador y elegí “Instalar aplicación” o “Agregar a pantalla principal”.');return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if('serviceWorker' in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
 </script>
 </body>
 </html>
