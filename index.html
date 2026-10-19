@@ -133,7 +133,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.4.6</span>
+  <span class="beta" title="Versión de prueba">Beta 0.4.7</span>
 </header>
 <div class="app-links"><button id="install-app" type="button">Instalar Kinderly gratis</button><span class="hint2">Se agrega a tu pantalla de inicio con su propio icono.</span></div>
 
@@ -282,9 +282,10 @@ function score(b){
   return (authorPhrase?120:fullTitle?100:titlePrefix?80:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+coverage*10-Math.max(0,t.length-query.length)*.12;
 }
 function isSpanish(value){const codes=(Array.isArray(value)?value:[value]).flatMap(v=>String(v||'').toLowerCase().split(/[;,\s]+/)).map(v=>v.trim().replace(/^.*\//,'')).filter(Boolean);return codes.some(v=>v==='es'||v==='spa'||v==='spanish'||v==='espanol'||v==='español'||v==='castellano'||v==='castilian'||v.startsWith('es-'))}
-function add(src,list){list.forEach(b=>{const buyUrl=b.buyUrl||'';if(!b.title||!isSpanish(b.language)||(!buyUrl&&(b.sendable===false||typeof b.url!=='function')))return;
-  const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false,buyUrl},e=all.find(x=>x.k===k);
-  if(e){if(!e.opts.some(p=>p.src===src))e.opts.push(o);else{const old=e.opts.find(p=>p.src===src);if(buyUrl&&!old.buyUrl)old.buyUrl=buyUrl}if(!e.author&&b.author)e.author=b.author;if(!e.img&&b.img)e.img=b.img}
+function add(src,list){list.forEach(b=>{if(!b.title||!isSpanish(b.language))return;
+  const directBuy=!!b.buyUrl,query=[b.title,b.author||''].filter(Boolean).join(' '),buyUrl=b.buyUrl||('https://books.google.com/books?hl=es&q='+encodeURIComponent(query));
+  const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false,buyUrl,buyLabel:directBuy?'Comprar en Google Books':'Buscar opciones de compra'},e=all.find(x=>x.k===k);
+  if(e){if(!e.opts.some(p=>p.src===src))e.opts.push(o);else{const old=e.opts.find(p=>p.src===src);if(directBuy&&!old.buyUrl){old.buyUrl=buyUrl;old.buyLabel='Comprar en Google Books'}}if(!e.author&&b.author)e.author=b.author;if(!e.img&&b.img)e.img=b.img}
   else all.push({k,title:b.title,author:b.author||'',img:b.img||'',opts:[o]})})}
 function card(b,target="res"){
   const el=document.createElement('div');el.className='item';
@@ -298,7 +299,7 @@ function card(b,target="res"){
   const actions=document.createElement('div');actions.className='actions';
   const hasAuthorizedSource=b.opts.some(o=>o.sendable&&typeof o.url==='function');
   if(hasAuthorizedSource){const dl=document.createElement('button');dl.className='ghost download';dl.textContent='Descargar EPUB';dl.onclick=()=>download(b,dl);actions.append(dl);const btn=document.createElement('button');btn.textContent='Enviar al mail';btn.onclick=()=>send(b,btn);actions.append(btn)}
-  const purchase=b.opts.find(o=>o.buyUrl);if(purchase){const buy=document.createElement('a');buy.className='buy';buy.href=purchase.buyUrl;buy.target='_blank';buy.rel='noopener noreferrer';buy.textContent='Comprar en Google Books';actions.append(buy)}
+  const purchase=b.opts.find(o=>o.buyUrl);if(purchase){const buy=document.createElement('a');buy.className='buy';buy.href=purchase.buyUrl;buy.target='_blank';buy.rel='noopener noreferrer';buy.textContent=purchase.buyLabel||'Buscar opciones de compra';actions.append(buy)}
   if(!hasAuthorizedSource&&!purchase){const note=document.createElement('span');note.className='hint2';note.textContent='Sin EPUB autorizado disponible';actions.append(note)}
   const cv=document.createElement('div');cv.className='cov';
   const hh=[...b.title].reduce((x,c)=>(x*31+c.charCodeAt(0))%997,7),CV=[['#14304f','#0b1f36'],['#1f5b3e','#103625'],['#14304f','#1f5b3e'],['#9a4a2c','#5e2a17']],pc=CV[hh%4];
