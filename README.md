@@ -1,6 +1,6 @@
 # Kinderly: búsqueda federada en español y envío de EPUB autorizados
 
-Kinderly busca ediciones etiquetadas en español en varios catálogos abiertos y reúne resultados duplicados. Los resultados sin un idioma español verificable se descartan. Anna’s Archive se consulta solo para metadatos mediante el paquete Dart de terceros [`annas_archive_api`](https://pub.dev/packages/annas_archive_api); no obtiene archivos de esa fuente.
+Kinderly busca ediciones etiquetadas en español en varios catálogos abiertos y reúne resultados duplicados. Google Books también muestra el enlace de compra cuando el catálogo informa que una edición está a la venta en Argentina. Los resultados sin un idioma español verificable se descartan. Anna’s Archive se consulta solo para metadatos mediante el paquete Dart de terceros [`annas_archive_api`](https://pub.dev/packages/annas_archive_api); no obtiene archivos de esa fuente.
 
 ## Fuentes integradas
 
@@ -13,7 +13,11 @@ Solo se habilita el envío cuando Kinderly puede identificar un archivo EPUB de 
 
 ## Descubrir libros
 
-La sección “Descubrir” reúne EPUB en español ordenados por descargas públicas de Project Gutenberg e Internet Archive. Las cifras son las que informan esos catálogos y pueden variar.
+La sección “Descubrir” reúne EPUB en español ordenados por descargas públicas de Project Gutenberg e Internet Archive. Cada catálogo carga por separado para que un fallo temporal de uno no bloquee el otro. Las cifras son las que informan esos catálogos y pueden variar.
+
+## Comprar libros
+
+Para ediciones no disponibles como EPUB gratuito autorizado, Kinderly muestra el enlace de compra de Google Books cuando existe. La disponibilidad y el precio dependen del país y de cada edición.
 
 ## Uso gratuito
 
@@ -76,4 +80,4 @@ El escaneo recorta la zona marcada en la cámara y conserva más resolución. Si
 
 Los resultados de Anna’s Archive son solo metadatos y el botón de envío permanece desactivado si no hay otra fuente autorizada para ese mismo título. Si Kinderly encuentra el libro también en Gutenberg, Wikisource, Internet Archive u otra fuente que permita obtener legalmente el archivo, conserva el flujo de envío de esa fuente.
 
-Esto permite demostrar una búsqueda integrada y, con un EPUB de dominio público, licencia abierta o autorización explícita, probar la entrega a Kindle. El reconocimiento de portadas y la sinopsis dependen del Google Apps Script configurado en `index.html`; el código de ese script no está incluido en este proyecto, así que la disponibilidad y el modelo de IA deben verificarse con el servicio activo. No implementa ni habilita descargas de Anna’s Archive. La búsqueda depende de un paquete de terceros y de la disponibilidad del sitio; no es una API oficial de Anna’s Archive.
+Esto permite demostrar una búsqueda integrada y, con un EPUB de dominio público, licencia abierta o autorización explícita, probar la entrega a Kindle. El envío usa una única cuenta propietaria de Google Apps Script, por lo que la cuota diaria se comparte entre quienes usan la app. Para una publicación a mayor escala se necesita migrar a un proveedor transaccional con dominio verificado o pedir a cada persona que autorice su propia cuenta; ambas opciones requieren configuración de cuenta. El reconocimiento de portadas y la sinopsis dependen del Google Apps Script configurado en `index.html`; el código de ese script no está incluido en este proyecto, así que la disponibilidad y el modelo de IA deben verificarse con el servicio activo. No implementa ni habilita descargas de Anna’s Archive. La búsqueda depende de un paquete de terceros y de la disponibilidad del sitio; no es una API oficial de Anna’s Archive.
