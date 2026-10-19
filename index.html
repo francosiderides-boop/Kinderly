@@ -11,7 +11,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Kinderly"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0f2238" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3f6f8">
+<script>try{const t=localStorage.getItem("theme");document.documentElement.dataset.theme=t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -126,6 +127,9 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 #status{border-radius:16px;backdrop-filter:blur(12px)}
 @media(max-width:520px){body{padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}.app{max-width:100%}header{margin-bottom:26px}.mark{width:46px;height:46px}h1{font-size:1.85rem}.lead{font-size:1.55rem}.search{gap:2px;padding-left:11px}.search button{padding:11px 14px}.top{grid-template-columns:48px minmax(0,1fr);gap:11px}.cov{width:48px;height:68px}.top>div:nth-child(2){grid-column:2;grid-row:1}.actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;min-width:0;margin-top:3px}.actions button{min-height:44px;padding:9px 8px}.item{padding:13px;border-radius:17px}.src{margin-bottom:16px}#empty{padding:28px 16px}}
  .discover-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 15px;border-radius:12px;background:var(--btn);color:var(--btnInk);text-decoration:none;font-size:.84rem;font-weight:600;white-space:nowrap}.discover-link:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.theme-toggle{width:42px;height:42px;min-width:42px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:1.2rem;line-height:1}
+:root[data-theme="light"]{color-scheme:light;--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--soft:#eaf2f3;--green:#0e6b5d;--terra:#c35f40;--gold:#e6b94f;--navy:#122b3a;--btn:#116b5c;--btnInk:#fff;--acc:#c35f40;--ok:#16745f;--err:#bd4a42;--sh:0 3px 10px rgba(18,43,58,.04),0 12px 30px rgba(18,43,58,.06)}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#101a22;--card:#172630;--ink:#edf4f5;--mute:#aab9c1;--line:#2c404b;--soft:#203740;--green:#78c5b3;--terra:#f19a79;--gold:#edc45f;--navy:#10212b;--btn:#70c3ae;--btnInk:#102a2a;--acc:#f19a79;--ok:#7ed5bd;--err:#ffaaa0;--sh:0 3px 10px rgba(0,0,0,.18),0 12px 30px rgba(0,0,0,.24)}
 </style>
 </head>
 <body>
@@ -134,7 +138,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.5.2</span>
+  <span class="beta" title="Versión de prueba">Beta 0.5.3</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 <div class="app-links"><button id="install-app" type="button">Instalar Kinderly gratis</button><span class="hint2">Se agrega a tu pantalla de inicio con su propio icono.</span></div>
 
@@ -175,6 +179,9 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 const $=id=>document.getElementById(id);
 const ANNA_API_BASE=(document.querySelector('meta[name="kinderly-api-base"]')?.content||'').trim().replace(/\/+$/,'');
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
+function setTheme(mode,persist=false){document.documentElement.dataset.theme=mode;const b=$('theme-toggle');if(b){b.textContent=mode==='dark'?'☀':'☾';b.setAttribute('aria-label',mode==='dark'?'Activar modo día':'Activar modo nocturno');b.title=mode==='dark'?'Activar modo día':'Activar modo nocturno'}if(persist)store.set('theme',mode)}
+setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
+$('theme-toggle').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark',true);
 const SCRIPT_URLS=['https://script.google.com/macros/s/AKfycbzEMKDt0EcagYTfTD_Qq4Yw2A7PsLcDC_sQoXu5P_ITsiTcQzUiqHdvZL4zZqxMQapc/exec']; // si agregás otro remitente, sumá su URL acá separada por coma
 async function api(p){let last={ok:false,error:'No se pudo conectar con el servicio'};for(const u of SCRIPT_URLS){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),signal:AbortSignal.timeout(25000)});if(!r.ok)throw new Error(`El servicio respondió HTTP ${r.status}`);const d=await r.json();if(d.ok||!/límite/i.test(d.error||''))return d;last=d}catch(e){last={ok:false,error:e.name==='TimeoutError'?'El servicio tardó demasiado en responder':e.message||'Error de conexión'}}}return last}
 $('mail').value=store.get('mail');
