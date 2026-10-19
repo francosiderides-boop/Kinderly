@@ -2,7 +2,7 @@
   "id": "/Kinderly/",
   "name": "Kinderly",
   "short_name": "Kinderly",
-  "description": "Encontrá libros y EPUB de fuentes abiertas.",
+  "description": "Buscá libros y EPUB en español en catálogos abiertos. Instalación gratuita.",
   "start_url": "/Kinderly/",
   "scope": "/Kinderly/",
   "display": "standalone",
