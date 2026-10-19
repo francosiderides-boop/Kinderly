@@ -9,6 +9,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
+
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Kinderly"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#fbf7ef" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#0f2238" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -89,6 +90,10 @@ header{padding:8px 2px 18px;border-bottom:1px solid var(--line);margin-bottom:30
 .mark{width:52px;height:52px}
 h1{font-size:2rem}
 .beta{border:1px solid var(--line);color:var(--green);background:var(--soft);letter-spacing:.06em}
+.app-links{display:flex;gap:8px;margin:-18px 0 24px;flex-wrap:wrap}
+.app-links a,.app-links button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 14px;border-radius:12px;font:600 .84rem var(--sans);text-decoration:none}
+.app-links a{background:var(--card);color:var(--green);border:1px solid var(--line)}
+.app-links button{background:var(--btn);color:var(--btnInk)}
 .lead{font-size:clamp(1.6rem,4vw,2.1rem);margin-bottom:18px}
 .search{border-radius:18px;padding:7px 7px 7px 16px;border-color:var(--line);box-shadow:0 6px 20px rgba(18,43,58,.07)}
 .search:focus-within{border-color:var(--green);box-shadow:0 0 0 4px rgba(17,107,92,.09),0 8px 24px rgba(18,43,58,.07)}
@@ -121,8 +126,9 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.4.1</span>
+  <span class="beta" title="Versión de prueba">Beta 0.4.2</span>
 </header>
+<div class="app-links"><button id="install-app" type="button">Instalar gratis</button><a href="https://github.com/francosiderides-boop/Kinderly/archive/refs/heads/main.zip" download>Descargar gratis</a></div>
 
 <p class="lead">Buscá un libro. <em>Recibilo donde leés.</em></p>
 <div class="search">
@@ -130,7 +136,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
   <input type="text" id="q" placeholder="Título o autor…" enterkeyhint="search" aria-label="Buscar libro">
   <button id="go">Buscar</button>
 </div>
-<div class="src" id="catalog-links"><span>Ampliá la búsqueda en:</span> <a data-catalog="standard" href="https://standardebooks.org/ebooks" target="_blank" rel="noopener noreferrer">Standard Ebooks</a><a data-catalog="gutenberg" href="https://www.gutenberg.org/ebooks/search/" target="_blank" rel="noopener noreferrer">Project Gutenberg</a><a data-catalog="openlibrary" href="https://openlibrary.org/search" target="_blank" rel="noopener noreferrer">Open Library</a><a data-catalog="archive" href="https://archive.org/search" target="_blank" rel="noopener noreferrer">Internet Archive</a><a href="https://annasarchive.io/datasets" target="_blank" rel="noopener noreferrer">Datos bibliográficos</a><p class="hint2">Estos enlaces abren cada catálogo con tu búsqueda. Standard Ebooks informa las condiciones de derechos según el país.</p></div>
+<div class="src" id="catalog-links"><span>Ampliá la búsqueda en:</span> <a data-catalog="gutenberg" href="https://www.gutenberg.org/ebooks/search/" target="_blank" rel="noopener noreferrer">Project Gutenberg</a><a data-catalog="openlibrary" href="https://openlibrary.org/search" target="_blank" rel="noopener noreferrer">Open Library</a><a data-catalog="archive" href="https://archive.org/search" target="_blank" rel="noopener noreferrer">Internet Archive</a><a href="https://annasarchive.io/datasets" target="_blank" rel="noopener noreferrer">Datos bibliográficos</a><p class="hint2">Los catálogos se abren con el filtro de español cuando está disponible; revisá el idioma de la edición antes de descargar.</p></div>
 <div class="chips">
   <button class="ghost" id="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Escanear tapa</button>
   <button class="ghost" id="gal0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 9"/></svg>Desde galería</button>
@@ -191,30 +197,30 @@ async function iaEpub(id){
 const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books','OAPEN','DOAB','dBooks'];
 const SOURCES=[
  {name:'Project Gutenberg',async run(q){
-   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=gutenberg&q='+encodeURIComponent(q));
-   return d.results.filter(b=>b.formats['application/epub+zip']).map(b=>({title:b.title,author:(b.authors[0]||{}).name||'',img:b.formats['image/jpeg']||'',url:async()=>b.formats['application/epub+zip'],inf:async()=>({author:b.authors.map(a=>a.name+(a.birth_year?` (${a.birth_year}–${a.death_year||''})`:'')).join('; '),desc:(b.summaries||[])[0]||'',edition:'Project Gutenberg, dominio público'})}));}},
+   const d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q));
+   return d.results.filter(b=>b.languages?.includes('es')&&b.formats['application/epub+zip']).map(b=>({title:b.title,author:(b.authors[0]||{}).name||'',language:'es',img:b.formats['image/jpeg']||'',url:async()=>b.formats['application/epub+zip'],inf:async()=>({author:b.authors.map(a=>a.name+(a.birth_year?` (${a.birth_year}–${a.death_year||''})`:'')).join('; '),desc:(b.summaries||[])[0]||'',edition:'Project Gutenberg, dominio público'})}));}},
  {name:'Internet Archive',async run(q){
    const e=q.replace(/["():\[\]]/g,' ').trim();
-   const p=new URLSearchParams({q:`(title:(\"${e}\") OR creator:(\"${e}\")) AND mediatype:texts AND format:EPUB AND -collection:inlibrary AND -access-restricted-item:true`,rows:50,output:'json'});
-   ['identifier','title','creator','licenseurl','rights','date'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
+   const p=new URLSearchParams({q:`(title:(\"${e}\") OR creator:(\"${e}\")) AND mediatype:texts AND format:EPUB AND language:spa AND -collection:inlibrary AND -access-restricted-item:true`,rows:50,output:'json'});
+   ['identifier','title','creator','licenseurl','rights','date','language'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
    const d=await j('https://archive.org/advancedsearch.php?'+p);
-   return d.response.docs.map(b=>({title:b.title,author:[].concat(b.creator||[])[0]||'',img:'https://archive.org/services/img/'+b.identifier,sendable:hasOpenLicense(b.licenseurl||b.rights),page:'https://archive.org/details/'+encodeURIComponent(b.identifier),url:()=>iaEpub(b.identifier),inf:()=>iaInfo(b.identifier)}));}},
+   return d.response.docs.map(b=>({title:b.title,author:[].concat(b.creator||[])[0]||'',language:b.language,img:'https://archive.org/services/img/'+b.identifier,sendable:hasOpenLicense(b.licenseurl||b.rights),page:'https://archive.org/details/'+encodeURIComponent(b.identifier),url:()=>iaEpub(b.identifier),inf:()=>iaInfo(b.identifier)}));}},
  {name:'Open Library',async run(q){
-   const p=new URLSearchParams({q:q,fields:'title,author_name,ia,key,first_publish_year,publisher,number_of_pages_median,cover_i,ebook_access',limit:30});
+   const p=new URLSearchParams({q:q+' language:spa',fields:'title,author_name,ia,key,first_publish_year,publisher,number_of_pages_median,cover_i,ebook_access,language',limit:30});
    const d=await j('https://openlibrary.org/search.json?'+p);
-   return (d.docs||[]).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',img:b.cover_i?'https://covers.openlibrary.org/b/id/'+b.cover_i+'-M.jpg?default=false':'',page:'https://openlibrary.org'+b.key,sendable:false,url:async()=>{throw new Error('Open Library ofrece la ficha; revisá allí la disponibilidad y los derechos del archivo.')},inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key),pages:b.number_of_pages_median,edition:(b.publisher||[])[0]})}));}},
+   return (d.docs||[]).map(b=>({title:b.title,author:(b.author_name||[])[0]||'',language:b.language,img:b.cover_i?'https://covers.openlibrary.org/b/id/'+b.cover_i+'-M.jpg?default=false':'',page:'https://openlibrary.org'+b.key,sendable:false,url:async()=>{throw new Error('Open Library ofrece la ficha; revisá allí la disponibilidad y los derechos del archivo.')},inf:async()=>({year:b.first_publish_year,desc:await olDesc(b.key),pages:b.number_of_pages_median,edition:(b.publisher||[])[0]})}));}},
  {name:'Google Books',async run(q){
-   const p=new URLSearchParams({q,filter:'free-ebooks',download:'epub',printType:'books',maxResults:20});
-   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=google-books&q='+encodeURIComponent(q));
+   const p=new URLSearchParams({q,filter:'free-ebooks',download:'epub',printType:'books',maxResults:20,langRestrict:'es'});
+   const d=await j('https://www.googleapis.com/books/v1/volumes?'+new URLSearchParams({q,filter:'free-ebooks',printType:'books',maxResults:20,langRestrict:'es'}));
    return (d.items||[]).map(v=>{const i=v.volumeInfo||{},ai=v.accessInfo||{},ep=ai.epub||{},legal=!!(ai.publicDomain&&ep.isAvailable&&ep.downloadLink);
-     return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',img:((i.imageLinks||{}).thumbnail||'').replace('http:','https:'),page:i.infoLink||'',sendable:legal,url:async()=>{if(!legal)throw new Error('Google Books muestra la ficha; solo se envían EPUB descargables de dominio público.');return ep.downloadLink},inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description),pages:i.pageCount,edition:[i.publisher,(i.publishedDate||'').slice(0,4)].filter(Boolean).join(', ')})}});}},
+     return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',language:i.language,img:((i.imageLinks||{}).thumbnail||'').replace('http:','https:'),page:i.infoLink||'',sendable:legal,url:async()=>{if(!legal)throw new Error('Google Books muestra la ficha; solo se envían EPUB descargables de dominio público.');return ep.downloadLink},inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description),pages:i.pageCount,edition:[i.publisher,(i.publishedDate||'').slice(0,4)].filter(Boolean).join(', ')})}});}},
  {name:'OAPEN',async run(q){
    const d=await j(ANNA_API_BASE+'/api/catalog-search?source=oapen&q='+encodeURIComponent(q));
    const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
    return (Array.isArray(d)?d:[]).map(it=>{
      const f=(it.bitstreams||[]).find(x=>/epub/i.test(x.mimeType||'')||/\.epub$/i.test(x.name||''));
      const rights=[...md(it,'dc.rights.uri'),...md(it,'dc.rights')].join(' '),licensed=hasOpenLicense(rights);
-      return f?{title:it.name,author:(md(it,'dc.contributor.author')[0]||'').replace(/,\s*$/,''),img:(()=>{const t=(it.bitstreams||[]).find(x=>x.bundleName==='THUMBNAIL');return t?'https://library.oapen.org'+t.retrieveLink:''})(),sendable:licensed,url:async()=>{if(!licensed)throw new Error('OAPEN no declara una licencia abierta verificable para este archivo.');return 'https://library.oapen.org'+f.retrieveLink},inf:async()=>({year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:txt(md(it,'dc.description.abstract')[0]),edition:md(it,'publisher.name')[0]||md(it,'dc.publisher')[0],pages:md(it,'oapen.pages')[0]})}:null}).filter(Boolean);}},
+      return f?{title:it.name,author:(md(it,'dc.contributor.author')[0]||'').replace(/,\s*$/,''),language:[...md(it,'dc.language.iso'),...md(it,'dc.language')],img:(()=>{const t=(it.bitstreams||[]).find(x=>x.bundleName==='THUMBNAIL');return t?'https://library.oapen.org'+t.retrieveLink:''})(),sendable:licensed,url:async()=>{if(!licensed)throw new Error('OAPEN no declara una licencia abierta verificable para este archivo.');return 'https://library.oapen.org'+f.retrieveLink},inf:async()=>({year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:txt(md(it,'dc.description.abstract')[0]),edition:md(it,'publisher.name')[0]||md(it,'dc.publisher')[0],pages:md(it,'oapen.pages')[0]})}:null}).filter(Boolean);}},
  {name:'DOAB',async run(q){
    const d=await j(ANNA_API_BASE+'/api/catalog-search?source=doab&q='+encodeURIComponent(q));
    const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
@@ -224,7 +230,7 @@ const SOURCES=[
    return (d.books||[]).map(b=>({title:[b.title,b.subtitle].filter(Boolean).join(': '),author:b.authors||'',img:b.image||'',sendable:false,page:b.url||'',url:async()=>{throw new Error('Abrí el registro de dBooks para revisar sus condiciones y formatos disponibles.')},inf:async()=>({author:b.authors||'',desc:b.subtitle||'',edition:'dBooks · ficha bibliográfica',pages:''})}));}},
    {name:'Wikisource',async run(q){
    const d=await j('https://es.wikisource.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=15&srnamespace=0&srsearch='+encodeURIComponent(q));
-   return d.query.search.map(b=>({title:b.title,author:'',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||'',edition:'Wikisource'}}}));}}
+   return d.query.search.map(b=>({title:b.title,author:'',language:'es',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||'',edition:'Wikisource'}}}));}}
 ];
 
 const txt=h=>new DOMParser().parseFromString(String(h||''),'text/html').body.textContent.replace(/\s+/g,' ').trim();
@@ -265,7 +271,8 @@ function score(b){
   if(!relevant)return -100;
   return (authorPhrase?120:fullTitle?100:titlePrefix?80:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+coverage*10-Math.max(0,t.length-query.length)*.12;
 }
-function add(src,list){list.forEach(b=>{if(!b.title||b.sendable===false||typeof b.url!=='function')return;
+function isSpanish(value){const codes=(Array.isArray(value)?value:[value]).flatMap(v=>String(v||'').toLowerCase().split(/[;,\s]+/)).map(v=>v.trim().replace(/^.*\//,'')).filter(Boolean);return codes.some(v=>v==='es'||v==='spa'||v==='spanish'||v==='espanol'||v==='español'||v==='castellano'||v==='castilian'||v.startsWith('es-'))}
+function add(src,list){list.forEach(b=>{if(!b.title||!isSpanish(b.language)||b.sendable===false||typeof b.url!=='function')return;
   const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false},e=all.find(x=>x.k===k);
   if(e){if(!e.opts.some(p=>p.src===src))e.opts.push(o);if(!e.author&&b.author)e.author=b.author;if(!e.img&&b.img)e.img=b.img}
   else all.push({k,title:b.title,author:b.author||'',img:b.img||'',opts:[o]})})}
@@ -314,7 +321,7 @@ function render(){
 }
 async function search(author=''){
   const raw=$('q').value.trim();if(!raw)return;const q=cleanQuery(raw);if(!q)return;
-  const run=++searchRun;all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando en todas las fuentes…');let done=0;const failed=[];
+  const run=++searchRun;all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando EPUB en español…');let done=0;const failed=[];
   await Promise.all(SOURCES.map(async s=>{
     try{
       let results=await s.run(q);
@@ -327,7 +334,7 @@ async function search(author=''){
     if(run!==searchRun)return;
     done++;const n=render();say(`Buscando… (${done}/${SOURCES.length} fuentes · ${n} resultados)`,n?'ok':'');
   }));
-  if(run===searchRun){const n=render();const details=failed.length?` Fuentes sin respuesta: ${failed.join(' · ')}`:'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):'No encontré EPUB autorizados y descargables. Probá con el título o el autor más exacto.')+details,n?'ok':'err')}
+  if(run===searchRun){const n=render();const details=failed.length?` Fuentes sin respuesta: ${failed.join(' · ')}`:'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):'No encontré EPUB autorizados y descargables en español. Probá con el título o el autor más exacto.')+details,n?'ok':'err')}
 }
 async function download(b,btn){
   const tab=window.open('about:blank','_blank');
@@ -357,7 +364,7 @@ async function send(b,btn){
 document.querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>{$('q').value=b.dataset.query;search()});
 $('go').onclick=()=>search();
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
-const catalogUrls={standard:q=>`https://standardebooks.org/ebooks?query=${encodeURIComponent(q)}`,gutenberg:q=>`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(q)}`,openlibrary:q=>`https://openlibrary.org/search?q=${encodeURIComponent(q)}`,archive:q=>`https://archive.org/search?query=${encodeURIComponent(q)}`};
+const catalogUrls={standard:q=>`https://standardebooks.org/ebooks?query=${encodeURIComponent(q)}`,gutenberg:q=>`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(q)}&languages=es`,openlibrary:q=>`https://openlibrary.org/search?q=${encodeURIComponent(q+' language:spa')}`,archive:q=>`https://archive.org/search?query=${encodeURIComponent('language:spa AND '+q)}`};
 function updateCatalogLinks(){const q=cleanQuery($('q').value.trim());document.querySelectorAll('[data-catalog]').forEach(a=>{const make=catalogUrls[a.dataset.catalog];if(make)a.href=make(q)})}
 $('q').addEventListener('input',updateCatalogLinks);updateCatalogLinks();
 
@@ -412,5 +419,10 @@ $('file').onchange=e=>{
   const img=new Image(),url=URL.createObjectURL(f);img.onload=()=>{readCover(img).finally(()=>URL.revokeObjectURL(url))};img.onerror=()=>{URL.revokeObjectURL(url);say('No pude abrir esa imagen. Probá con JPG o PNG.','err')};img.src=url;e.target.value='';
 };
 </script>
+
+<script>
+let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){alert('Para instalar Kinderly gratis: en iPhone/iPad, tocá Compartir y luego “Agregar a pantalla de inicio”. En Android, abrí el menú del navegador y elegí “Instalar aplicación” o “Agregar a pantalla principal”.');return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if('serviceWorker' in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script>
 </body>
 </html>
+
