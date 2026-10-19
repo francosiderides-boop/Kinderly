@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="kinderly-api-base" content="https://kinderly-anna-api.onrender.com">
+<meta name="kinderly-catalog-api" content="https://kinderly-anna-api.onrender.com">
 <title>Kinderly</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -138,7 +138,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.5.4</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
+  <span class="beta" title="Versión de prueba">Beta 0.5.7</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 <div class="app-links"><button id="install-app" type="button">Instalar Kinderly gratis</button><span class="hint2">Se agrega a tu pantalla de inicio con su propio icono.</span></div>
 
@@ -148,7 +148,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
   <input type="text" id="q" placeholder="Título o autor…" enterkeyhint="search" aria-label="Buscar libro">
   <button id="go">Buscar</button>
 </div>
-<div class="src" id="catalog-links"><span>Ampliá la búsqueda en:</span> <a data-catalog="gutenberg" href="https://www.gutenberg.org/ebooks/search/" target="_blank" rel="noopener noreferrer">Project Gutenberg</a><a data-catalog="openlibrary" href="https://openlibrary.org/search" target="_blank" rel="noopener noreferrer">Open Library</a><a data-catalog="archive" href="https://archive.org/search" target="_blank" rel="noopener noreferrer">Internet Archive</a><a href="https://annasarchive.io/datasets" target="_blank" rel="noopener noreferrer">Datos bibliográficos</a><p class="hint2">Los catálogos se abren con el filtro de español cuando está disponible; revisá el idioma de la edición antes de descargar.</p></div>
+<div class="src" id="catalog-links"><span>Ampliá la búsqueda en:</span> <a data-catalog="gutenberg" href="https://www.gutenberg.org/ebooks/search/" target="_blank" rel="noopener noreferrer">Project Gutenberg</a><a data-catalog="openlibrary" href="https://openlibrary.org/search" target="_blank" rel="noopener noreferrer">Open Library</a><a data-catalog="archive" href="https://archive.org/search" target="_blank" rel="noopener noreferrer">Internet Archive</a><p class="hint2">Los catálogos se abren con el filtro de español cuando está disponible; revisá el idioma de la edición antes de descargar.</p></div>
 <section class="discover" aria-labelledby="discover-title"><div class="discover-head"><div><h2 id="discover-title">Descubrir</h2><p>Explorá por tema, momento o estado de ánimo.</p></div><a class="discover-link" href="./descubrir.html" target="_blank" rel="noopener noreferrer">Explorar libros</a></div></section>
 <div class="chips">
   <button class="ghost" id="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Escanear tapa</button>
@@ -166,6 +166,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
   <div style="margin-top:12px"><button id="save">Guardar</button></div>
   <p class="hint2">Si usás Kindle, aprobá el mail remitente en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).</p>
 </details>
+<p class="hint2" id="app-version" style="text-align:center;margin:18px 0 0"></p>
 </div>
 <div id="status" role="status"></div>
 
@@ -177,7 +178,9 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 
 <script>
 const $=id=>document.getElementById(id);
-const ANNA_API_BASE=(document.querySelector('meta[name="kinderly-api-base"]')?.content||'').trim().replace(/\/+$/,'');
+const APP_VERSION='v057'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · versión '+APP_VERSION;
+const CATALOG_API_BASE=(document.querySelector('meta[name="kinderly-catalog-api"]')?.content||'').trim().replace(/\/+$/,'');
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 function setTheme(mode,persist=false){document.documentElement.dataset.theme=mode;const b=$('theme-toggle');if(b){b.textContent=mode==='dark'?'☀':'☾';b.setAttribute('aria-label',mode==='dark'?'Activar modo día':'Activar modo nocturno');b.title=mode==='dark'?'Activar modo día':'Activar modo nocturno'}if(persist)store.set('theme',mode)}
 setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
@@ -233,18 +236,18 @@ const SOURCES=[
      if(!legal&&!buyUrl)return null;
      return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',language:i.language,img:((i.imageLinks||{}).thumbnail||'').replace('http:','https:'),page:i.infoLink||'',sendable:legal,buyUrl,url:async()=>{if(!legal)throw new Error('Esta edición no tiene un EPUB gratuito y autorizado.');return ep.downloadLink},inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description),pages:i.pageCount,edition:[i.publisher,(i.publishedDate||'').slice(0,4)].filter(Boolean).join(', ')})}}).filter(Boolean);}},
  {name:'OAPEN',async run(q){
-   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=oapen&q='+encodeURIComponent(q));
+   const d=await j(CATALOG_API_BASE+'/api/catalog-search?source=oapen&q='+encodeURIComponent(q)).catch(()=>j('https://library.oapen.org/rest/search?expand=metadata,bitstreams&query='+encodeURIComponent(q)));
    const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
    return (Array.isArray(d)?d:[]).map(it=>{
      const f=(it.bitstreams||[]).find(x=>/epub/i.test(x.mimeType||'')||/\.epub$/i.test(x.name||''));
      const rights=[...md(it,'dc.rights.uri'),...md(it,'dc.rights')].join(' '),licensed=hasOpenLicense(rights);
       return f?{title:it.name,author:(md(it,'dc.contributor.author')[0]||'').replace(/,\s*$/,''),language:[...md(it,'dc.language.iso'),...md(it,'dc.language')],img:(()=>{const t=(it.bitstreams||[]).find(x=>x.bundleName==='THUMBNAIL');return t?'https://library.oapen.org'+t.retrieveLink:''})(),sendable:licensed,url:async()=>{if(!licensed)throw new Error('OAPEN no declara una licencia abierta verificable para este archivo.');return 'https://library.oapen.org'+f.retrieveLink},inf:async()=>({year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:txt(md(it,'dc.description.abstract')[0]),edition:md(it,'publisher.name')[0]||md(it,'dc.publisher')[0],pages:md(it,'oapen.pages')[0]})}:null}).filter(Boolean);}},
  {name:'DOAB',async run(q){
-   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=doab&q='+encodeURIComponent(q));
+   const d=await j(CATALOG_API_BASE+'/api/catalog-search?source=doab&q='+encodeURIComponent(q));
    const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
    return (Array.isArray(d)?d:[]).map(it=>({title:it.name||md(it,'dc.title')[0]||'',author:md(it,'dc.contributor.author')[0]||md(it,'dc.creator')[0]||'',img:'',sendable:false,page:it.handle?'https://directory.doabooks.org/handle/'+encodeURIComponent(it.handle):'',url:async()=>{throw new Error('DOAB muestra libros de acceso abierto; abrí el registro para elegir el formato disponible.')},inf:async()=>({author:md(it,'dc.contributor.author')[0]||md(it,'dc.creator')[0]||'',year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:md(it,'dc.description.abstract')[0]||'',edition:md(it,'dc.publisher')[0]||'Directory of Open Access Books'})}));}},
  {name:'dBooks',async run(q){
-   const d=await j(ANNA_API_BASE+'/api/catalog-search?source=dbooks&q='+encodeURIComponent(q));
+   const d=await j(CATALOG_API_BASE+'/api/catalog-search?source=dbooks&q='+encodeURIComponent(q));
    return (d.books||[]).map(b=>({title:[b.title,b.subtitle].filter(Boolean).join(': '),author:b.authors||'',img:b.image||'',sendable:false,page:b.url||'',url:async()=>{throw new Error('Abrí el registro de dBooks para revisar sus condiciones y formatos disponibles.')},inf:async()=>({author:b.authors||'',desc:b.subtitle||'',edition:'dBooks · ficha bibliográfica',pages:''})}));}},
    {name:'Wikisource',async run(q){
    const d=await j('https://es.wikisource.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=15&srnamespace=0&srsearch='+encodeURIComponent(q));
@@ -366,7 +369,7 @@ async function send(b,btn){
   const to=store.get('mail');
   if(!to){$('cfg').open=true;say('Primero guardá tu mail','err');return}
   btn.disabled=true;let err='';
-  for(const o of b.opts.filter(o=>o.sendable&&!o.src.startsWith('Anna’s Archive')).sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){
+  for(const o of b.opts.filter(o=>o.sendable).sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){
     try{
       say(`Enviando “${b.title}” desde ${o.src}…`);
       const file=await o.url();
@@ -378,7 +381,7 @@ async function send(b,btn){
   say('No se pudo enviar: '+err,'err');btn.disabled=false;
 }
 let discoveryBusy=false;
-$('discover-btn').onclick=loadPopular;
+const discoverBtn=$('discover-btn');if(discoverBtn)discoverBtn.onclick=loadPopular;
 async function loadPopular(){
   if(discoveryBusy)return;discoveryBusy=true;const btn=$('discover-btn'),out=$('discover-results');btn.disabled=true;btn.textContent='Cargando…';out.textContent='';
   try{
@@ -405,7 +408,7 @@ function shrink(src,crop=false){
   if(!w0||!h0)throw new Error('La imagen todavía no está lista');
   let sx=0,sy=0,sw=w0,sh=h0;
   if(crop&&src.videoWidth){
-    const video=$('vid'),vr=video.getBoundingClientRect(),fr=$('.frame').getBoundingClientRect(),scale=Math.max(vr.width/w0,vr.height/h0),rw=w0*scale,rh=h0*scale,ox=(vr.width-rw)/2,oy=(vr.height-rh)/2;
+    const video=$('vid'),vr=video.getBoundingClientRect(),fr=document.querySelector('.frame').getBoundingClientRect(),scale=Math.max(vr.width/w0,vr.height/h0),rw=w0*scale,rh=h0*scale,ox=(vr.width-rw)/2,oy=(vr.height-rh)/2;
     sx=Math.max(0,(fr.left-vr.left-ox)/scale);sy=Math.max(0,(fr.top-vr.top-oy)/scale);sw=Math.min(w0-sx,fr.width/scale);sh=Math.min(h0-sy,fr.height/scale);
   }
   const k=Math.min(1,1400/Math.max(sw,sh)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(sw*k));c.height=Math.max(1,Math.round(sh*k));
