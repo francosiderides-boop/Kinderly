@@ -101,7 +101,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 <input type="file" id="file" accept="image/*">
 
 <div id="res"></div>
-<div id="empty"><svg aria-hidden="true"><use href="#lg"/></svg><br>Buscá un título o escaneá una tapa.<br>Solo mostramos EPUB verificables, autorizados y listos para enviar.</div>
+<div id="empty"><svg aria-hidden="true"><use href="#lg"/></svg><br>Buscá un título o escaneá una tapa.<br>Solo mostramos EPUB con licencia abierta o de dominio público comprobable.</div>
 
 <details id="cfg">
   <summary>Mi mail</summary>
@@ -298,7 +298,7 @@ async function send(b,btn){
     try{
       say(`Enviando “${b.title}” desde ${o.src}…`);
       const file=await o.url();
-      const d=await api({to,url:file,title:b.title,filename:slug(b.title)+'.epub'});
+      const d=await api({action:'enviar',to,url:file,title:b.title,filename:slug(b.title)+'.epub'});
       if(d.ok){say('Enviado a '+to+' ('+o.src+')','ok');btn.disabled=false;return}
       err=d.error;if(/límite/i.test(err))break;
     }catch(e){err=e.message}
