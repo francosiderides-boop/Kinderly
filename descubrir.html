@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f3f6f8">
+<script>try{const t=localStorage.getItem("theme");document.documentElement.dataset.theme=t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
 <title>Descubrir libros · Kinderly</title>
 <style>
 :root{color-scheme:light;--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--green:#116b5c;--soft:#eaf2f3;--accent:#c35f40;--gold:#e6b94f;--shadow:0 8px 26px rgba(18,43,58,.06)}
@@ -31,11 +32,14 @@ h2{font:600 1.55rem Georgia,serif;margin:0}.caption{font-size:.82rem;color:var(-
 .note{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px 14px;color:var(--mute);font-size:.82rem;margin-top:24px}
 @media(max-width:560px){.wrap{padding:15px 14px 50px}.categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cat{min-height:104px;padding:12px}.section-head{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.hero{padding-top:25px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.theme-toggle{width:42px;height:42px;min-width:42px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:1.2rem;line-height:1;cursor:pointer}
+:root[data-theme="light"]{color-scheme:light;--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--green:#116b5c;--soft:#eaf2f3;--accent:#c35f40;--gold:#e6b94f;--shadow:0 8px 26px rgba(18,43,58,.06)}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#101a22;--card:#172630;--ink:#edf4f5;--mute:#aab9c1;--line:#2c404b;--green:#78c5b3;--soft:#203740;--accent:#f19a79;--gold:#edc45f;--shadow:0 8px 26px rgba(0,0,0,.24)}
 </style>
 </head>
 <body>
 <main class="wrap">
-<header><div class="logo" aria-hidden="true">K</div><div><div class="brand">Kinderly</div><div class="tagline">Tu espacio para explorar lecturas</div></div><a class="home" href="./index.html">Volver a buscar</a></header>
+<header><div class="logo" aria-hidden="true">K</div><div><div class="brand">Kinderly</div><div class="tagline">Tu espacio para explorar lecturas</div></div><a class="home" href="./index.html">Volver a buscar</a><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button></header>
 <section class="hero"><div class="eyebrow">Lecturas en español</div><h1>Descubrí algo nuevo.</h1><p>Elegí una categoría y seguí explorando. Los libros aparecen de a poco al desplazarte; mostramos ediciones EPUB de acceso abierto o dominio público.</p></section>
 <nav class="categories" id="categories" aria-label="Categorías de libros"></nav>
 <section aria-labelledby="category-title"><div class="section-head"><div><h2 id="category-title">Más populares</h2><p class="caption" id="category-description">Los títulos con más descargas en Project Gutenberg.</p></div><div class="caption" id="count"></div></div><div class="grid" id="books" aria-live="polite"></div><div id="state" role="status">Cargando libros…</div><div id="sentinel" aria-hidden="true"></div></section>
@@ -57,6 +61,8 @@ const categories=[
 {id:'drama',title:'Teatro',desc:'Obras dramáticas para leer o representar.',topic:'drama'}
 ];
 const $=id=>document.getElementById(id),state=$('state'),booksEl=$('books'),countEl=$('count');
+function setTheme(mode,persist=false){document.documentElement.dataset.theme=mode;const b=$('theme-toggle');b.textContent=mode==='dark'?'☀':'☾';b.setAttribute('aria-label',mode==='dark'?'Activar modo día':'Activar modo nocturno');b.title=mode==='dark'?'Activar modo día':'Activar modo nocturno';if(persist){try{localStorage.setItem('theme',mode)}catch(e){}}}
+setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');$('theme-toggle').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark',true);
 let active=categories[0],nextUrl='',busy=false,shown=0,scanned=0,seen=new Set(),observer,iaPage=1,iaTotal=0;
 const safeEpub=b=>{const u=b.formats&&b.formats['application/epub+zip'];if(!u)return '';try{const x=new URL(u);return x.protocol==='https:'&&(x.hostname==='gutenberg.org'||x.hostname.endsWith('.gutenberg.org'))?x.href:''}catch(e){return ''}};
 function renderCategories(){const nav=$('categories');for(const c of categories){const b=document.createElement('button');b.type='button';b.className='cat';b.setAttribute('aria-pressed',String(c.id===active.id));const strong=document.createElement('strong');strong.textContent=c.title;const span=document.createElement('span');span.textContent=c.desc;b.append(strong,span);b.onclick=()=>select(c);nav.append(b)}}
