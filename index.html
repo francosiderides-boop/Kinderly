@@ -76,6 +76,39 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 .camBar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px calc(18px + env(safe-area-inset-bottom,0px));background:#0a1625}
 .camBar .ghost{background:transparent;color:#fff;border-color:#42586f}
 #snap{width:72px;height:72px;padding:0;border-radius:50%;background:#fffdf8;border:5px solid var(--gold);font-size:0}
+
+:root{--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--soft:#eaf2f3;--green:#0e6b5d;--terra:#c35f40;--gold:#e6b94f;--navy:#122b3a;--btn:#116b5c;--btnInk:#fff;--acc:#c35f40;--ok:#16745f;--err:#bd4a42;--sh:0 3px 10px rgba(18,43,58,.04),0 12px 30px rgba(18,43,58,.06)}
+@media(prefers-color-scheme:dark){:root{--bg:#101a22;--card:#172630;--ink:#edf4f5;--mute:#aab9c1;--line:#2c404b;--soft:#203740;--green:#78c5b3;--terra:#f19a79;--gold:#edc45f;--navy:#10212b;--btn:#70c3ae;--btnInk:#102a2a;--acc:#f19a79;--ok:#7ed5bd;--err:#ffaaa0;--sh:0 3px 10px rgba(0,0,0,.18),0 12px 30px rgba(0,0,0,.24)}}
+body{background:radial-gradient(ellipse at 50% -18%,rgba(17,107,92,.12),transparent 56%),var(--bg);padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.app{max-width:760px}
+header{padding:8px 2px 18px;border-bottom:1px solid var(--line);margin-bottom:30px}
+.mark{width:52px;height:52px}
+h1{font-size:2rem}
+.beta{border:1px solid var(--line);color:var(--green);background:var(--soft);letter-spacing:.06em}
+.lead{font-size:clamp(1.6rem,4vw,2.1rem);margin-bottom:18px}
+.search{border-radius:18px;padding:7px 7px 7px 16px;border-color:var(--line);box-shadow:0 6px 20px rgba(18,43,58,.07)}
+.search:focus-within{border-color:var(--green);box-shadow:0 0 0 4px rgba(17,107,92,.09),0 8px 24px rgba(18,43,58,.07)}
+.search input{padding:12px 8px}
+.search button{padding:12px 22px;border-radius:13px}
+.src{margin:12px 2px 18px;line-height:1.7;font-size:.85rem}
+.src a{display:inline-flex;align-items:center;margin:0 0 0 5px;border-color:var(--line);color:var(--green);font-weight:600;padding:5px 12px}
+.chips{gap:10px;margin:0 0 28px}
+.chips button{min-height:44px;padding:10px 16px;border-radius:13px}
+.item{border-radius:20px;padding:16px;margin:13px 0;box-shadow:0 5px 18px rgba(18,43,58,.045);animation:in .22s ease both}
+.top{display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:15px;align-items:center}
+.top>div:nth-child(2){align-self:center}
+.cov{width:60px;height:84px;border-radius:6px 10px 10px 6px}
+.top b{font-size:1.08rem;line-height:1.3}
+.top small{font-size:.86rem}
+.tag{padding:3px 10px;margin:8px 5px 0 0;font-size:.7rem}
+.actions{display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:132px}
+.actions button{width:100%;min-height:42px;padding:9px 12px;border-radius:12px;font-size:.82rem}
+.actions .download{background:var(--card);color:var(--green);border:1px solid var(--line)}
+#empty{background:var(--card);border:1px solid var(--line);border-radius:20px;margin:24px 0;padding:36px 20px;box-shadow:var(--sh)}
+details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
+#cfg summary{font-size:1rem}
+#status{border-radius:16px;backdrop-filter:blur(12px)}
+@media(max-width:520px){body{padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}.app{max-width:100%}header{margin-bottom:26px}.mark{width:46px;height:46px}h1{font-size:1.85rem}.lead{font-size:1.55rem}.search{gap:2px;padding-left:11px}.search button{padding:11px 14px}.top{grid-template-columns:48px minmax(0,1fr);gap:11px}.cov{width:48px;height:68px}.top>div:nth-child(2){grid-column:2;grid-row:1}.actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;min-width:0;margin-top:3px}.actions button{min-height:44px;padding:9px 8px}.item{padding:13px;border-radius:17px}.src{margin-bottom:16px}#empty{padding:28px 16px}}
 </style>
 </head>
 <body>
@@ -84,7 +117,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.3.4</span>
+  <span class="beta" title="Versión de prueba">Beta 0.4.0</span>
 </header>
 
 <p class="lead">Buscá un libro. <em>Recibilo donde leés.</em></p>
@@ -242,17 +275,19 @@ function card(b){
   b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.src;t.append(g)});
   const record=b.opts.find(o=>o.page);if(record){const a=document.createElement('a');a.href=record.page;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Abrir ficha';a.className='tag';t.append(a)}
   const btn=document.createElement('button');
-  const hasAuthorizedSource=b.opts.some(o=>o.sendable&&!o.src.startsWith('Anna’s Archive'));
-  btn.textContent=hasAuthorizedSource?'Enviar':'Sin archivo autorizado';
+  const hasAuthorizedSource=b.opts.some(o=>o.sendable&&typeof o.url==='function');
+  btn.textContent=hasAuthorizedSource?'Enviar al mail':'Sin archivo autorizado';
   btn.disabled=!hasAuthorizedSource;
   if(hasAuthorizedSource)btn.onclick=()=>send(b,btn);
-  else btn.title='Este resultado solo contiene metadatos; abrí el registro de la fuente o buscá un archivo con licencia abierta.';
+  else btn.title='No hay un EPUB con permiso verificable para este resultado.';
+  const dl=document.createElement('button');dl.className='ghost download';dl.textContent='Descargar EPUB';dl.disabled=!hasAuthorizedSource;if(hasAuthorizedSource)dl.onclick=()=>download(b,dl);
+  const actions=document.createElement('div');actions.className='actions';actions.append(dl,btn);
   const cv=document.createElement('div');cv.className='cov';
   const hh=[...b.title].reduce((x,c)=>(x*31+c.charCodeAt(0))%997,7),CV=[['#14304f','#0b1f36'],['#1f5b3e','#103625'],['#14304f','#1f5b3e'],['#9a4a2c','#5e2a17']],pc=CV[hh%4];
   cv.style.background=`linear-gradient(145deg,${pc[0]},${pc[1]})`;
   const ini=document.createElement('span');ini.textContent=(norm(b.title).split(' ').filter(w=>!STOP.has(w)).slice(0,2).map(w=>w[0]||'').join('')||'L').toUpperCase();cv.append(ini);
   if(b.img){const im=new Image();im.alt='';im.referrerPolicy='no-referrer';im.onload=()=>{if(im.naturalWidth>40){cv.textContent='';cv.append(im);cv.classList.add('has')}};im.src=b.img}
-  top.append(cv,t,btn);
+  top.append(cv,t,actions);
   const dt=document.createElement('details');dt.className='det';
   const su=document.createElement('summary');su.textContent='Ver detalles';
   const body=document.createElement('div');dt.append(su,body);
@@ -289,6 +324,16 @@ async function search(author=''){
     done++;const n=render();say(`Buscando… (${done}/${SOURCES.length} fuentes · ${n} resultados)`,n?'ok':'');
   }));
   if(run===searchRun){const n=render();const details=failed.length?` Fuentes sin respuesta: ${failed.join(' · ')}`:'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):'No encontré EPUB autorizados y descargables. Probá con el título o el autor más exacto.')+details,n?'ok':'err')}
+}
+async function download(b,btn){
+  const tab=window.open('about:blank','_blank');
+  if(!tab){say('Permití las ventanas emergentes para abrir el EPUB.','err');return}
+  btn.disabled=true;let err='';
+  const allowed=['gutenberg.org','archive.org','wikisource.org','wmcloud.org','books.google.com','library.oapen.org'];
+  for(const o of b.opts.filter(o=>o.sendable&&typeof o.url==='function')){
+    try{const file=await o.url(),u=new URL(file);if(u.protocol!=='https:'||!allowed.some(h=>u.hostname===h||u.hostname.endsWith('.'+h)))throw new Error('El enlace de descarga no pertenece a una fuente permitida');tab.location.replace(u.href);say('Abriendo el EPUB autorizado desde '+o.src,'ok');btn.disabled=false;return}catch(e){err=e.message}
+  }
+  tab.close();say('No se pudo abrir el EPUB: '+err,'err');btn.disabled=false;
 }
 async function send(b,btn){
   const to=store.get('mail');
