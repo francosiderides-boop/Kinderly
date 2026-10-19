@@ -138,7 +138,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.5.7</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
+  <span class="beta" title="Versión de prueba">Beta 0.5.8</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 <div class="app-links"><button id="install-app" type="button">Instalar Kinderly gratis</button><span class="hint2">Se agrega a tu pantalla de inicio con su propio icono.</span></div>
 
@@ -178,14 +178,14 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v057'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v058'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · versión '+APP_VERSION;
 const CATALOG_API_BASE=(document.querySelector('meta[name="kinderly-catalog-api"]')?.content||'').trim().replace(/\/+$/,'');
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 function setTheme(mode,persist=false){document.documentElement.dataset.theme=mode;const b=$('theme-toggle');if(b){b.textContent=mode==='dark'?'☀':'☾';b.setAttribute('aria-label',mode==='dark'?'Activar modo día':'Activar modo nocturno');b.title=mode==='dark'?'Activar modo día':'Activar modo nocturno'}if(persist)store.set('theme',mode)}
 setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
 $('theme-toggle').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark',true);
-const SCRIPT_URLS=['https://script.google.com/macros/s/AKfycbzEMKDt0EcagYTfTD_Qq4Yw2A7PsLcDC_sQoXu5P_ITsiTcQzUiqHdvZL4zZqxMQapc/exec']; // si agregás otro remitente, sumá su URL acá separada por coma
+const SCRIPT_URLS=['https://script.google.com/macros/s/AKfycbwhRlwAlFh1VdroyXcpxVdl6cf2yzDuou4t0MnaTo9pK5KUFk7NZnfdXNesi8RONMv5jQ/exec']; // si agregás otro remitente, sumá su URL acá separada por coma
 async function api(p){let last={ok:false,error:'No se pudo conectar con el servicio'};for(const u of SCRIPT_URLS){try{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(p),signal:AbortSignal.timeout(25000)});if(!r.ok)throw new Error(`El servicio respondió HTTP ${r.status}`);const d=await r.json();if(d.ok||!/límite/i.test(d.error||''))return d;last=d}catch(e){last={ok:false,error:e.name==='TimeoutError'?'El servicio tardó demasiado en responder':e.message||'Error de conexión'}}}return last}
 $('mail').value=store.get('mail');
 $('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
