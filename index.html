@@ -94,6 +94,13 @@ h1{font-size:2rem}
 .app-links a,.app-links button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 14px;border-radius:12px;font:600 .84rem var(--sans);text-decoration:none}
 .app-links a{background:var(--card);color:var(--green);border:1px solid var(--line)}
 .app-links button{background:var(--btn);color:var(--btnInk)}
+.discover{margin:20px 0 26px;padding:18px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh)}
+.discover-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.discover h2{font:600 1.28rem var(--serif);margin:0}
+.discover p{font-size:.83rem;color:var(--mute);margin:3px 0 0}
+.discover-head button{font-size:.82rem;padding:10px 14px}
+#discover-results:empty{display:none}
+@media(max-width:520px){.discover{padding:14px;border-radius:16px}.discover-head{align-items:flex-start;flex-direction:column}.discover-head button{width:100%}}
 .lead{font-size:clamp(1.6rem,4vw,2.1rem);margin-bottom:18px}
 .search{border-radius:18px;padding:7px 7px 7px 16px;border-color:var(--line);box-shadow:0 6px 20px rgba(18,43,58,.07)}
 .search:focus-within{border-color:var(--green);box-shadow:0 0 0 4px rgba(17,107,92,.09),0 8px 24px rgba(18,43,58,.07)}
@@ -126,7 +133,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.4.2</span>
+  <span class="beta" title="Versión de prueba">Beta 0.4.3</span>
 </header>
 <div class="app-links"><button id="install-app" type="button">Instalar gratis</button><a href="https://github.com/francosiderides-boop/Kinderly/archive/refs/heads/main.zip" download>Descargar gratis</a></div>
 
@@ -137,6 +144,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
   <button id="go">Buscar</button>
 </div>
 <div class="src" id="catalog-links"><span>Ampliá la búsqueda en:</span> <a data-catalog="gutenberg" href="https://www.gutenberg.org/ebooks/search/" target="_blank" rel="noopener noreferrer">Project Gutenberg</a><a data-catalog="openlibrary" href="https://openlibrary.org/search" target="_blank" rel="noopener noreferrer">Open Library</a><a data-catalog="archive" href="https://archive.org/search" target="_blank" rel="noopener noreferrer">Internet Archive</a><a href="https://annasarchive.io/datasets" target="_blank" rel="noopener noreferrer">Datos bibliográficos</a><p class="hint2">Los catálogos se abren con el filtro de español cuando está disponible; revisá el idioma de la edición antes de descargar.</p></div>
+<section class="discover" aria-labelledby="discover-title"><div class="discover-head"><div><h2 id="discover-title">Descubrir</h2><p>Populares en español · descargas públicas de Gutenberg e Internet Archive</p></div><button class="ghost" id="discover-btn" type="button">Ver populares</button></div><div id="discover-results" aria-live="polite"></div></section>
 <div class="chips">
   <button class="ghost" id="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Escanear tapa</button>
   <button class="ghost" id="gal0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 9"/></svg>Desde galería</button>
@@ -276,14 +284,14 @@ function add(src,list){list.forEach(b=>{if(!b.title||!isSpanish(b.language)||b.s
   const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false},e=all.find(x=>x.k===k);
   if(e){if(!e.opts.some(p=>p.src===src))e.opts.push(o);if(!e.author&&b.author)e.author=b.author;if(!e.img&&b.img)e.img=b.img}
   else all.push({k,title:b.title,author:b.author||'',img:b.img||'',opts:[o]})})}
-function card(b){
+function card(b,target="res"){
   const el=document.createElement('div');el.className='item';
   const top=document.createElement('div');top.className='top';
   const t=document.createElement('div');
   const h=document.createElement('b');h.textContent=b.title;
   const sm=document.createElement('small');sm.textContent=b.author;
   t.append(h,sm,document.createElement('br'));
-  b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.src;t.append(g)});
+  b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.label||o.src;t.append(g)});
   const record=b.opts.find(o=>o.page);if(record){const a=document.createElement('a');a.href=record.page;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Abrir ficha';a.className='tag';t.append(a)}
   const btn=document.createElement('button');
   const hasAuthorizedSource=b.opts.some(o=>o.sendable&&typeof o.url==='function');
@@ -311,7 +319,7 @@ function card(b){
     }catch(e){body.textContent='No se pudieron cargar los detalles'}
   };
   dt.addEventListener('toggle',()=>{if(dt.open&&!dt.dataset.l){dt.dataset.l=1;show()}});
-  el.append(top,dt);$('res').append(el);
+  el.append(top,dt);$(target).append(el);
 }
 function render(){
   all.forEach(b=>b.s=score(b));
@@ -360,6 +368,21 @@ async function send(b,btn){
     }catch(e){err=e.message}
   }
   say('No se pudo enviar: '+err,'err');btn.disabled=false;
+}
+let discoveryBusy=false;
+$('discover-btn').onclick=loadPopular;
+async function loadPopular(){
+  if(discoveryBusy)return;discoveryBusy=true;const btn=$('discover-btn'),out=$('discover-results');btn.disabled=true;btn.textContent='Cargando…';out.textContent='';
+  try{
+    const d=await j('https://gutendex.com/books/?languages=es&sort=popular');
+    const books=(d.results||[]).filter(b=>b.languages?.includes('es')&&b.formats?.['application/epub+zip']).sort((a,b)=>(b.download_count||0)-(a.download_count||0)).slice(0,12);
+    if(!books.length)out.textContent='Buscando en Internet Archive…';
+    for(const b of books){const author=(b.authors||[]).map(a=>a.name).join('; ');const count=new Intl.NumberFormat('es-AR').format(b.download_count||0);const book={title:b.title,author,language:'es',img:b.formats['image/jpeg']||'',opts:[{src:'Project Gutenberg',label:'Project Gutenberg · '+count+' descargas',sendable:true,url:async()=>b.formats['application/epub+zip'],inf:async()=>({author,desc:(b.summaries||[])[0]||'',edition:'Project Gutenberg, dominio público'})}]};card(book,'discover-results')}
+
+    try{const p=new URLSearchParams({q:'mediatype:texts AND format:EPUB AND language:spa AND -collection:inlibrary AND -access-restricted-item:true',rows:12,output:'json'});['identifier','title','creator','licenseurl','rights','date','language','downloads'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
+    const ia=await j('https://archive.org/advancedsearch.php?'+p);for(const b of (ia.response?.docs||[]).filter(x=>isSpanish(x.language)&&hasOpenLicense(x.licenseurl||x.rights)).slice(0,10)){const count=new Intl.NumberFormat('es-AR').format(b.downloads||0);const book={title:b.title,author:[].concat(b.creator||[])[0]||'',language:b.language,img:'https://archive.org/services/img/'+b.identifier,opts:[{src:'Internet Archive',label:'Internet Archive · '+count+' descargas',sendable:true,url:()=>iaEpub(b.identifier),page:'https://archive.org/details/'+encodeURIComponent(b.identifier),inf:()=>iaInfo(b.identifier)}]};card(book,'discover-results')}}catch(e){if(!out.children.length)out.textContent='No se pudo cargar la lista popular en este momento.'}
+  }catch(e){out.textContent='No se pudo cargar la lista popular. Probá de nuevo en un momento.'}
+  finally{btn.textContent='Actualizar populares';btn.disabled=false;discoveryBusy=false}
 }
 document.querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>{$('q').value=b.dataset.query;search()});
 $('go').onclick=()=>search();
