@@ -13,7 +13,7 @@ Solo se habilita el envío cuando Kinderly puede identificar un archivo EPUB de 
 
 ## Descubrir libros
 
-La sección “Descubrir” vive en una página propia, organiza EPUB en español por categorías temáticas y carga más títulos al desplazarse. Incluye categorías creativas como “Para leer en una sentada”, “Para sacarte del bloqueo”, “Para pensar” y “Para entender el mundo”, además de novelas, cuentos, poesía, ciencia e historia. Usa los temas y cifras públicas de Project Gutenberg; los resultados se filtran por idioma español, EPUB disponible y estado de dominio público. Si el catálogo no responde, la interfaz muestra un mensaje sencillo para reintentar.
+La sección “Descubrir” vive en una página propia, organiza EPUB en español por categorías temáticas y carga más títulos al desplazarse. Incluye categorías creativas como “Para leer en una sentada”, “Para sacarte del bloqueo”, “Para pensar” y “Para entender el mundo”, además de novelas, cuentos, poesía, ciencia e historia. Usa los temas y cifras públicas de Project Gutenberg y una categoría de Internet Archive con licencia abierta verificable; los resultados se filtran por idioma y derechos, y la paginación carga más títulos al desplazarse. Si el catálogo no responde, la interfaz muestra un mensaje sencillo para reintentar.
 
 ## Comprar libros
 
