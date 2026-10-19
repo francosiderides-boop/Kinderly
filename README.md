@@ -17,7 +17,7 @@ La sección “Descubrir” reúne EPUB en español ordenados por descargas púb
 
 ## Uso gratuito
 
-La app web es gratuita y se puede instalar desde el navegador en teléfonos y computadoras compatibles. En iPhone/iPad, usá Compartir → Agregar a pantalla de inicio; en Android, elegí Instalar aplicación o Agregar a pantalla principal en el menú del navegador. También se puede descargar el proyecto como ZIP desde el botón “Descargar gratis” de la app.
+La app web es gratuita y se puede instalar desde el navegador en teléfonos y computadoras compatibles. En iPhone/iPad, usá Compartir → Agregar a pantalla de inicio; en Android, elegí Instalar aplicación o Agregar a pantalla principal en el menú del navegador. Kinderly se instala desde la página; no hace falta descargar el código ni pagar una tienda de aplicaciones.
 
 ## Estructura
 
