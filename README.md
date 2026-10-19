@@ -82,3 +82,8 @@ El escaneo recorta la zona marcada en la cámara y conserva más resolución. Si
 Los resultados de Anna’s Archive son solo metadatos y el botón de envío permanece desactivado si no hay otra fuente autorizada para ese mismo título. Si Kinderly encuentra el libro también en Gutenberg, Wikisource, Internet Archive u otra fuente que permita obtener legalmente el archivo, conserva el flujo de envío de esa fuente.
 
 Esto permite demostrar una búsqueda integrada y, con un EPUB de dominio público, licencia abierta o autorización explícita, probar la entrega a Kindle. El envío usa una única cuenta propietaria de Google Apps Script, por lo que la cuota diaria se comparte entre quienes usan la app. Para una publicación a mayor escala se necesita migrar a un proveedor transaccional con dominio verificado o pedir a cada persona que autorice su propia cuenta; ambas opciones requieren configuración de cuenta. El reconocimiento de portadas y la sinopsis dependen del Google Apps Script configurado en `index.html`; el código de ese script no está incluido en este proyecto, así que la disponibilidad y el modelo de IA deben verificarse con el servicio activo. No implementa ni habilita descargas de Anna’s Archive. La búsqueda depende de un paquete de terceros y de la disponibilidad del sitio; no es una API oficial de Anna’s Archive.
+
+
+Beta 0.5.4: selector persistente de modo día/noche en búsqueda y Descubrir; se comparte la preferencia entre ambas páginas.
+
+Beta 0.5.4: las portadas de Descubrir se amplían al tocarlas, con desplazamiento horizontal a una contracubierta informativa; se agregaron fichas detalladas y envío de EPUB abiertos al mail/Kindle configurado.
