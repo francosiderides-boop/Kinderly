@@ -13,7 +13,7 @@ Solo se habilita el envío cuando Kinderly puede identificar un archivo EPUB de 
 
 ## Descubrir libros
 
-La sección “Descubrir” reúne EPUB en español ordenados por descargas públicas de Project Gutenberg e Internet Archive. Cada catálogo carga por separado para que un fallo temporal de uno no bloquee el otro. Las cifras son las que informan esos catálogos y pueden variar.
+La sección “Descubrir” vive en una página propia, organiza EPUB en español por categorías temáticas y carga más títulos al desplazarse. Incluye categorías creativas como “Para leer en una sentada”, “Para sacarte del bloqueo”, “Para pensar” y “Para entender el mundo”, además de novelas, cuentos, poesía, ciencia e historia. Usa los temas y cifras públicas de Project Gutenberg; los resultados se filtran por idioma español, EPUB disponible y estado de dominio público. Si el catálogo no responde, la interfaz muestra un mensaje sencillo para reintentar.
 
 ## Comprar libros
 
@@ -25,7 +25,8 @@ La app web es gratuita y se puede instalar desde el navegador en teléfonos y co
 
 ## Estructura
 
-- `index.html`: interfaz de Kinderly, filtro de idioma español y fuentes bibliográficas existentes.
+- `index.html`: búsqueda de Kinderly, filtro de idioma español, compra en Google Books cuando está disponible y enlace a Descubrir.
+- `descubrir.html`: exploración por categorías con carga progresiva.
 - `manifest.webmanifest` y `sw.js`: instalación como app web y disponibilidad sin conexión de la interfaz.
 - `main.dart`: servidor HTTP con `/api/annas-search` y `/api/health`.
 - `pubspec.yaml`: dependencia `annas_archive_api`.
