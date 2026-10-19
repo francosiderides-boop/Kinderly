@@ -11,6 +11,10 @@ Kinderly busca ediciones etiquetadas en español en varios catálogos abiertos y
 
 Solo se habilita el envío cuando Kinderly puede identificar un archivo EPUB de una fuente marcada como apta. En Internet Archive se exige una licencia abierta reconocible o que Open Library identifique el registro como acceso público; los registros sin permiso verificable quedan como metadatos.
 
+## Descubrir libros
+
+La sección “Descubrir” reúne EPUB en español ordenados por descargas públicas de Project Gutenberg e Internet Archive. Las cifras son las que informan esos catálogos y pueden variar.
+
 ## Uso gratuito
 
 La app web es gratuita y se puede instalar desde el navegador en teléfonos y computadoras compatibles. En iPhone/iPad, usá Compartir → Agregar a pantalla de inicio; en Android, elegí Instalar aplicación o Agregar a pantalla principal en el menú del navegador. También se puede descargar el proyecto como ZIP desde el botón “Descargar gratis” de la app.
