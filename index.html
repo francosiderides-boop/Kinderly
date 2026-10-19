@@ -125,6 +125,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 #cfg summary{font-size:1rem}
 #status{border-radius:16px;backdrop-filter:blur(12px)}
 @media(max-width:520px){body{padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}.app{max-width:100%}header{margin-bottom:26px}.mark{width:46px;height:46px}h1{font-size:1.85rem}.lead{font-size:1.55rem}.search{gap:2px;padding-left:11px}.search button{padding:11px 14px}.top{grid-template-columns:48px minmax(0,1fr);gap:11px}.cov{width:48px;height:68px}.top>div:nth-child(2){grid-column:2;grid-row:1}.actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;min-width:0;margin-top:3px}.actions button{min-height:44px;padding:9px 8px}.item{padding:13px;border-radius:17px}.src{margin-bottom:16px}#empty{padding:28px 16px}}
+ .discover-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 15px;border-radius:12px;background:var(--btn);color:var(--btnInk);text-decoration:none;font-size:.84rem;font-weight:600;white-space:nowrap}.discover-link:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 </style>
 </head>
 <body>
@@ -133,7 +134,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.4.7</span>
+  <span class="beta" title="Versión de prueba">Beta 0.5.0</span>
 </header>
 <div class="app-links"><button id="install-app" type="button">Instalar Kinderly gratis</button><span class="hint2">Se agrega a tu pantalla de inicio con su propio icono.</span></div>
 
@@ -144,7 +145,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
   <button id="go">Buscar</button>
 </div>
 <div class="src" id="catalog-links"><span>Ampliá la búsqueda en:</span> <a data-catalog="gutenberg" href="https://www.gutenberg.org/ebooks/search/" target="_blank" rel="noopener noreferrer">Project Gutenberg</a><a data-catalog="openlibrary" href="https://openlibrary.org/search" target="_blank" rel="noopener noreferrer">Open Library</a><a data-catalog="archive" href="https://archive.org/search" target="_blank" rel="noopener noreferrer">Internet Archive</a><a href="https://annasarchive.io/datasets" target="_blank" rel="noopener noreferrer">Datos bibliográficos</a><p class="hint2">Los catálogos se abren con el filtro de español cuando está disponible; revisá el idioma de la edición antes de descargar.</p></div>
-<section class="discover" aria-labelledby="discover-title"><div class="discover-head"><div><h2 id="discover-title">Descubrir</h2><p>Populares en español · descargas públicas de Gutenberg e Internet Archive</p></div><button class="ghost" id="discover-btn" type="button">Ver populares</button></div><div id="discover-results" aria-live="polite"></div></section>
+<section class="discover" aria-labelledby="discover-title"><div class="discover-head"><div><h2 id="discover-title">Descubrir</h2><p>Explorá por tema, momento o estado de ánimo.</p></div><a class="discover-link" href="./descubrir.html" target="_blank" rel="noopener noreferrer">Explorar libros</a></div></section>
 <div class="chips">
   <button class="ghost" id="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Escanear tapa</button>
   <button class="ghost" id="gal0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 9"/></svg>Desde galería</button>
@@ -342,7 +343,7 @@ async function search(author=''){
     if(run!==searchRun)return;
     done++;const n=render();say(`Buscando… (${done}/${SOURCES.length} fuentes · ${n} resultados)`,n?'ok':'');
   }));
-  if(run===searchRun){const n=render();const details=failed.length?` Fuentes sin respuesta: ${failed.join(' · ')}`:'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):'No encontré EPUB autorizados ni enlaces de compra para esa búsqueda en español. Probá con el título o el autor más exacto.')+details,n?'ok':'err')}
+  if(run===searchRun){const n=render();const note=failed.length?(n?' Algunas fuentes no respondieron; podés reintentar para ver más opciones.':failed.length===SOURCES.length?'No se pudo conectar con los catálogos. Probá nuevamente en unos minutos.':'Algunas fuentes están demoradas. Probá de nuevo para ampliar la búsqueda.'):'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):failed.length?'No encontramos coincidencias por ahora. '+note:'No encontramos resultados en español. Probá con el título o el autor más exacto.')+(n?note:''),n?'ok':failed.length?'':'err')}
 }
 async function download(b,btn){
   const tab=window.open('about:blank','_blank');
