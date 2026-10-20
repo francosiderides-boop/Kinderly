@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#27389B"/>
+  <rect width="64" height="64" rx="14" fill="#3E5287"/>
   <defs><clipPath id="kc"><rect x="0" y="15" width="64" height="35"/></clipPath></defs>
   <g transform="translate(2.2 0)">
   <path d="M20 0h8.4v50l-4.2-4.8L20 50z" fill="#F4F1E8"/>

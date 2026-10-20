@@ -1,5 +1,5 @@
 {
-  "id": "/Kinderly/",
+  "id": "/Kinderly/?v=2",
   "name": "Kinderly",
   "short_name": "Kinderly",
   "description": "Instalá Kinderly gratis desde tu navegador y descubrí libros en español.",
@@ -7,22 +7,22 @@
   "scope": "/Kinderly/",
   "display": "standalone",
   "background_color": "#F3F2EE",
-  "theme_color": "#27389B",
+  "theme_color": "#3E5287",
   "icons": [
     {
-      "src": "/Kinderly/icon-192.png",
+      "src": "/Kinderly/k2-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/Kinderly/icon-512.png",
+      "src": "/Kinderly/k2-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/Kinderly/icon.svg",
+      "src": "/Kinderly/k2-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
