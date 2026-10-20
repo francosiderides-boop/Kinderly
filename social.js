@@ -2,7 +2,7 @@
 // Si este módulo no carga (sin conexión, CDN bloqueado), el resto de la app sigue funcionando.
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
-import {getFirestore,doc,setDoc,updateDoc,deleteDoc,addDoc,getDocs,collection,query,where,onSnapshot,serverTimestamp,limit,arrayUnion} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
+import {getFirestore,doc,getDoc,setDoc,updateDoc,deleteDoc,addDoc,getDocs,collection,query,where,onSnapshot,serverTimestamp,limit,arrayUnion,deleteField} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 
 const cfg={apiKey:['AIzaSyC4yXv45','CTxrENY8YYkQ8dY8BHIcuaZdU'].join('_'),authDomain:'kinderly-6bde4.firebaseapp.com',projectId:'kinderly-6bde4',appId:'1:630134944016:web:b5519d0a9005817311f595',messagingSenderId:'630134944016'};
 // Script de Google que solo descarga EPUB de fuentes legales (el navegador no puede por CORS).
@@ -16,7 +16,7 @@ provider.setCustomParameters({prompt:'select_account'});
 
 const $=id=>document.getElementById(id);
 const say=(t,c)=>{try{window.say(t,c)}catch(e){}};
-const S={user:null,friends:[],reqIn:[],reqOut:[],sharesIn:[],bookIn:[],bookOut:[],unsubs:[]};
+const S={user:null,friends:[],reqIn:[],reqOut:[],sharesIn:[],bookIn:[],bookOut:[],unsubs:[],username:''};
 let token='',tokenExp=0;
 try{token=sessionStorage.getItem('k_gt')||'';tokenExp=+sessionStorage.getItem('k_gt_exp')||0}catch(e){}
 const tokenOk=()=>!!token&&Date.now()<tokenExp-60000;
@@ -75,7 +75,33 @@ async function sendMail({to,url,title,filename}){
 
 // ---------- Datos ----------
 async function upsertProfile(u){
-  try{await setDoc(doc(db,'users',u.uid),{name:u.displayName||'',email:u.email||'',emailLower:(u.email||'').toLowerCase(),photo:u.photoURL||'',updatedAt:serverTimestamp()})}catch(e){console.warn('perfil',e)}
+  try{
+    await setDoc(doc(db,'users',u.uid),{name:u.displayName||'',photo:u.photoURL||'',updatedAt:serverTimestamp(),email:deleteField(),emailLower:deleteField()},{merge:true});
+    const s=await getDoc(doc(db,'users',u.uid));S.username=(s.exists()&&s.data().username)||'';
+  }catch(e){console.warn('perfil',e)}
+}
+const myName=()=>S.username||(S.user&&S.user.displayName)||'Alguien';
+async function claimUsername(raw){
+  const low=String(raw||'').trim().replace(/^@/,'').toLowerCase();
+  if(!/^[a-z0-9_.]{3,20}$/.test(low))throw new Error('Usá de 3 a 20 letras minúsculas, números, punto o guion bajo (sin espacios ni tildes)');
+  if(S.username&&S.username===low){await updateDoc(doc(db,'users',S.user.uid),{username:low,usernameLower:low});return}
+  const ref=doc(db,'usernames',low),ex=await getDoc(ref);
+  if(ex.exists()&&ex.data().uid!==S.user.uid)throw new Error('Ese usuario ya está en uso, probá con otro');
+  if(!ex.exists()){try{await setDoc(ref,{uid:S.user.uid,createdAt:serverTimestamp()})}catch(e){throw new Error('Ese usuario ya está en uso, probá con otro')}}
+  const old=(S.username||'').toLowerCase();
+  await updateDoc(doc(db,'users',S.user.uid),{username:low,usernameLower:low});
+  if(old&&old!==low){try{await deleteDoc(doc(db,'usernames',old))}catch(e){}}
+  S.username=low;
+}
+function promptUsername(){
+  if(!S.user)return;
+  modal(S.username?'Cambiar tu nombre de usuario':'Elegí tu nombre de usuario',(bx,close)=>{
+    bx.append(el('p','hint2','Tus amigos te van a encontrar con este nombre, no con tu mail. Usá de 3 a 20 letras minúsculas, números, punto o guion bajo.'));
+    const i=el('input');i.type='text';i.maxLength=20;i.placeholder='ej: maria_lee';i.autocapitalize='none';i.autocomplete='off';i.spellcheck=false;i.value=S.username||'';bx.append(i);
+    const a=el('div','ks-acts');
+    a.append(btn(S.username?'Cancelar':'Después',close,true),btn('Guardar',()=>guard(async()=>{await claimUsername(i.value);close();render()},'¡Listo! Tu usuario quedó guardado')));
+    bx.append(a);setTimeout(()=>i.focus(),50);
+  });
 }
 function subscribe(){
   const uid=S.user.uid,warn=e=>console.warn(e);
@@ -91,19 +117,20 @@ function unsubscribe(){S.unsubs.forEach(f=>{try{f()}catch(e){}});S.unsubs=[];S.f
 
 async function guard(fn,okMsg){try{await fn();if(okMsg)say(okMsg,'ok')}catch(e){say(errMsg(e),'err')}}
 async function addFriend(raw){
-  const email=(raw||'').trim().toLowerCase(),me=S.user;
-  if(!/^\S+@\S+\.\S+$/.test(email)){say('Ese mail no parece válido','err');return}
-  if(email===(me.email||'').toLowerCase()){say('Ese es tu propio mail','err');return}
-  const s=await getDocs(query(collection(db,'users'),where('emailLower','==',email)));
-  if(s.empty){say('Esa persona todavía no entró a Kinderly. Compartile el link (abajo, “Compartir Kinderly”) y probá de nuevo cuando entre.','err');return}
+  const low=(raw||'').trim().replace(/^@/,'').toLowerCase(),me=S.user;
+  if(!S.username){promptUsername();say('Primero elegí tu nombre de usuario','err');return}
+  if(!/^[a-z0-9_.]{3,20}$/.test(low)){say('Escribí el nombre de usuario de tu amigo/a (3 a 20 letras, números, punto o guion bajo)','err');return}
+  if(low===S.username){say('Ese es tu propio usuario','err');return}
+  const s=await getDocs(query(collection(db,'users'),where('usernameLower','==',low)));
+  if(s.empty){say('No encontramos a nadie con ese usuario. Revisá cómo lo escribió tu amigo/a.','err');return}
   const tid=s.docs[0].id,t=s.docs[0].data();
   if(S.friends.some(f=>f.uid===tid)){say('Ya son amigos','ok');return}
   if(S.reqIn.some(r=>r.from===tid)){say('Esa persona ya te mandó una solicitud: aceptala en esta misma sección','ok');return}
   if(S.reqOut.some(r=>r.to===tid)){say('Ya le mandaste una solicitud, está pendiente','ok');return}
   const id=me.uid+'_'+tid;
   try{await deleteDoc(doc(db,'friendRequests',id))}catch(e){}
-  await setDoc(doc(db,'friendRequests',id),{from:me.uid,to:tid,fromName:me.displayName||me.email,toName:t.name||t.email,fromEmail:me.email,toEmail:t.email,participants:[me.uid,tid],status:'pending',createdAt:serverTimestamp()});
-  say('Solicitud enviada a '+(t.name||t.email),'ok');
+  await setDoc(doc(db,'friendRequests',id),{from:me.uid,to:tid,fromName:S.username,toName:t.username||t.name||'',participants:[me.uid,tid],status:'pending',createdAt:serverTimestamp()});
+  say('Solicitud enviada a @'+(t.username||''),'ok');
 }
 async function acceptReq(r){
   await updateDoc(doc(db,'friendRequests',r.id),{status:'accepted'});
@@ -152,8 +179,8 @@ function render(){
   if(sum)sum.textContent='Mi cuenta y amigos'+(n?' ('+n+')':'');const tb=$('tab-bdg');if(tb){tb.textContent=n;tb.style.display=n?'grid':'none'}
   const me=el('div','ks-me');
   if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;me.append(im)}
-  const who=el('div');who.append(el('b','',S.user.displayName||S.user.email),el('small','hint2',S.user.email));who.style.flex='1';who.querySelector('small').style.display='block';
-  me.append(who,btn('Salir',logout,true));body.append(me);
+  const who=el('div');who.append(el('b','',S.user.displayName||S.user.email),el('small','hint2',S.username?('@'+S.username):'Todavía no elegiste tu nombre de usuario'));who.style.flex='1';who.querySelector('small').style.display='block';
+  me.append(who,btn(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername(),true),btn('Salir',logout,true));body.append(me);
   body.append(el('p','hint2','Los libros salen desde tu Gmail hacia '+myMail()+'. Si es un Kindle, aprobá tu Gmail en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).'));
 
   // Recibidos
@@ -182,11 +209,11 @@ function render(){
 
   // Amigos
   const sec3=el('div','ks-sec');sec3.append(el('h4','','Amigos'));
-  const form=el('div','ks-add'),inp=el('input');inp.type='email';inp.placeholder='mail de tu amigo (el de su cuenta de Google)';inp.autocomplete='off';
+  const form=el('div','ks-add'),inp=el('input');inp.type='text';inp.placeholder='usuario de tu amigo/a (ej: maria_lee)';inp.autocapitalize='none';inp.spellcheck=false;inp.autocomplete='off';
   form.append(inp,btn('Agregar',()=>guard(()=>addFriend(inp.value).then(()=>{inp.value=''}))));sec3.append(form);
-  S.reqIn.forEach(r=>sec3.append(row(r.fromName||r.fromEmail,'quiere ser tu amigo/a',[btn('Aceptar',()=>guard(()=>acceptReq(r),'Ahora son amigos')),btn('Rechazar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)])));
-  S.reqOut.forEach(r=>sec3.append(row(r.toName||r.toEmail,'solicitud pendiente',[btn('Cancelar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)])));
-  if(!S.friends.length&&!S.reqIn.length&&!S.reqOut.length)sec3.append(el('p','hint2','Agregá a un amigo con el mail de su cuenta de Google. Tiene que haber entrado una vez a Kinderly.'));
+  S.reqIn.forEach(r=>sec3.append(row(r.fromName||'alguien','quiere ser tu amigo/a',[btn('Aceptar',()=>guard(()=>acceptReq(r),'Ahora son amigos')),btn('Rechazar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)])));
+  S.reqOut.forEach(r=>sec3.append(row(r.toName||'pendiente','solicitud pendiente',[btn('Cancelar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)])));
+  if(!S.friends.length&&!S.reqIn.length&&!S.reqOut.length)sec3.append(el('p','hint2','Agregá a un amigo con su nombre de usuario. Tiene que haber entrado a Kinderly y elegido uno.'));
   S.friends.forEach(f=>sec3.append(row(f.name,f.email,[btn('Pedir libro',()=>askBook(f)),btn('Quitar',()=>{if(confirm('¿Quitar a '+f.name+' de tus amigos?'))return guard(()=>removeFriend(f))},true)])));
   body.append(sec3);
 }
@@ -196,7 +223,7 @@ function askBook(f){
     const i=el('input');i.type='text';i.maxLength=200;i.placeholder='Título y autor';bx.append(i);
     const a=el('div','ks-acts');a.append(btn('Cancelar',close,true),btn('Enviar pedido',async()=>{
       const t=i.value.trim();if(!t){say('Escribí qué libro buscás','err');return}
-      await guard(()=>addDoc(collection(db,'bookRequests'),{from:S.user.uid,to:f.uid,fromName:S.user.displayName||S.user.email,toName:f.name,text:t,status:'open',createdAt:serverTimestamp()}),'Pedido enviado a '+f.name);close()}));
+      await guard(()=>addDoc(collection(db,'bookRequests'),{from:S.user.uid,to:f.uid,fromName:myName(),toName:f.name,text:t,status:'open',createdAt:serverTimestamp()}),'Pedido enviado a '+f.name);close()}));
     bx.append(a);setTimeout(()=>i.focus(),50);
   });
 }
@@ -218,7 +245,7 @@ async function pickFriendForBook(b,button){
     const n=el('input');n.type='text';n.maxLength=200;n.placeholder='Mensaje (opcional)';bx.append(n);
     const a=el('div','ks-acts');a.append(btn('Cancelar',close,true),btn('Enviar',async()=>{
       const f=S.friends.find(x=>x.uid===sel);
-      await guard(()=>addDoc(collection(db,'shares'),{from:S.user.uid,to:sel,fromName:S.user.displayName||S.user.email,title:b.title,author:b.author||'',url:file,source:o.src,note:n.value.trim().slice(0,200),status:'new',createdAt:serverTimestamp()}),'Libro enviado a '+(f?f.name:'tu amigo'));close()}));
+      await guard(()=>addDoc(collection(db,'shares'),{from:S.user.uid,to:sel,fromName:myName(),title:b.title,author:b.author||'',url:file,source:o.src,note:n.value.trim().slice(0,200),status:'new',createdAt:serverTimestamp()}),'Libro enviado a '+(f?f.name:'tu amigo'));close()}));
     bx.append(a);
   });
 }
@@ -237,7 +264,7 @@ function renderSug(){
   else{
     const ta=el('textarea');ta.maxLength=400;ta.rows=3;ta.placeholder='Contanos qué te gustaría que Kinderly tenga o mejore…';ta.style.cssText='width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:10px 12px;font:inherit';
     f.append(ta);const a=el('div','ks-acts');
-    a.append(btn('Enviar sugerencia',()=>guard(async()=>{const t=ta.value.trim();if(t.length<3){say('Escribí un poco más','err');return}await addDoc(collection(db,'suggestions'),{from:S.user.uid,fromName:S.user.displayName||'Anónimo',text:t,votes:[S.user.uid],createdAt:serverTimestamp()});ta.value=''},'¡Gracias! Tu sugerencia ya está publicada')));
+    a.append(btn('Enviar sugerencia',()=>guard(async()=>{const t=ta.value.trim();if(t.length<3){say('Escribí un poco más','err');return}await addDoc(collection(db,'suggestions'),{from:S.user.uid,fromName:(S.username||S.user.displayName||'Anónimo'),text:t,votes:[S.user.uid],createdAt:serverTimestamp()});ta.value=''},'¡Gracias! Tu sugerencia ya está publicada')));
     f.append(a);
   }
   host.append(f);
@@ -279,7 +306,7 @@ function openReviews(b){
         const ta=el('textarea');ta.rows=3;ta.maxLength=600;ta.placeholder='Tu reseña (opcional)';ta.value=mine?mine.text:'';ta.style.cssText='width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:10px 12px;font:inherit';
         const a=el('div','ks-acts');
         if(mine)a.append(btn('Borrar',()=>guard(async()=>{await deleteDoc(doc(db,'reviews',key+'_'+S.user.uid));await draw(true);refreshBadges(key)}),true));
-        a.append(btn(mine?'Actualizar':'Publicar',()=>guard(async()=>{if(!st){say('Elegí de 1 a 5 estrellas','err');return}await setDoc(doc(db,'reviews',key+'_'+S.user.uid),{bookKey:key,title:String(b.title).slice(0,200),author:String(b.author||'').slice(0,200),uid:S.user.uid,name:S.user.displayName||'Anónimo',stars:st,text:ta.value.trim().slice(0,600),updatedAt:serverTimestamp()});await draw(true);refreshBadges(key)},'¡Gracias por tu reseña!')));
+        a.append(btn(mine?'Actualizar':'Publicar',()=>guard(async()=>{if(!st){say('Elegí de 1 a 5 estrellas','err');return}await setDoc(doc(db,'reviews',key+'_'+S.user.uid),{bookKey:key,title:String(b.title).slice(0,200),author:String(b.author||'').slice(0,200),uid:S.user.uid,name:(S.username||S.user.displayName||'Anónimo'),stars:st,text:ta.value.trim().slice(0,600),updatedAt:serverTimestamp()});await draw(true);refreshBadges(key)},'¡Gracias por tu reseña!')));
         form.append(row,ta,a);
       }
       list.textContent='';
@@ -299,8 +326,8 @@ window.KRev={decorate:decorateRev,open:openReviews};
 window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,sendMail,decorate,openPanel};
 
 onAuthStateChanged(auth,async u=>{
-  unsubscribe();S.user=u||null;
-  if(u){await upsertProfile(u);subscribe()}else clearToken();
+  unsubscribe();S.user=u||null;S.username='';
+  if(u){await upsertProfile(u);subscribe();if(!S.username)setTimeout(()=>promptUsername(),600)}else clearToken();
   render();renderSug();
 });
 render();renderSug();
