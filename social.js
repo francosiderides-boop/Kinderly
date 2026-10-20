@@ -32,10 +32,12 @@ const hostOk=u=>{try{const x=new URL(u);return x.protocol==='https:'&&ALLOWED.so
 const myMail=()=>{let m='';try{m=localStorage.getItem('mail')||''}catch(e){}return m||(S.user&&S.user.email)||''};
 const secs=x=>(x&&x.createdAt&&x.createdAt.seconds)||Date.now()/1000;
 
+let needConsent=false;
 async function popup(){
+  provider.setCustomParameters({prompt:needConsent?'consent':'select_account'});needConsent=false;
   const r=await signInWithPopup(auth,provider);
   const c=GoogleAuthProvider.credentialFromResult(r);
-  if(c&&c.accessToken)setToken(c.accessToken);
+  if(c&&c.accessToken){let ok=true;try{const ti=await(await fetch('https://oauth2.googleapis.com/tokeninfo?access_token='+encodeURIComponent(c.accessToken))).json();ok=!ti.scope||ti.scope.includes('gmail.send')}catch(e){}if(!ok){needConsent=true;throw Object.assign(new Error('Falta el permiso de enviar correo. Tocá “Entrar con Google” de nuevo y tildá la casilla de enviar correo.'),{code:'no-scope'})}setToken(c.accessToken)}
   return r.user;
 }
 async function login(){try{const u=await popup();say('Hola, '+(u.displayName||u.email)+'. Ya podés enviar desde tu Gmail.','ok')}catch(e){say(errMsg(e),'err')}}
@@ -62,11 +64,11 @@ async function sendMail({to,url,title,filename}){
       '--'+B,'Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64','',wrap(b64u('Acá tenés “'+title+'”, enviado con Kinderly.')),
       '--'+B,'Content-Type: application/epub+zip; name="'+fname+'"','Content-Disposition: attachment; filename="'+fname+'"','Content-Transfer-Encoding: base64','',wrap(d.data),
       '--'+B+'--',''].join('\r\n');
-    const g=await fetch('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'message/rfc822'},body:new Blob([mime])});
+    const raw=btoa(mime).replace(/\+/g,'-').replace(/\//g,'_');const g=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({raw})});
     if(g.ok)return{ok:true};
     let msg='';try{msg=(await g.json()).error.message}catch(e){}
     if(g.status===401){clearToken();return{ok:false,error:'Se venció el permiso de Gmail. Probá de nuevo.'}}
-    if(g.status===403)return{ok:false,error:'Google no dejó enviar'+(msg?' ('+msg+')':'')+'. Al entrar, tildá el permiso de enviar correo.'};
+    if(g.status===403){clearToken();needConsent=true}if(g.status===403)return{ok:false,error:'Google no dejó enviar'+(msg?' ('+msg+')':'')+'. Al entrar, tildá el permiso de enviar correo.'};
     return{ok:false,error:'Gmail respondió '+g.status+(msg?': '+msg:'')};
   }catch(e){return{ok:false,error:e.message||'Error al enviar'}}
 }
