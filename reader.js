@@ -83,7 +83,7 @@ function aiForm(box,onDone){
     return;
   }
   const steps=el('ol');steps.style.cssText='margin:6px 0 6px 18px;padding:0;line-height:1.5;font-size:.92rem';
-  ['Tocá el botón verde: se abre Google AI Studio (es gratis, sin tarjeta).','Entrá con tu cuenta de Google y tocá “Crear clave de API”. Después tocá el ícono de copiar.','Volvé a Kinderly y tocá “Pegar mi clave”.'].forEach(t=>steps.append(el('li','',t)));
+  ['Tocá “Conseguir mi clave gratis”: se abre Google AI Studio (es gratis, sin tarjeta).','Entrá con tu cuenta de Google y tocá “Crear clave de API”. Después tocá el ícono de copiar.','Volvé a Kinderly y tocá “Pegar mi clave”.'].forEach(t=>steps.append(el('li','',t)));
   box.append(steps,mkb('1 · Conseguir mi clave gratis',()=>window.open('https://aistudio.google.com/apikey','_blank','noopener')));
   box.append(mkb('2 · Pegar mi clave',async()=>{
     try{const t=await navigator.clipboard.readText();if(!t||t.trim().length<20){state.textContent='No encontré una clave copiada. Copiala en AI Studio y probá de nuevo, o pegala abajo.';return}trySave(t)}
@@ -464,7 +464,7 @@ function pickFile(){const i=document.createElement('input');i.type='file';i.acce
 function renderLib(){
   const host=document.querySelector('.view[data-view="biblioteca"]');if(!host)return;
   host.textContent='';
-  host.append(el('h2','vt','Mi biblioteca'),el('p','vs','Tus libros para leer en Kinderly, incluso sin conexión.'));
+  host.append(el('h2','vt','Mi biblioteca'),el('p','vs','Tus libros, incluso sin conexión.'));
   const top=el('div','card');
   top.append(el('b','','Abrir un libro de tu celular'),el('p','hint2','Elegí un archivo .epub que ya tengas guardado (descargas, Drive, mail…). Queda en esta biblioteca y no sale de tu dispositivo.'));
   const b=btn('Elegir archivo EPUB',pickFile);b.style.marginTop='10px';top.append(b);host.append(top);
@@ -506,7 +506,7 @@ const aiSettingsRefresh=()=>window.aiSettingsRefresh&&window.aiSettingsRefresh()
 
 function decorate(b,actions){
   const o=b.opts.find(x=>x.sendable&&typeof x.url==='function');if(!o)return;
-  const x=el('button','ghost','Leer en la app');x.type='button';
+  const x=el('button','read','Leer en la app');x.type='button';
   x.onclick=async()=>{x.disabled=true;try{const url=await o.url();await open({url,title:b.title,author:b.author})}catch(e){say(e&&e.message||'No se pudo abrir','err')}finally{x.disabled=false}};
   actions.append(x);
 }

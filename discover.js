@@ -9,7 +9,7 @@ host.textContent='';
 const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 host.append(mk('h2','vt','Descubrir'),mk('p','vs','Elegí cómo te sentís o un autor clásico, y te mostramos libros con EPUB gratuito y legal.'));
 const st=document.createElement('style');
-st.textContent='.dz-h{font:600 1.05rem var(--serif);margin:20px 0 8px}.dz-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.dz-g button{display:flex;align-items:center;gap:8px;justify-content:flex-start;text-align:left;white-space:normal;line-height:1.2;padding:12px;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:var(--sh)}.dz-g button.on{border-color:var(--green);background:var(--soft)}.dz-g .e{font-size:1.3rem}.dz-a{display:flex;flex-wrap:wrap;gap:8px}.dz-a button{padding:8px 13px;font-size:.82rem;font-weight:500;background:var(--card);color:var(--ink);border:1px solid var(--line)}#dz-res:empty{display:none}.dz-n{color:var(--mute);font-size:.9rem;padding:14px 4px}';
+st.textContent='.dz-h{font:600 1.05rem var(--serif);margin:20px 0 8px}.dz-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.dz-g button{display:flex;align-items:center;gap:8px;justify-content:space-between;text-align:left;white-space:normal;line-height:1.2;min-height:56px;padding:12px 14px;font:500 1rem var(--serif);background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:var(--sh)}.dz-g button::after{content:"›";color:var(--mute);font:400 1.3rem/1 var(--sans)}.dz-g button:first-child{grid-column:1/-1;border-color:var(--green)}.dz-g button.on{border-color:var(--green);background:var(--soft)}.dz-g .e{font-size:1.3rem}.dz-a{display:flex;flex-wrap:wrap;gap:8px}.dz-a button{padding:8px 13px;font-size:.82rem;font-weight:500;background:var(--card);color:var(--ink);border:1px solid var(--line)}#dz-res:empty{display:none}.dz-n{color:var(--mute);font-size:.9rem;padding:14px 4px}';
 document.head.append(st);
 
 host.append(mk('h3','dz-h','¿Qué tenés ganas de leer?'));
@@ -49,8 +49,8 @@ async function show(label,query,btn,sc){
   finally{busy=false}
   if(sc)title.scrollIntoView({behavior:'smooth',block:'start'});
 }
-MOODS.forEach(([e,t,q])=>{const b=mk('button','');b.type='button';b.append(mk('span','e',e),mk('span','',t));b.onclick=()=>show(t,'topic='+encodeURIComponent(q),b,true);mg.append(b)});
-const pb=mk('button','');pb.type='button';pb.append(mk('span','e','⭐'),mk('span','','Los más leídos'));pb.onclick=()=>show('Los más leídos en español','',pb,true);mg.prepend(pb);
+MOODS.forEach(([e,t,q])=>{const b=mk('button','');b.type='button';b.append(mk('span','',t));b.onclick=()=>show(t,'topic='+encodeURIComponent(q),b,true);mg.append(b)});
+const pb=mk('button','');pb.type='button';pb.append(mk('span','','Los más leídos'));pb.onclick=()=>show('Los más leídos en español','',pb,true);mg.prepend(pb);
 AUTHORS.forEach(a=>{const b=mk('button','',a);b.type='button';b.onclick=()=>{window.showView('buscar');$('q').value=a;$('go').click()};ag.append(b)});
 // primera vez: mostramos los más leídos
 let first=false;const tab=document.querySelector('nav.tabs button[data-go="descubrir"]');
