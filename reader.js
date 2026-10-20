@@ -21,7 +21,7 @@ async function dbDel(k){try{const d=await idb();await new Promise(ok=>{const t=d
 // ---- librerías externas (solo al abrir el primer libro) ----
 const addScript=src=>new Promise((ok,ko)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>ko(new Error('No se pudo cargar el lector. Revisá tu conexión.'));document.head.append(s)});
 let libsP=null;
-const libs=()=>libsP||(libsP=(async()=>{if(window.ePub)return;await addScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');await addScript('https://cdnjs.cloudflare.com/ajax/libs/epub.js/0.3.93/epub.min.js')})().catch(e=>{libsP=null;throw e}));
+const libs=()=>libsP||(libsP=(async()=>{if(window.ePub)return;await addScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');try{await addScript('https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js')}catch(e){await addScript('https://unpkg.com/epubjs@0.3.93/dist/epub.min.js')}})().catch(e=>{libsP=null;throw e}));
 
 async function fetchBook(url){
   const r=await fetch(DL_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'descargar',url}),signal:AbortSignal.timeout(90000)});

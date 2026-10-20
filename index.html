@@ -153,7 +153,7 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.8.1</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
+  <span class="beta" title="Versión de prueba">Beta 0.8.2</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 
 
@@ -199,7 +199,7 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v081'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v082'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · versión '+APP_VERSION;
 const VIEWS=['buscar','descubrir','amigos','ajustes','sugerencias'];
 window.showView=(v,keep)=>{if(!VIEWS.includes(v))v='buscar';document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.go===v);b.setAttribute('aria-current',b.dataset.go===v?'page':'false')});if(!keep){try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo({top:0})}};
@@ -483,9 +483,9 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=081"></script>
-<script src="discover.js?v=081"></script>
-<script type="module" src="social.js?v=081"></script>
+<script src="reader.js?v=082"></script>
+<script src="discover.js?v=082"></script>
+<script type="module" src="social.js?v=082"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
