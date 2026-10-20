@@ -2,7 +2,7 @@
 // Si este módulo no carga (sin conexión, CDN bloqueado), el resto de la app sigue funcionando.
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-auth.js';
-import {getFirestore,doc,setDoc,updateDoc,deleteDoc,addDoc,getDocs,collection,query,where,onSnapshot,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
+import {getFirestore,doc,setDoc,updateDoc,deleteDoc,addDoc,getDocs,collection,query,where,onSnapshot,serverTimestamp,limit,arrayUnion} from 'https://www.gstatic.com/firebasejs/13.0.0/firebase-firestore.js';
 
 const cfg={apiKey:['AIzaSyC4yXv45','CTxrENY8YYkQ8dY8BHIcuaZdU'].join('_'),authDomain:'kinderly-6bde4.firebaseapp.com',projectId:'kinderly-6bde4',appId:'1:630134944016:web:b5519d0a9005817311f595',messagingSenderId:'630134944016'};
 // Script de Google que solo descarga EPUB de fuentes legales (el navegador no puede por CORS).
@@ -163,6 +163,7 @@ function render(){
     const sub='de '+(s.fromName||'un amigo')+(s.note?' · “'+s.note+'”':'')+(s.status==='received'?' · ya enviado a tu mail':'');
     sec1.append(row(s.title,sub,[
       btn('Enviar a mi mail',async()=>{if(!(await ensureToken()))return;say('Enviando “'+s.title+'”…');const r=await sendMail({to:myMail(),url:s.url,title:s.title,filename:s.title+'.epub'});if(r.ok){say('Enviado a '+myMail(),'ok');guard(()=>updateDoc(doc(db,'shares',s.id),{status:'received'}))}else say('No se pudo enviar: '+r.error,'err')}),
+      btn('Leer en la app',async()=>{if(!hostOk(s.url)){say('El enlace no pertenece a una fuente permitida','err');return}window.KReader?window.KReader.open({title:s.title,author:s.author||'',url:s.url}):say('El lector todavía no cargó','err')}),
       btn('Descargar',async()=>{if(hostOk(s.url))window.open(s.url,'_blank','noopener');else say('El enlace no pertenece a una fuente permitida','err')},true),
       btn('Quitar',()=>guard(()=>deleteDoc(doc(db,'shares',s.id))),true)]));
   });
@@ -226,11 +227,38 @@ function decorate(b,actions){
   const x=el('button','ghost','Enviar a un amigo');x.type='button';x.onclick=()=>pickFriendForBook(b,x);actions.append(x);
 }
 
+
+// ---------- Sugerencias ----------
+const SG={list:[]};
+function renderSug(){
+  const host=$('sug-body');if(!host)return;host.textContent='';
+  const f=el('div','card');
+  if(!S.user){f.append(el('p','hint2','Entrá con Google para dejar tu sugerencia y votar las de otros.'));f.append(btn('Entrar con Google',login))}
+  else{
+    const ta=el('textarea');ta.maxLength=400;ta.rows=3;ta.placeholder='Contanos qué te gustaría que Kinderly tenga o mejore…';ta.style.cssText='width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:10px 12px;font:inherit';
+    f.append(ta);const a=el('div','ks-acts');
+    a.append(btn('Enviar sugerencia',()=>guard(async()=>{const t=ta.value.trim();if(t.length<3){say('Escribí un poco más','err');return}await addDoc(collection(db,'suggestions'),{from:S.user.uid,fromName:S.user.displayName||'Anónimo',text:t,votes:[S.user.uid],createdAt:serverTimestamp()});ta.value=''},'¡Gracias! Tu sugerencia ya está publicada')));
+    f.append(a);
+  }
+  host.append(f);
+  const l=SG.list.slice().sort((a,b)=>(b.votes||[]).length-(a.votes||[]).length||secs(b)-secs(a));
+  const sec=el('div','ks-sec');sec.append(el('h4','','Lo que piden los usuarios'));
+  if(!l.length)sec.append(el('p','hint2','Todavía no hay sugerencias. ¡Sé el primero!'));
+  l.forEach(s=>{
+    const mine=!!S.user&&(s.votes||[]).includes(S.user.uid),bs=[];
+    bs.push(btn((mine?'✓ ':'+1 ')+(s.votes||[]).length,()=>{if(!S.user){say('Entrá con Google para votar','err');return}if(mine)return;return guard(()=>updateDoc(doc(db,'suggestions',s.id),{votes:arrayUnion(S.user.uid)}))},mine));
+    if(S.user&&s.from===S.user.uid)bs.push(btn('Borrar',()=>guard(()=>deleteDoc(doc(db,'suggestions',s.id))),true));
+    sec.append(row(s.text,s.fromName||'',bs));
+  });
+  host.append(sec);
+}
+onSnapshot(query(collection(db,'suggestions'),limit(100)),s=>{SG.list=s.docs.map(d=>({id:d.id,...d.data()}));renderSug()},e=>console.warn(e));
+
 window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,sendMail,decorate,openPanel};
 
 onAuthStateChanged(auth,async u=>{
   unsubscribe();S.user=u||null;
   if(u){await upsertProfile(u);subscribe()}else clearToken();
-  render();
+  render();renderSug();
 });
-render();
+render();renderSug();
