@@ -177,10 +177,10 @@ function render(){
   }
   const n=S.reqIn.length+S.sharesIn.filter(s=>s.status==='new').length+S.bookIn.filter(r=>r.status==='open').length;
   if(sum)sum.textContent='Mi cuenta y amigos'+(n?' ('+n+')':'');const tb=$('tab-bdg');if(tb){tb.textContent=n;tb.style.display=n?'grid':'none'}
-  const me=el('div','ks-me');
-  if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;me.append(im)}
-  const who=el('div');who.append(el('b','',S.user.displayName||S.user.email),el('small','hint2',S.username?('@'+S.username):'Todavía no elegiste tu nombre de usuario'));who.style.flex='1';who.querySelector('small').style.display='block';
-  me.append(who,btn(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername(),true),btn('Salir',logout,true));body.append(me);
+  const me=el('div','ks-me2'),head=el('div','ks-me2h');
+  if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;head.append(im)}
+  const who=el('div');who.append(el('b','',S.user.displayName||S.user.email),el('small','hint2',S.username?('@'+S.username):'Todavía no elegiste tu nombre de usuario'));who.querySelector('small').style.display='block';
+  head.append(who);const acts=el('div','ks-me2a');acts.append(btn(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername(),true),btn('Salir',logout,true));me.append(head,acts);body.append(me);
   body.append(el('p','hint2','Los libros salen desde tu Gmail hacia '+myMail()+'. Si es un Kindle, aprobá tu Gmail en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).'));
 
   // Recibidos
