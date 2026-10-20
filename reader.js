@@ -95,9 +95,9 @@ async function open(o){
     book=ePub(buf);
     rend=book.renderTo(view,{width:'100%',height:'100%',flow:'paginated',spread:'none',allowScriptedContent:false});
     const style=()=>{const q=prefs(),t=THEMES[q.theme]||THEMES.claro;
-      rend.themes.override('color',t.fg);rend.themes.override('background',t.bg);
-      rend.themes.override('font-family',q.font==='sans'?'Inter,system-ui,sans-serif':'Georgia,"Iowan Old Style",serif');
-      rend.themes.override('line-height','1.6');rend.themes.fontSize(q.size+'%')};
+      const ff=q.font==='sans'?'Inter,system-ui,sans-serif':'Georgia,"Iowan Old Style",serif',im=' !important';
+      const rules={'html':{'background':t.bg+im},'body':{'background':t.bg+im,'color':t.fg+im,'font-family':ff+im,'line-height':'1.6'+im},'p,div,span,li,td,th,h1,h2,h3,h4,h5,h6,blockquote,em,i,b,strong,small':{'color':t.fg+im},'a,a:link,a:visited':{'color':t.fg+im}};
+      const nm='k_'+q.theme+'_'+q.font;rend.themes.register(nm,rules);rend.themes.select(nm);rend.themes.fontSize(q.size+'%')};
     rend.hooks.content.register(c=>{try{const d=c.document;d.documentElement.style.background=(THEMES[prefs().theme]||THEMES.claro).bg}catch(e){}});
     style();
     const start=(lib().find(x=>x.id===id)||{}).cfi;
