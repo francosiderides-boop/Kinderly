@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Kinderly"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#F8F6F1">
+<meta name="theme-color" content="#FFFFFF"><meta name="color-scheme" content="light dark">
 <script>try{const t=localStorage.getItem("theme");document.documentElement.dataset.theme=t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -148,7 +148,7 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 </style>
 <style>html,body{max-width:100%;overflow-x:hidden}body{touch-action:pan-y}img,svg,video{max-width:100%}.ks-me{flex-wrap:wrap}.ks-me>div{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}.ks-me button{flex:0 0 auto}.ks-row>div{min-width:0;flex:1 1 150px;overflow-wrap:anywhere}.ks-row button{flex:0 0 auto}.wl{margin:8px 0 12px 18px;padding:0;line-height:1.55;font-size:.9rem}.wl li{margin:4px 0}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(62,82,135,.55);outline-offset:2px}.ks-row button,.lib-item button,.ks-acts button{min-height:44px}.empty-cta{margin-top:12px}</style>
 <style id="brand">
-:root[data-theme="light"]{--bg:#F8F6F1;--card:#FFFFFF;--ink:#2B303B;--mute:#6F7480;--line:#E4E1D8;--soft:#F0EEE7;--green:#4A5F94;--terra:#C8372D;--gold:#D9C58B;--navy:#2B303B;--btn:#4A5F94;--btnInk:#FFFFFF;--acc:#C8372D;--ok:#2E6B4F;--err:#B3382C;--sh:0 1px 0 rgba(22,26,34,.04),0 8px 22px rgba(22,26,34,.05)}
+:root[data-theme="light"]{--bg:#FFFFFF;--card:#FFFFFF;--ink:#30353F;--mute:#737985;--line:#E8E6E0;--soft:#F5F4F0;--green:#5468A3;--terra:#C8372D;--gold:#D9C58B;--navy:#30353F;--btn:#5468A3;--btnInk:#FFFFFF;--acc:#C8372D;--ok:#2E6B4F;--err:#B3382C;--sh:0 1px 0 rgba(22,26,34,.04),0 8px 22px rgba(22,26,34,.05)}
 :root[data-theme="dark"]{--bg:#232832;--card:#2C323E;--ink:#F1EEE7;--mute:#B0B5C0;--line:#40475A;--soft:#353C4A;--green:#BAC6E6;--terra:#FF8A7F;--gold:#D9C58B;--navy:#1B1F28;--btn:#B1BEE0;--btnInk:#1D2340;--acc:#FF8A7F;--ok:#7FCFA3;--err:#FF9A8F;--sh:0 1px 0 rgba(255,255,255,.03),0 10px 26px rgba(0,0,0,.35)}
 html,body{background:var(--bg)}
 .mark{filter:none;border-radius:13px}
@@ -244,8 +244,8 @@ h1{font-size:1.75rem}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v103'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.10.3 · versión '+APP_VERSION;
+const APP_VERSION='v104'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.10.4 · versión '+APP_VERSION;
 const VIEWS=['buscar','descubrir','biblioteca','amigos','ajustes','sugerencias'];
 window.showView=(v,keep)=>{if(!VIEWS.includes(v))v='buscar';document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.go===v);b.setAttribute('aria-current',b.dataset.go===v?'page':'false')});if(!keep){try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo({top:0})}};
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>window.showView(b.dataset.go));
@@ -529,9 +529,9 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=103"></script>
-<script src="discover.js?v=103"></script>
-<script type="module" src="social.js?v=103"></script>
+<script src="reader.js?v=104"></script>
+<script src="discover.js?v=104"></script>
+<script type="module" src="social.js?v=104"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
