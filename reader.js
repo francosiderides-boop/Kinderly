@@ -326,7 +326,7 @@ async function open(o){
     rend.on('selected',(cfi,contents)=>{
       try{const r=rend.getRange(cfi),text=(r?r.toString():'').replace(/\s+/g,' ').trim();if(!text)return;
         let ctx='';try{ctx=(r.startContainer.parentElement.textContent||'').replace(/\s+/g,' ').trim().slice(0,300)}catch(e){}
-        curSel={cfi,text,contents,ctx};closePanel();selbar.classList.add('on')}catch(e){}
+        curSel={cfi,text,contents,ctx};closePanel();if(text.length<=30&&!/\s/.test(text)){const n=Date.now();if(window.__krW&&window.__krW.w===text&&n-window.__krW.t<2500)return;window.__krW={w:text,t:n};hideSel();define(text,ctx);return}selbar.classList.add('on')}catch(e){}
     });
     };
     remount=async()=>{const c=lastCfi;try{rend.destroy()}catch(e){}rend=null;await mount(c);marks.forEach(paint);closePanel()};
