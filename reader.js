@@ -66,17 +66,35 @@ async function askAI(prompt){
 function aiForm(box,onDone){
   box.textContent='';
   const c=ai();
-  const sel=el('select');[['gemini','Gemini (Google, hay plan gratis)'],['claude','Claude (Anthropic)']].forEach(([v,t])=>{const o=el('option','',t);o.value=v;sel.append(o)});sel.value=(c&&c.p)||'gemini';
-  sel.style.cssText='width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin:6px 0';
-  const inp=el('input');inp.type='password';inp.placeholder=c?'Clave guardada (escribí otra para cambiarla)':'Pegá tu clave de API';inp.autocomplete='off';
-  inp.style.cssText='width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin:6px 0';
-  const help=el('p','hint2','');
-  const upd=()=>{help.textContent=sel.value==='claude'?'Sacala en console.anthropic.com → API keys. Se cobra a tu cuenta de Anthropic por uso.':'Sacala gratis en aistudio.google.com → Get API key. Usa tu cuota de Google.'};upd();sel.onchange=upd;
-  const row=el('div');row.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px';
-  const save=el('button','','Guardar');save.type='button';save.onclick=()=>{const k=inp.value.trim();if(!k&&!c){say('Pegá tu clave de API','err');return}store.set('kr_ai',{p:sel.value,key:k||c.key});say('Clave guardada en este dispositivo','ok');if(onDone)onDone()};
-  row.append(save);
-  if(c){const del=el('button','ghost','Quitar clave');del.type='button';del.onclick=()=>{store.del('kr_ai');say('Clave eliminada','ok');if(onDone)onDone()};row.append(del)}
-  box.append(sel,inp,help,row,el('p','hint2','Tu clave queda solo en este dispositivo y se usa únicamente para hablar con el proveedor que elegiste. Kinderly no la recibe. Al pedir un resumen se envía a ese proveedor el texto del capítulo.'));
+  const fld='width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin:6px 0';
+  const mkb=(t,fn,g)=>{const b=el('button',g?'ghost':'',t);b.type='button';b.onclick=fn;b.style.cssText='width:100%;margin:6px 0;padding:13px';return b};
+  const state=el('p','hint2','');
+  const trySave=async k=>{
+    k=(k||'').trim();if(k.length<20){say('Esa clave parece incompleta','err');return}
+    const prev=store.get('kr_ai',null);store.set('kr_ai',{p:/^sk-ant-/.test(k)?'claude':'gemini',key:k});
+    state.textContent='Probando tu clave…';
+    try{await askAI('Respondé solo: OK');say('¡Listo! La IA quedó activada','ok');if(onDone)onDone()}
+    catch(e){if(prev)store.set('kr_ai',prev);else store.del('kr_ai');state.textContent='No funcionó: '+((e&&e.message)||'error')+'. Revisá que hayas copiado la clave completa.'}
+  };
+  const note=el('p','hint2','Tu clave queda solo en este celular y se usa únicamente para hablar con Google (o Anthropic). Kinderly no la recibe. Al pedir un resumen se envía el texto del capítulo a ese proveedor.');
+  if(c&&c.key){
+    box.append(el('p','','✓ IA activada ('+(c.p==='claude'?'Claude':'Gemini')+')'));
+    box.append(mkb('Cambiar clave',()=>{store.del('kr_ai');aiForm(box,onDone)},true),mkb('Quitar clave',()=>{store.del('kr_ai');say('Clave eliminada','ok');if(onDone)onDone()},true),note);
+    return;
+  }
+  const steps=el('ol');steps.style.cssText='margin:6px 0 6px 18px;padding:0;line-height:1.5;font-size:.92rem';
+  ['Tocá el botón verde: se abre Google AI Studio (es gratis, sin tarjeta).','Entrá con tu cuenta de Google y tocá “Crear clave de API”. Después tocá el ícono de copiar.','Volvé a Kinderly y tocá “Pegar mi clave”.'].forEach(t=>steps.append(el('li','',t)));
+  box.append(steps,mkb('1 · Conseguir mi clave gratis',()=>window.open('https://aistudio.google.com/apikey','_blank','noopener')));
+  box.append(mkb('2 · Pegar mi clave',async()=>{
+    try{const t=await navigator.clipboard.readText();if(!t||t.trim().length<20){state.textContent='No encontré una clave copiada. Copiala en AI Studio y probá de nuevo, o pegala abajo.';return}trySave(t)}
+    catch(e){state.textContent='Tu navegador no dejó leer lo copiado. Pegá la clave en el campo de abajo.'}
+  }));
+  const inp=el('input');inp.type='password';inp.placeholder='…o pegala acá';inp.autocomplete='off';inp.style.cssText=fld;
+  inp.addEventListener('paste',()=>setTimeout(()=>trySave(inp.value),50));
+  box.append(inp,mkb('Guardar',()=>trySave(inp.value),true),state);
+  const d=document.createElement('details');d.style.cssText='margin:8px 0;font-size:.85rem';
+  d.append(el('summary','','¿Preferís usar Claude?'),el('p','hint2','Sacá una clave en console.anthropic.com → API keys (empieza con sk-ant-) y pegala acá arriba. Se cobra a tu cuenta de Anthropic por uso.'));
+  box.append(d,note);
 }
 
 // ---- estilos ----
