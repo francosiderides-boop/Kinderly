@@ -185,7 +185,7 @@ function render(){
 
   // Recibidos
   const sec1=el('div','ks-sec');sec1.append(el('h4','','Libros que te mandaron'));
-  if(!S.sharesIn.length)sec1.append(el('p','hint2','Todavía no te mandaron libros.'));
+  if(!S.sharesIn.length)sec1.append(el('p','hint2','Todavía no te mandaron libros. Cuando un amigo te comparta uno, aparece acá.'));
   S.sharesIn.forEach(s=>{
     const sub='de '+(s.fromName||'un amigo')+(s.note?' · “'+s.note+'”':'')+(s.status==='received'?' · ya enviado a tu mail':'');
     sec1.append(row(s.title,sub,[
@@ -214,8 +214,8 @@ function render(){
   S.reqIn.forEach(r=>sec3.append(row(r.fromName||'alguien','quiere ser tu amigo/a',[btn('Aceptar',()=>guard(()=>acceptReq(r),'Ahora son amigos')),btn('Rechazar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)])));
   S.reqOut.forEach(r=>sec3.append(row(r.toName||'pendiente','solicitud pendiente',[btn('Cancelar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)])));
   if(!S.friends.length&&!S.reqIn.length&&!S.reqOut.length)sec3.append(el('p','hint2','Agregá a un amigo con su nombre de usuario. Tiene que haber entrado a Kinderly y elegido uno.'));
-  S.friends.forEach(f=>sec3.append(row(f.name,f.email,[btn('Pedir libro',()=>askBook(f)),btn('Quitar',()=>{if(confirm('¿Quitar a '+f.name+' de tus amigos?'))return guard(()=>removeFriend(f))},true)])));
-  body.append(sec3);
+  S.friends.forEach(f=>sec3.append(row(f.name,'Amigo/a',[btn('Pedir libro',()=>askBook(f)),btn('Quitar',()=>{if(confirm('¿Quitar a '+f.name+' de tus amigos?'))return guard(()=>removeFriend(f))},true)])));
+  body.append(sec3);body.insertBefore(sec3,sec1);
 }
 
 function askBook(f){

@@ -146,7 +146,7 @@ nav.tabs .bdg{position:absolute;top:1px;left:calc(50% + 6px);min-width:18px;heig
 #status{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 </style>
-<style>html,body{max-width:100%;overflow-x:hidden}body{touch-action:pan-y}img,svg,video{max-width:100%}.ks-me{flex-wrap:wrap}.ks-me>div{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}.ks-me button{flex:0 0 auto}.ks-row>div{min-width:0;flex:1 1 150px;overflow-wrap:anywhere}.ks-row button{flex:0 0 auto}</style>
+<style>html,body{max-width:100%;overflow-x:hidden}body{touch-action:pan-y}img,svg,video{max-width:100%}.ks-me{flex-wrap:wrap}.ks-me>div{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}.ks-me button{flex:0 0 auto}.ks-row>div{min-width:0;flex:1 1 150px;overflow-wrap:anywhere}.ks-row button{flex:0 0 auto}.wl{margin:8px 0 12px 18px;padding:0;line-height:1.55;font-size:.9rem}.wl li{margin:4px 0}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(17,107,92,.55);outline-offset:2px}.ks-row button,.lib-item button,.ks-acts button{min-height:44px}.empty-cta{margin-top:12px}</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute"><symbol id="lg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#116b5c"/><path d="M11 19c8-2 15-.8 21 3.5V49c-6.8-4.1-13.8-5.2-21-3.5z" fill="#fffaf0"/><path d="M53 19c-8-2-15-.8-21 3.5V49c6.8-4.1 13.8-5.2 21-3.5z" fill="#efe5d3"/><path d="M32 23v26M8 49c8-2.2 16-1 24 3.5 8-4.5 16-5.7 24-3.5" fill="none" stroke="#e6b94f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m47 9 1.8 4.8 4.8 1.7-4.8 1.8-1.8 4.7-1.7-4.7-4.8-1.8 4.8-1.7z" fill="#f19a79"/></symbol></svg>
@@ -154,11 +154,13 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.9.6</span><button class="theme-toggle" data-go="ajustes" type="button" aria-label="Ajustes" title="Ajustes" style="margin-left:6px">⚙</button><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
+  <span class="beta" title="Versión de prueba">Beta 0.9.7</span><button class="theme-toggle" data-go="ajustes" type="button" aria-label="Ajustes" title="Ajustes" style="margin-left:6px">⚙</button><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 
 
 <section class="view" data-view="buscar"><p class="lead">Encontrá tu próxima lectura.</p>
+<div class="card" id="welcome" style="display:none"><b>¡Bienvenido/a a Kinderly!</b><ul class="wl"><li><b>Buscar</b>: escribí un título o autor y elegí un EPUB gratis y legal.</li><li><b>Descubrir</b>: ideas de lectura según tu ánimo.</li><li><b>Biblioteca</b>: tus libros para leer acá, o un archivo de tu celular.</li><li><b>Amigos</b>: mandá y pedí libros con tu nombre de usuario.</li><li><b>Ideas</b>: contanos qué mejorarías.</li></ul><button type="button" id="welcome-ok">Entendido</button></div>
+<script>try{if(!localStorage.getItem('k_welcome')){var w=document.getElementById('welcome');w.style.display='';document.getElementById('welcome-ok').onclick=function(){w.style.display='none';try{localStorage.setItem('k_welcome','1')}catch(e){}}}}catch(e){}</script>
 <div class="search">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
   <input type="text" id="q" placeholder="Título o autor…" enterkeyhint="search" aria-label="Buscar libro">
@@ -201,7 +203,7 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v096'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v097'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · versión '+APP_VERSION;
 const VIEWS=['buscar','descubrir','biblioteca','amigos','ajustes','sugerencias'];
 window.showView=(v,keep)=>{if(!VIEWS.includes(v))v='buscar';document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.go===v);b.setAttribute('aria-current',b.dataset.go===v?'page':'false')});if(!keep){try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo({top:0})}};
@@ -486,9 +488,9 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=096"></script>
-<script src="discover.js?v=096"></script>
-<script type="module" src="social.js?v=096"></script>
+<script src="reader.js?v=097"></script>
+<script src="discover.js?v=097"></script>
+<script type="module" src="social.js?v=097"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
