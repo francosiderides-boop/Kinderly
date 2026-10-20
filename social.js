@@ -132,7 +132,7 @@ function modal(title,build){
   const close=()=>ov.remove();build(bx,close);
   ov.addEventListener('click',e=>{if(e.target===ov)close()});ov.append(bx);document.body.append(ov);return close;
 }
-function openPanel(){const d=$('soc');if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'center'})}}
+function openPanel(){if(window.showView)window.showView('amigos')}
 
 function row(main,sub,buttons){const r=el('div','ks-row'),d=el('div');d.append(el('b','',main));if(sub)d.append(el('small','',sub));r.append(d);buttons.forEach(b=>r.append(b));return r}
 
@@ -141,7 +141,7 @@ function render(){
   body.textContent='';
   const sum=$('soc-sum');
   if(!S.user){
-    if(sum)sum.textContent='Entrar con Google';
+    if(sum)sum.textContent='Entrar con Google';const tb0=$('tab-bdg');if(tb0)tb0.style.display='none';
     body.append(el('p','hint2','Entrá con tu cuenta de Google para enviarte libros desde tu propio Gmail (sin límite compartido) y para pedirle libros a tus amigos o mandárselos.'));
     body.append(el('p','hint2','Kinderly solo pide permiso para enviar mails con el libro adjunto. Nunca lee tu correo.'));
     const b=btn('Entrar con Google',login);b.style.marginTop='10px';body.append(b);
@@ -149,7 +149,7 @@ function render(){
     return;
   }
   const n=S.reqIn.length+S.sharesIn.filter(s=>s.status==='new').length+S.bookIn.filter(r=>r.status==='open').length;
-  if(sum)sum.textContent='Mi cuenta y amigos'+(n?' ('+n+')':'');
+  if(sum)sum.textContent='Mi cuenta y amigos'+(n?' ('+n+')':'');const tb=$('tab-bdg');if(tb){tb.textContent=n;tb.style.display=n?'grid':'none'}
   const me=el('div','ks-me');
   if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;me.append(im)}
   const who=el('div');who.append(el('b','',S.user.displayName||S.user.email),el('small','hint2',S.user.email));who.style.flex='1';who.querySelector('small').style.display='block';
@@ -173,7 +173,7 @@ function render(){
   const openIn=S.bookIn.filter(r=>r.status==='open');
   if(!openIn.length&&!S.bookOut.length)sec2.append(el('p','hint2','Cuando alguien te pida un libro, aparece acá. Vos podés pedirle uno a un amigo desde su ficha.'));
   openIn.forEach(r=>sec2.append(row((r.fromName||'Un amigo')+' busca:','“'+r.text+'”',[
-    btn('Buscar',()=>{$('q').value=r.text;$('go').click();window.scrollTo({top:0,behavior:'smooth'})}),
+    btn('Buscar',()=>{window.showView('buscar');$('q').value=r.text;$('go').click()}),
     btn('Listo',()=>guard(()=>updateDoc(doc(db,'bookRequests',r.id),{status:'done'}))),
     btn('Quitar',()=>guard(()=>deleteDoc(doc(db,'bookRequests',r.id))),true)])));
   S.bookOut.forEach(r=>sec2.append(row('Le pedí a '+(r.toName||'un amigo')+':','“'+r.text+'” · '+(r.status==='done'?'listo':'abierto'),[btn('Quitar',()=>guard(()=>deleteDoc(doc(db,'bookRequests',r.id))),true)])));

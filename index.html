@@ -130,6 +130,21 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 .theme-toggle{width:42px;height:42px;min-width:42px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:1.2rem;line-height:1}
 :root[data-theme="light"]{color-scheme:light;--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--soft:#eaf2f3;--green:#0e6b5d;--terra:#c35f40;--gold:#e6b94f;--navy:#122b3a;--btn:#116b5c;--btnInk:#fff;--acc:#c35f40;--ok:#16745f;--err:#bd4a42;--sh:0 3px 10px rgba(18,43,58,.04),0 12px 30px rgba(18,43,58,.06)}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#101a22;--card:#172630;--ink:#edf4f5;--mute:#aab9c1;--line:#2c404b;--soft:#203740;--green:#78c5b3;--terra:#f19a79;--gold:#edc45f;--navy:#10212b;--btn:#70c3ae;--btnInk:#102a2a;--acc:#f19a79;--ok:#7ed5bd;--err:#ffaaa0;--sh:0 3px 10px rgba(0,0,0,.18),0 12px 30px rgba(0,0,0,.24)}
+
+.view{display:none}.view.on{display:block;animation:in .22s ease both}
+.vt{font:600 1.5rem var(--serif);margin:0 0 4px}.vs{color:var(--mute);margin:0 0 18px;font-size:.92rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--sh)}
+#cfg,#shr{margin:14px 0 0}details.more{margin:6px 0 0}details.more>summary{cursor:pointer;color:var(--green);font-weight:600;font-size:.9rem;padding:6px 2px}
+#empty{text-align:left}#empty svg{display:block;margin:0 auto 6px}#empty .eh{display:block;text-align:center;font:600 1.15rem var(--serif);margin-bottom:12px}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:12px}.steps li{display:flex;gap:12px;align-items:flex-start;color:var(--mute);font-size:.9rem}.steps li b{display:block;color:var(--ink)}
+.steps li>span{flex:none;width:28px;height:28px;border-radius:50%;background:var(--soft);color:var(--green);font-weight:700;display:grid;place-items:center}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+nav.tabs .in{display:flex;max-width:760px;margin:0 auto;gap:4px}
+nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;border-radius:12px;background:transparent;color:var(--mute);font:600 .7rem var(--sans);position:relative}
+nav.tabs button svg{width:24px;height:24px}nav.tabs button.on{color:var(--green);background:var(--soft)}
+nav.tabs .bdg{position:absolute;top:1px;left:calc(50% + 6px);min-width:18px;height:18px;border-radius:9px;background:var(--acc);color:#fff;font-size:.65rem;place-items:center;padding:0 5px}
+#status{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 </style>
 </head>
 <body>
@@ -138,18 +153,16 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.6.2</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
+  <span class="beta" title="Versión de prueba">Beta 0.7.0</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 
 
-<p class="lead">Encontrá tu próxima lectura.</p>
+<section class="view" data-view="buscar"><p class="lead">Encontrá tu próxima lectura.</p>
 <div class="search">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
   <input type="text" id="q" placeholder="Título o autor…" enterkeyhint="search" aria-label="Buscar libro">
   <button id="go">Buscar</button>
 </div>
-<div class="src" id="catalog-links"><span>Ampliá la búsqueda en:</span> <a data-catalog="gutenberg" href="https://www.gutenberg.org/ebooks/search/" target="_blank" rel="noopener noreferrer">Project Gutenberg</a><a data-catalog="openlibrary" href="https://openlibrary.org/search" target="_blank" rel="noopener noreferrer">Open Library</a><a data-catalog="archive" href="https://archive.org/search" target="_blank" rel="noopener noreferrer">Internet Archive</a><p class="hint2">Los catálogos se abren con el filtro de español cuando está disponible; revisá el idioma de la edición antes de descargar.</p></div>
-<section class="discover" aria-labelledby="discover-title"><div class="discover-head"><div><h2 id="discover-title">Descubrir</h2><p>Explorá por tema, momento o estado de ánimo.</p></div><a class="discover-link" href="./descubrir.html" target="_blank" rel="noopener noreferrer">Explorar libros</a></div></section>
 <div class="chips">
   <button class="ghost" id="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>Escanear tapa</button>
   <button class="ghost" id="gal0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-9 9"/></svg>Desde galería</button>
@@ -157,19 +170,24 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <input type="file" id="file" accept="image/*">
 
 <div id="res"></div>
-<div id="empty"><svg aria-hidden="true"><use href="#lg"/></svg><br>Buscá un título o escaneá una tapa.<br>Solo mostramos EPUB con licencia abierta o de dominio público comprobable.</div>
-
-<details id="cfg">
+<div id="empty"><svg aria-hidden="true"><use href="#lg"/></svg><b class="eh">Así de simple</b><ol class="steps"><li><span>1</span><div><b>Buscá</b>Escribí un título o autor, o escaneá la tapa de un libro.</div></li><li><span>2</span><div><b>Elegí</b>Te mostramos solo ediciones EPUB gratuitas y legales.</div></li><li><span>3</span><div><b>Recibilo</b>Lo mandamos a tu mail o a tu Kindle con un toque.</div></li></ol></div>
+<details class="more"><summary>Buscar en otras bibliotecas</summary><div class="src" id="catalog-links"><span>Ampliá la búsqueda en:</span> <a data-catalog="gutenberg" href="https://www.gutenberg.org/ebooks/search/" target="_blank" rel="noopener noreferrer">Project Gutenberg</a><a data-catalog="openlibrary" href="https://openlibrary.org/search" target="_blank" rel="noopener noreferrer">Open Library</a><a data-catalog="archive" href="https://archive.org/search" target="_blank" rel="noopener noreferrer">Internet Archive</a><p class="hint2">Los catálogos se abren con el filtro de español cuando está disponible; revisá el idioma de la edición antes de descargar.</p></div>
+</details></section>
+<section class="view" data-view="descubrir"><h2 class="vt">Descubrir</h2><p class="vs">Explorá libros por tema, época o estado de ánimo, todos con EPUB gratuito y legal.</p><div class="card"><b>Explorar el catálogo</b><p class="hint2">Una página con categorías para encontrar lecturas sin saber qué buscar.</p><a class="discover-link" href="./descubrir.html" target="_blank" rel="noopener noreferrer" style="margin-top:12px">Explorar libros</a></div></section>
+<section class="view" data-view="amigos"><h2 class="vt">Amigos</h2><p class="vs">Entrá con Google para mandar libros desde tu propio Gmail, y para pedirles libros a tus amigos o enviárselos.</p><div class="card" id="soc"><span id="soc-sum" hidden></span><div id="soc-body"><p class="hint2">Cargando…</p></div></div></section>
+<section class="view" data-view="ajustes"><h2 class="vt">Ajustes</h2><p class="vs">Dónde recibís tus libros y cómo compartir Kinderly.</p>
+<details id="cfg" open>
   <summary>Mi mail</summary>
   <label for="mail">Dónde recibís los libros (o tu Kindle: usuario@kindle.com)</label>
   <input type="email" id="mail" placeholder="vos@gmail.com" autocomplete="email">
   <div style="margin-top:12px"><button id="save">Guardar</button></div>
   <p class="hint2">Si usás Kindle, aprobá el mail remitente en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).</p>
 </details>
-<details id="soc" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary id="soc-sum" style="font-weight:600;cursor:pointer">Entrar con Google</summary><div id="soc-body"><p class="hint2">Cargando…</p></div></details>
 <details id="shr" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary style="font-weight:600;cursor:pointer">Compartir Kinderly</summary><p class="hint2">Mandale el link a quien quieras. Desde ahí puede abrirla e instalarla gratis en su celular.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="share-app" type="button">Compartir link</button><button id="install-app" type="button" class="ghost">Instalar en este dispositivo</button></div></details>
+</section>
 <p class="hint2" id="app-version" style="text-align:center;margin:18px 0 0"></p>
 </div>
+<nav class="tabs" aria-label="Secciones"><div class="in"><button type="button" data-go="buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Buscar</button><button type="button" data-go="descubrir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Descubrir</button><button type="button" data-go="amigos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .6 3.3 2.3 3.6 5.2"/></svg>Amigos<span class="bdg" id="tab-bdg" style="display:none">0</span></button><button type="button" data-go="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button></div></nav>
 <div id="status" role="status"></div>
 
 <div id="cam">
@@ -180,8 +198,12 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v062'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v070'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · versión '+APP_VERSION;
+const VIEWS=['buscar','descubrir','amigos','ajustes'];
+window.showView=(v,keep)=>{if(!VIEWS.includes(v))v='buscar';document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.go===v);b.setAttribute('aria-current',b.dataset.go===v?'page':'false')});if(!keep){try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo({top:0})}};
+document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>window.showView(b.dataset.go));
+window.showView((location.hash||'').slice(1),true);
 const CATALOG_API_BASE=(document.querySelector('meta[name="kinderly-catalog-api"]')?.content||'').trim().replace(/\/+$/,'');
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
 function setTheme(mode,persist=false){document.documentElement.dataset.theme=mode;const b=$('theme-toggle');if(b){b.textContent=mode==='dark'?'☀':'☾';b.setAttribute('aria-label',mode==='dark'?'Activar modo día':'Activar modo nocturno');b.title=mode==='dark'?'Activar modo día':'Activar modo nocturno'}if(persist)store.set('theme',mode)}
@@ -371,7 +393,7 @@ async function download(b,btn){
 async function send(b,btn){
   const K=window.KSoc,own=!!(K&&K.loggedIn());
   const to=store.get('mail')||(own?K.email():'');
-  if(!to){$('cfg').open=true;say('Primero guardá tu mail','err');return}
+  if(!to){window.showView('ajustes');$('cfg').open=true;say('Primero guardá tu mail, o entrá con Google en Amigos','err');return}
   btn.disabled=true;let err='';
   if(own&&!(await K.ensureToken())){btn.disabled=false;return}
   for(const o of b.opts.filter(o=>o.sendable).sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){
@@ -459,7 +481,7 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script type="module" src="social.js?v=062"></script>
+<script type="module" src="social.js?v=070"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
