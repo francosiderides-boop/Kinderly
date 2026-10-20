@@ -153,7 +153,7 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.8.3</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
+  <span class="beta" title="Versión de prueba">Beta 0.9.0</span><button class="theme-toggle" data-go="ajustes" type="button" aria-label="Ajustes" title="Ajustes" style="margin-left:6px">⚙</button><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 
 
@@ -185,10 +185,11 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 </details>
 <details id="shr" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary style="font-weight:600;cursor:pointer">Compartir Kinderly</summary><p class="hint2">Mandale el link a quien quieras. Desde ahí puede abrirla e instalarla gratis en su celular.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="share-app" type="button">Compartir link</button><button id="install-app" type="button" class="ghost">Instalar en este dispositivo</button></div></details>
 </section>
+<section class="view" data-view="biblioteca"></section>
 <section class="view" data-view="sugerencias"><h2 class="vt">Sugerencias</h2><p class="vs">Contanos qué mejorarías o qué te gustaría que Kinderly tenga. Las más votadas son las primeras que hacemos.</p><div id="sug-body"></div></section>
 <p class="hint2" id="app-version" style="text-align:center;margin:18px 0 0"></p>
 </div>
-<nav class="tabs" aria-label="Secciones"><div class="in"><button type="button" data-go="buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Buscar</button><button type="button" data-go="descubrir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Descubrir</button><button type="button" data-go="amigos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .6 3.3 2.3 3.6 5.2"/></svg>Amigos<span class="bdg" id="tab-bdg" style="display:none">0</span></button><button type="button" data-go="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button><button type="button" data-go="sugerencias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>Ideas</button></div></nav>
+<nav class="tabs" aria-label="Secciones"><div class="in"><button type="button" data-go="buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Buscar</button><button type="button" data-go="descubrir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>Descubrir</button><button type="button" data-go="biblioteca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h12v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 7h6"/></svg>Biblioteca</button><button type="button" data-go="amigos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .6 3.3 2.3 3.6 5.2"/></svg>Amigos<span class="bdg" id="tab-bdg" style="display:none">0</span></button><button type="button" data-go="sugerencias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>Ideas</button></div></nav>
 <div id="status" role="status"></div>
 
 <div id="cam">
@@ -199,11 +200,11 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v083'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v090'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · versión '+APP_VERSION;
-const VIEWS=['buscar','descubrir','amigos','ajustes','sugerencias'];
+const VIEWS=['buscar','descubrir','biblioteca','amigos','ajustes','sugerencias'];
 window.showView=(v,keep)=>{if(!VIEWS.includes(v))v='buscar';document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.go===v);b.setAttribute('aria-current',b.dataset.go===v?'page':'false')});if(!keep){try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo({top:0})}};
-document.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>window.showView(b.dataset.go));
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>window.showView(b.dataset.go));
 window.showView((location.hash||'').slice(1),true);
 const CATALOG_API_BASE=(document.querySelector('meta[name="kinderly-catalog-api"]')?.content||'').trim().replace(/\/+$/,'');
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
@@ -337,6 +338,7 @@ function card(b,target="res"){
   if(hasAuthorizedSource){const dl=document.createElement('button');dl.className='ghost download';dl.textContent='Descargar EPUB';dl.onclick=()=>download(b,dl);actions.append(dl);const btn=document.createElement('button');btn.textContent='Enviar al mail';btn.onclick=()=>send(b,btn);actions.append(btn)}
   if(hasAuthorizedSource&&window.KSoc)window.KSoc.decorate(b,actions);
   if(hasAuthorizedSource&&window.KReader)window.KReader.decorate(b,actions);
+  if(window.KRev)window.KRev.decorate(b,actions);
   const purchase=b.opts.find(o=>o.buyUrl);if(purchase){const buy=document.createElement('a');buy.className='buy';buy.href=purchase.buyUrl;buy.target='_blank';buy.rel='noopener noreferrer';buy.textContent=purchase.buyLabel||'Buscar opciones de compra';actions.append(buy)}
   if(!hasAuthorizedSource&&!purchase){const note=document.createElement('span');note.className='hint2';note.textContent='Sin EPUB autorizado disponible';actions.append(note)}
   const cv=document.createElement('div');cv.className='cov';
@@ -483,9 +485,9 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=083"></script>
-<script src="discover.js?v=083"></script>
-<script type="module" src="social.js?v=083"></script>
+<script src="reader.js?v=090"></script>
+<script src="discover.js?v=090"></script>
+<script type="module" src="social.js?v=090"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;

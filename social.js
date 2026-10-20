@@ -254,6 +254,48 @@ function renderSug(){
 }
 onSnapshot(query(collection(db,'suggestions'),limit(100)),s=>{SG.list=s.docs.map(d=>({id:d.id,...d.data()}));renderSug()},e=>console.warn(e));
 
+
+// ---------- Reseñas y puntuaciones ----------
+const normT=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function bookKey(b){const a=normT(String(b.author||'').split(/[;,]/)[0]),t=normT(b.title).replace(/^(el|la|los|las|un|una) /,'');const s=t+'|'+a;let h1=0x811c9dc5,h2=5381;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);h1=Math.imul(h1^c,16777619)>>>0;h2=((h2*33)^c)>>>0}return 'b'+h1.toString(36)+h2.toString(36)}
+const RV={cache:{},badges:{}};
+async function loadReviews(key,force){if(!force&&RV.cache[key])return RV.cache[key];const s=await getDocs(query(collection(db,'reviews'),where('bookKey','==',key),limit(60)));const l=s.docs.map(d=>({id:d.id,...d.data()}));RV.cache[key]=l;return l}
+const avgR=l=>l.length?l.reduce((a,r)=>a+r.stars,0)/l.length:0;
+const starsTxt=n=>'★'.repeat(n)+'☆'.repeat(5-n);
+const refreshBadges=key=>(RV.badges[key]||[]).forEach(f=>f());
+function openReviews(b){
+  const key=bookKey(b);
+  modal('Reseñas de “'+b.title+'”',(bx,close)=>{
+    const sum=el('p','hint2','Cargando…'),form=el('div'),list=el('div','ks-sec');bx.append(sum,form,list);
+    const draw=async force=>{
+      let l=[];try{l=await loadReviews(key,force)}catch(e){sum.textContent='No se pudieron cargar las reseñas.';return}
+      sum.textContent=l.length?('★ '+avgR(l).toFixed(1)+' · '+l.length+(l.length===1?' reseña':' reseñas')):'Todavía no hay reseñas. ¡Sé el primero!';
+      form.textContent='';
+      if(!S.user){form.append(el('p','hint2','Entrá con Google para puntuar y dejar tu reseña.'),btn('Entrar con Google',async()=>{await login();draw(false)}))}
+      else{
+        const mine=l.find(r=>r.uid===S.user.uid);let st=mine?mine.stars:0;
+        const row=el('div');row.style.cssText='display:flex;gap:4px;margin:6px 0';const sb=[];
+        for(let i=1;i<=5;i++){const x=btn('★',()=>{st=i;sb.forEach((y,j)=>{y.style.opacity=j<i?1:.3})},true);x.setAttribute('aria-label','Puntuar con '+i);x.style.cssText='font-size:1.3rem;padding:4px 10px;color:#e6a817;opacity:'+(i<=st?1:.3);sb.push(x);row.append(x)}
+        const ta=el('textarea');ta.rows=3;ta.maxLength=600;ta.placeholder='Tu reseña (opcional)';ta.value=mine?mine.text:'';ta.style.cssText='width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:10px 12px;font:inherit';
+        const a=el('div','ks-acts');
+        if(mine)a.append(btn('Borrar',()=>guard(async()=>{await deleteDoc(doc(db,'reviews',key+'_'+S.user.uid));await draw(true);refreshBadges(key)}),true));
+        a.append(btn(mine?'Actualizar':'Publicar',()=>guard(async()=>{if(!st){say('Elegí de 1 a 5 estrellas','err');return}await setDoc(doc(db,'reviews',key+'_'+S.user.uid),{bookKey:key,title:String(b.title).slice(0,200),author:String(b.author||'').slice(0,200),uid:S.user.uid,name:S.user.displayName||'Anónimo',stars:st,text:ta.value.trim().slice(0,600),updatedAt:serverTimestamp()});await draw(true);refreshBadges(key)},'¡Gracias por tu reseña!')));
+        form.append(row,ta,a);
+      }
+      list.textContent='';
+      l.slice().sort((a,c)=>((c.updatedAt&&c.updatedAt.seconds)||0)-((a.updatedAt&&a.updatedAt.seconds)||0)).forEach(r=>{const d=el('div','ks-row'),w=el('div');w.append(el('b','',(r.name||'Anónimo')+'  '+starsTxt(r.stars)));if(r.text)w.append(el('small','',r.text));d.append(w);list.append(d)});
+    };
+    draw(false);
+    const a=el('div','ks-acts');a.append(btn('Cerrar',close,true));bx.append(a);
+  });
+}
+function decorateRev(b,actions){
+  const key=bookKey(b),x=el('button','ghost','☆ Reseñas');x.type='button';x.onclick=()=>openReviews(b);actions.append(x);
+  const upd=async()=>{try{const l=await loadReviews(key);x.textContent=l.length?('★ '+avgR(l).toFixed(1)+' ('+l.length+')'):'☆ Reseñas'}catch(e){}};
+  (RV.badges[key]=RV.badges[key]||[]).push(upd);upd();
+}
+window.KRev={decorate:decorateRev,open:openReviews};
+
 window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,sendMail,decorate,openPanel};
 
 onAuthStateChanged(auth,async u=>{
