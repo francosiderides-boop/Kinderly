@@ -6,8 +6,8 @@
   "start_url": "/Kinderly/",
   "scope": "/Kinderly/",
   "display": "standalone",
-  "background_color": "#f3f6f8",
-  "theme_color": "#116b5c",
+  "background_color": "#F3F2EE",
+  "theme_color": "#27389B",
   "icons": [
     {
       "src": "/Kinderly/icon-192.png",

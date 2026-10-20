@@ -1,7 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#116b5c"/>
-  <path d="M11 19c8-2 15-.8 21 3.5V49c-6.8-4.1-13.8-5.2-21-3.5z" fill="#fffaf0"/>
-  <path d="M53 19c-8-2-15-.8-21 3.5V49c6.8-4.1 13.8-5.2 21-3.5z" fill="#efe5d3"/>
-  <path d="M32 23v26M8 49c8-2.2 16-1 24 3.5 8-4.5 16-5.7 24-3.5" fill="none" stroke="#e6b94f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="m47 9 1.8 4.8 4.8 1.7-4.8 1.8-1.8 4.7-1.7-4.7-4.8-1.8 4.8-1.7z" fill="#f19a79"/>
+  <rect width="64" height="64" rx="14" fill="#27389B"/>
+  <defs><clipPath id="kc"><rect x="0" y="15" width="64" height="35"/></clipPath></defs>
+  <g transform="translate(2.2 0)">
+  <path d="M20 0h8.4v50l-4.2-4.8L20 50z" fill="#F4F1E8"/>
+  <g clip-path="url(#kc)" stroke="#F4F1E8" stroke-width="7.6" fill="none">
+    <path d="M25 34.5 46.5 11"/>
+    <path d="M25 33 47 56"/>
+  </g></g>
 </svg>

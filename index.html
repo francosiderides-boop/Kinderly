@@ -11,16 +11,16 @@
 <link rel="manifest" href="manifest.webmanifest">
 
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Kinderly"><meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f3f6f8">
+<meta name="theme-color" content="#F3F2EE">
 <script>try{const t=localStorage.getItem("theme");document.documentElement.dataset.theme=t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..700;1,6..72,400..600&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--serif:"Fraunces","Iowan Old Style",Georgia,serif;--sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+:root{--serif:"Newsreader","Iowan Old Style",Georgia,serif;--sans:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
 --bg:#fbf7ef;--card:#fffdf8;--ink:#2b2523;--mute:#7a6f66;--line:#e6dccb;--soft:#f3ebdb;
---green:#1f5b3e;--terra:#d2603a;--gold:#e8b94a;--navy:#14304f;
---btn:#1f5b3e;--btnInk:#fffdf8;--acc:#d2603a;--ok:#1f5b3e;--err:#b3382c;--sh:0 1px 2px rgba(60,40,20,.05),0 8px 22px rgba(60,40,20,.07)}
-@media(prefers-color-scheme:dark){:root{--bg:#0f2238;--card:#162c46;--ink:#f6efe2;--mute:#a9b3c0;--line:#27425f;--soft:#1b3553;--btn:#e8b94a;--btnInk:#14304f;--acc:#ef8a63;--ok:#7fd1a3;--err:#ff9a8a;--sh:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.3)}}
+--green:#27389B;--terra:#C8372D;--gold:#D9C58B;--navy:#14304f;
+--btn:#27389B;--btnInk:#fffdf8;--acc:#C8372D;--ok:#27389B;--err:#b3382c;--sh:0 1px 2px rgba(60,40,20,.05),0 8px 22px rgba(60,40,20,.07)}
+@media(prefers-color-scheme:dark){:root{--bg:#0f2238;--card:#162c46;--ink:#f6efe2;--mute:#a9b3c0;--line:#27425f;--soft:#1b3553;--btn:#D9C58B;--btnInk:#14304f;--acc:#ef8a63;--ok:#7fd1a3;--err:#ff9a8a;--sh:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.3)}}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{background:var(--bg)}
 body{margin:0;min-height:100vh;color:var(--ink);font:16px/1.55 var(--sans);background:var(--bg);padding:calc(20px + env(safe-area-inset-top,0px)) 18px calc(110px + env(safe-area-inset-bottom,0px))}
@@ -83,9 +83,9 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 .camBar .ghost{background:transparent;color:#fff;border-color:#42586f}
 #snap{width:72px;height:72px;padding:0;border-radius:50%;background:#fffdf8;border:5px solid var(--gold);font-size:0}
 
-:root{--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--soft:#eaf2f3;--green:#0e6b5d;--terra:#c35f40;--gold:#e6b94f;--navy:#122b3a;--btn:#116b5c;--btnInk:#fff;--acc:#c35f40;--ok:#16745f;--err:#bd4a42;--sh:0 3px 10px rgba(18,43,58,.04),0 12px 30px rgba(18,43,58,.06)}
+:root{--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--soft:#eaf2f3;--green:#27389B;--terra:#C8372D;--gold:#D9C58B;--navy:#122b3a;--btn:#27389B;--btnInk:#fff;--acc:#C8372D;--ok:#16745f;--err:#bd4a42;--sh:0 3px 10px rgba(18,43,58,.04),0 12px 30px rgba(18,43,58,.06)}
 @media(prefers-color-scheme:dark){:root{--bg:#101a22;--card:#172630;--ink:#edf4f5;--mute:#aab9c1;--line:#2c404b;--soft:#203740;--green:#78c5b3;--terra:#f19a79;--gold:#edc45f;--navy:#10212b;--btn:#70c3ae;--btnInk:#102a2a;--acc:#f19a79;--ok:#7ed5bd;--err:#ffaaa0;--sh:0 3px 10px rgba(0,0,0,.18),0 12px 30px rgba(0,0,0,.24)}}
-body{background:radial-gradient(ellipse at 50% -18%,rgba(17,107,92,.12),transparent 56%),var(--bg);padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+body{background:radial-gradient(ellipse at 50% -18%,rgba(39,56,155,.12),transparent 56%),var(--bg);padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
 .app{max-width:760px}
 header{padding:8px 2px 18px;border-bottom:1px solid var(--line);margin-bottom:30px}
 .mark{width:52px;height:52px}
@@ -104,7 +104,7 @@ h1{font-size:2rem}
 @media(max-width:520px){.discover{padding:14px;border-radius:16px}.discover-head{align-items:flex-start;flex-direction:column}.discover-head button{width:100%}}
 .lead{font-size:clamp(1.6rem,4vw,2.1rem);margin-bottom:18px}
 .search{border-radius:18px;padding:7px 7px 7px 16px;border-color:var(--line);box-shadow:0 6px 20px rgba(18,43,58,.07)}
-.search:focus-within{border-color:var(--green);box-shadow:0 0 0 4px rgba(17,107,92,.09),0 8px 24px rgba(18,43,58,.07)}
+.search:focus-within{border-color:var(--green);box-shadow:0 0 0 4px rgba(39,56,155,.09),0 8px 24px rgba(18,43,58,.07)}
 .search input{padding:12px 8px}
 .search button{padding:12px 22px;border-radius:13px}
 .src{margin:12px 2px 18px;line-height:1.7;font-size:.85rem}
@@ -128,7 +128,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 @media(max-width:520px){body{padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}.app{max-width:100%}header{margin-bottom:26px}.mark{width:46px;height:46px}h1{font-size:1.85rem}.lead{font-size:1.55rem}.search{gap:2px;padding-left:11px}.search button{padding:11px 14px}.top{grid-template-columns:48px minmax(0,1fr);gap:11px}.cov{width:48px;height:68px}.top>div:nth-child(2){grid-column:2;grid-row:1}.actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;min-width:0;margin-top:3px}.actions button{min-height:44px;padding:9px 8px}.item{padding:13px;border-radius:17px}.src{margin-bottom:16px}#empty{padding:28px 16px}}
  .discover-link{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:10px 15px;border-radius:12px;background:var(--btn);color:var(--btnInk);text-decoration:none;font-size:.84rem;font-weight:600;white-space:nowrap}.discover-link:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .theme-toggle{width:42px;height:42px;min-width:42px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:1.2rem;line-height:1}
-:root[data-theme="light"]{color-scheme:light;--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--soft:#eaf2f3;--green:#0e6b5d;--terra:#c35f40;--gold:#e6b94f;--navy:#122b3a;--btn:#116b5c;--btnInk:#fff;--acc:#c35f40;--ok:#16745f;--err:#bd4a42;--sh:0 3px 10px rgba(18,43,58,.04),0 12px 30px rgba(18,43,58,.06)}
+:root[data-theme="light"]{color-scheme:light;--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--soft:#eaf2f3;--green:#27389B;--terra:#C8372D;--gold:#D9C58B;--navy:#122b3a;--btn:#27389B;--btnInk:#fff;--acc:#C8372D;--ok:#16745f;--err:#bd4a42;--sh:0 3px 10px rgba(18,43,58,.04),0 12px 30px rgba(18,43,58,.06)}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#101a22;--card:#172630;--ink:#edf4f5;--mute:#aab9c1;--line:#2c404b;--soft:#203740;--green:#78c5b3;--terra:#f19a79;--gold:#edc45f;--navy:#10212b;--btn:#70c3ae;--btnInk:#102a2a;--acc:#f19a79;--ok:#7ed5bd;--err:#ffaaa0;--sh:0 3px 10px rgba(0,0,0,.18),0 12px 30px rgba(0,0,0,.24)}
 
 .view{display:none}.view.on{display:block;animation:in .22s ease both}
@@ -146,15 +146,32 @@ nav.tabs .bdg{position:absolute;top:1px;left:calc(50% + 6px);min-width:18px;heig
 #status{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
 body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 </style>
-<style>html,body{max-width:100%;overflow-x:hidden}body{touch-action:pan-y}img,svg,video{max-width:100%}.ks-me{flex-wrap:wrap}.ks-me>div{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}.ks-me button{flex:0 0 auto}.ks-row>div{min-width:0;flex:1 1 150px;overflow-wrap:anywhere}.ks-row button{flex:0 0 auto}.wl{margin:8px 0 12px 18px;padding:0;line-height:1.55;font-size:.9rem}.wl li{margin:4px 0}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(17,107,92,.55);outline-offset:2px}.ks-row button,.lib-item button,.ks-acts button{min-height:44px}.empty-cta{margin-top:12px}</style>
+<style>html,body{max-width:100%;overflow-x:hidden}body{touch-action:pan-y}img,svg,video{max-width:100%}.ks-me{flex-wrap:wrap}.ks-me>div{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}.ks-me button{flex:0 0 auto}.ks-row>div{min-width:0;flex:1 1 150px;overflow-wrap:anywhere}.ks-row button{flex:0 0 auto}.wl{margin:8px 0 12px 18px;padding:0;line-height:1.55;font-size:.9rem}.wl li{margin:4px 0}button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid rgba(39,56,155,.55);outline-offset:2px}.ks-row button,.lib-item button,.ks-acts button{min-height:44px}.empty-cta{margin-top:12px}</style>
+<style id="brand">
+:root[data-theme="light"]{--bg:#F3F2EE;--card:#FBFAF7;--ink:#161A22;--mute:#666A75;--line:#DAD8D0;--soft:#E9E8E1;--green:#27389B;--terra:#C8372D;--gold:#D9C58B;--navy:#161A22;--btn:#27389B;--btnInk:#F7F6F2;--acc:#C8372D;--ok:#2E6B4F;--err:#B3382C;--sh:0 1px 0 rgba(22,26,34,.04),0 8px 22px rgba(22,26,34,.05)}
+:root[data-theme="dark"]{--bg:#12151C;--card:#1A1E27;--ink:#ECE9E1;--mute:#9EA3AF;--line:#2B303C;--soft:#222735;--green:#A6B4FF;--terra:#FF8A7F;--gold:#D9C58B;--navy:#0E1118;--btn:#9AA9FF;--btnInk:#10143A;--acc:#FF8A7F;--ok:#7FCFA3;--err:#FF9A8F;--sh:0 1px 0 rgba(255,255,255,.03),0 10px 26px rgba(0,0,0,.35)}
+html,body{background:var(--bg)}
+.mark{filter:none;border-radius:13px}
+h1{font:600 2.1rem/1 var(--serif);letter-spacing:-.015em}
+.vt{font:600 1.6rem/1.15 var(--serif);letter-spacing:-.01em}
+.lead{font:500 1.5rem/1.28 var(--serif)}
+.tagline{font-family:var(--serif);font-style:italic;font-size:.95rem}
+.card,.search{border-radius:14px}
+button{border-radius:10px;font-weight:600;letter-spacing:.005em}
+.beta{background:transparent;border:1px solid var(--line)}
+nav.tabs{background:var(--card)}
+nav.tabs button.on{background:transparent;color:var(--green);box-shadow:inset 0 2px 0 var(--green);border-radius:0 0 10px 10px}
+.cov span{border-color:rgba(217,197,139,.5)}
+#welcome{margin-bottom:18px}
+</style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute"><symbol id="lg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#116b5c"/><path d="M11 19c8-2 15-.8 21 3.5V49c-6.8-4.1-13.8-5.2-21-3.5z" fill="#fffaf0"/><path d="M53 19c-8-2-15-.8-21 3.5V49c6.8-4.1 13.8-5.2 21-3.5z" fill="#efe5d3"/><path d="M32 23v26M8 49c8-2.2 16-1 24 3.5 8-4.5 16-5.7 24-3.5" fill="none" stroke="#e6b94f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="m47 9 1.8 4.8 4.8 1.7-4.8 1.8-1.8 4.7-1.7-4.7-4.8-1.8 4.8-1.7z" fill="#f19a79"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute"><symbol id="lg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#27389B"/><defs><clipPath id="kc"><rect x="0" y="15" width="64" height="35"/></clipPath></defs><g transform="translate(2.2 0)"><path d="M20 0h8.4v50l-4.2-4.8L20 50z" fill="#F4F1E8"/><g clip-path="url(#kc)" stroke="#F4F1E8" stroke-width="7.6" fill="none"><path d="M25 34.5 46.5 11"/><path d="M25 33 47 56"/></g></g></symbol></svg>
 <div class="app">
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.9.7</span><button class="theme-toggle" data-go="ajustes" type="button" aria-label="Ajustes" title="Ajustes" style="margin-left:6px">⚙</button><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
+  <span class="beta" title="Versión de prueba">Beta 0.9.8</span><button class="theme-toggle" data-go="ajustes" type="button" aria-label="Ajustes" title="Ajustes" style="margin-left:6px">⚙</button><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 
 
@@ -203,7 +220,7 @@ body{padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v097'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v098'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · versión '+APP_VERSION;
 const VIEWS=['buscar','descubrir','biblioteca','amigos','ajustes','sugerencias'];
 window.showView=(v,keep)=>{if(!VIEWS.includes(v))v='buscar';document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.go===v);b.setAttribute('aria-current',b.dataset.go===v?'page':'false')});if(!keep){try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo({top:0})}};
@@ -345,7 +362,7 @@ function card(b,target="res"){
   const purchase=b.opts.find(o=>o.buyUrl);if(purchase){const buy=document.createElement('a');buy.className='buy';buy.href=purchase.buyUrl;buy.target='_blank';buy.rel='noopener noreferrer';buy.textContent=purchase.buyLabel||'Buscar opciones de compra';actions.append(buy)}
   if(!hasAuthorizedSource&&!purchase){const note=document.createElement('span');note.className='hint2';note.textContent='Sin EPUB autorizado disponible';actions.append(note)}
   const cv=document.createElement('div');cv.className='cov';
-  const hh=[...b.title].reduce((x,c)=>(x*31+c.charCodeAt(0))%997,7),CV=[['#14304f','#0b1f36'],['#1f5b3e','#103625'],['#14304f','#1f5b3e'],['#9a4a2c','#5e2a17']],pc=CV[hh%4];
+  const hh=[...b.title].reduce((x,c)=>(x*31+c.charCodeAt(0))%997,7),CV=[['#27389B','#161F5E'],['#1E2733','#0E131B'],['#5B1F2A','#35121A'],['#2F4A3D','#1B2C24']],pc=CV[hh%4];
   cv.style.background=`linear-gradient(145deg,${pc[0]},${pc[1]})`;
   const ini=document.createElement('span');ini.textContent=(norm(b.title).split(' ').filter(w=>!STOP.has(w)).slice(0,2).map(w=>w[0]||'').join('')||'L').toUpperCase();cv.append(ini);
   if(b.img){const im=new Image();im.alt='';im.referrerPolicy='no-referrer';im.onload=()=>{if(im.naturalWidth>40){cv.textContent='';cv.append(im);cv.classList.add('has')}};im.src=b.img}
@@ -488,9 +505,9 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=097"></script>
-<script src="discover.js?v=097"></script>
-<script type="module" src="social.js?v=097"></script>
+<script src="reader.js?v=098"></script>
+<script src="discover.js?v=098"></script>
+<script type="module" src="social.js?v=098"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;

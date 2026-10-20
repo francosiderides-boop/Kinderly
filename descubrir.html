@@ -3,37 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f3f6f8">
+<meta name="theme-color" content="#F3F2EE">
 <script>try{const t=localStorage.getItem("theme");document.documentElement.dataset.theme=t==="dark"||t==="light"?t:(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){document.documentElement.dataset.theme="light"}</script>
 <title>Descubrir libros · Kinderly</title>
 <style>
-:root{color-scheme:light;--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--green:#116b5c;--soft:#eaf2f3;--accent:#c35f40;--gold:#e6b94f;--shadow:0 8px 26px rgba(18,43,58,.06)}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -18%,rgba(17,107,92,.12),transparent 56%),var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+:root{color-scheme:light;--bg:#F3F2EE;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--green:#27389B;--soft:#E9E8E1;--accent:#C8372D;--gold:#D9C58B;--shadow:0 8px 26px rgba(18,43,58,.06)}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -18%,rgba(39,56,155,.12),transparent 56%),var(--bg);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 a{color:inherit}.wrap{max-width:980px;margin:auto;padding:24px 20px 70px}
 header{display:flex;align-items:center;gap:14px;padding:8px 0 18px;border-bottom:1px solid var(--line)}
-.logo{width:48px;height:48px;border-radius:15px;background:var(--green);display:grid;place-items:center;color:#fffdf8;font:700 1.5rem Georgia,serif;box-shadow:0 6px 15px rgba(17,107,92,.2)}
+.logo{width:48px;height:48px;border-radius:15px;background:var(--green);display:grid;place-items:center;color:#fffdf8;font:700 1.5rem Georgia,serif;box-shadow:0 6px 15px rgba(39,56,155,.2)}
 .brand{font:700 1.4rem Georgia,serif}.tagline{font-size:.8rem;color:var(--mute);margin-top:2px}
 .home{margin-left:auto;color:var(--green);font-size:.88rem;font-weight:650;text-decoration:none;border:1px solid var(--line);background:var(--card);padding:9px 13px;border-radius:12px}
 .hero{padding:32px 0 20px}.eyebrow{color:var(--green);font-size:.76rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700}
 h1{font:600 clamp(2rem,5vw,3rem)/1.1 Georgia,serif;letter-spacing:-.035em;margin:7px 0}.hero p{color:var(--mute);max-width:640px;margin:10px 0 0}
 .categories{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:10px;margin:18px 0 28px}
 .cat{position:relative;text-align:left;min-height:100px;padding:15px 16px;border:1px solid var(--line);border-radius:17px;background:var(--card);color:var(--ink);cursor:pointer;box-shadow:0 2px 8px rgba(18,43,58,.025);transition:transform .15s,border-color .15s,box-shadow .15s}
-.cat:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:#a8c9c1}.cat[aria-pressed=true]{border-color:var(--green);box-shadow:0 0 0 2px rgba(17,107,92,.13),var(--shadow)}
+.cat:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:#B8BEE6}.cat[aria-pressed=true]{border-color:var(--green);box-shadow:0 0 0 2px rgba(39,56,155,.13),var(--shadow)}
 .cat strong{display:block;font:600 1.02rem Georgia,serif;margin-bottom:5px}.cat span{display:block;color:var(--mute);font-size:.77rem;line-height:1.4}
 .section-head{display:flex;align-items:end;justify-content:space-between;gap:16px;margin:22px 0 12px}
 h2{font:600 1.55rem Georgia,serif;margin:0}.caption{font-size:.82rem;color:var(--mute);margin:4px 0 0}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
 .book{display:grid;grid-template-columns:54px minmax(0,1fr);gap:13px;background:var(--card);border:1px solid var(--line);border-radius:17px;padding:14px;box-shadow:0 3px 12px rgba(18,43,58,.035);animation:fade .2s ease}
 @keyframes fade{from{opacity:.5;transform:translateY(4px)}}
-.cover{width:54px;height:74px;border-radius:5px 8px 8px 5px;background:linear-gradient(145deg,#116b5c,#123947);display:grid;place-items:center;color:#f5d276;font:700 1rem Georgia,serif;text-align:center;overflow:hidden;box-shadow:inset 4px 0 0 rgba(0,0,0,.2)}
+.cover{width:54px;height:74px;border-radius:5px 8px 8px 5px;background:linear-gradient(145deg,#27389B,#161F5E);display:grid;place-items:center;color:#D9C58B;font:700 1rem Georgia,serif;text-align:center;overflow:hidden;box-shadow:inset 4px 0 0 rgba(0,0,0,.2)}
 .cover img{width:100%;height:100%;object-fit:cover}.book h3{font:600 1rem/1.3 Georgia,serif;margin:1px 0 4px;overflow-wrap:anywhere}.author{color:var(--mute);font-size:.82rem}.meta{font-size:.74rem;color:var(--green);margin-top:8px}
-.book-link{display:inline-flex;margin-top:8px;color:var(--green);font-weight:650;font-size:.82rem;text-decoration:none;border-bottom:1px solid rgba(17,107,92,.35)}
+.book-link{display:inline-flex;margin-top:8px;color:var(--green);font-weight:650;font-size:.82rem;text-decoration:none;border-bottom:1px solid rgba(39,56,155,.35)}
 #state{color:var(--mute);padding:18px 2px;min-height:54px}#sentinel{height:1px}
 .note{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px 14px;color:var(--mute);font-size:.82rem;margin-top:24px}
 @media(max-width:560px){.wrap{padding:15px 14px 50px}.categories{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.cat{min-height:104px;padding:12px}.section-head{align-items:flex-start;flex-direction:column}.grid{grid-template-columns:1fr}.hero{padding-top:25px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 .theme-toggle{width:42px;height:42px;min-width:42px;padding:0;border-radius:50%;display:grid;place-items:center;background:var(--card);color:var(--ink);border:1px solid var(--line);font-size:1.2rem;line-height:1;cursor:pointer}
-:root[data-theme="light"]{color-scheme:light;--bg:#f3f6f8;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--green:#116b5c;--soft:#eaf2f3;--accent:#c35f40;--gold:#e6b94f;--shadow:0 8px 26px rgba(18,43,58,.06)}
+:root[data-theme="light"]{color-scheme:light;--bg:#F3F2EE;--card:#fff;--ink:#172a36;--mute:#61717b;--line:#dce5e9;--green:#27389B;--soft:#E9E8E1;--accent:#C8372D;--gold:#D9C58B;--shadow:0 8px 26px rgba(18,43,58,.06)}
 :root[data-theme="dark"]{color-scheme:dark;--bg:#101a22;--card:#172630;--ink:#edf4f5;--mute:#aab9c1;--line:#2c404b;--green:#78c5b3;--soft:#203740;--accent:#f19a79;--gold:#edc45f;--shadow:0 8px 26px rgba(0,0,0,.24)}
 
 .cover-button{border:0;background:transparent;padding:0;cursor:zoom-in;text-align:left;color:inherit;justify-self:start}
@@ -51,7 +51,7 @@ h2{font:600 1.55rem Georgia,serif;margin:0}.caption{font-size:.82rem;color:var(-
 .viewer-track{display:flex;gap:16px;width:100%;flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:thin;scrollbar-color:#7a919d transparent;align-items:center;padding:0 max(8vw,calc((100vw - 720px)/2)) 8px}
 .viewer-page{position:relative;flex:0 0 min(82vw,360px);height:min(72vh,640px);aspect-ratio:.64;scroll-snap-align:center;border-radius:10px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,.4)}
 .viewer-front{display:grid;place-items:center;background:#15252c}.viewer-front img{width:100%;height:100%;object-fit:contain;background:#15252c}
-.viewer-front .cover-fallback{width:100%;height:100%;display:grid;place-items:center;text-align:center;padding:24px;background:linear-gradient(145deg,#174a43,#15314b);color:#f5d276;font:600 clamp(1.4rem,5vw,2rem)/1.25 Georgia,serif}
+.viewer-front .cover-fallback{width:100%;height:100%;display:grid;place-items:center;text-align:center;padding:24px;background:linear-gradient(145deg,#174a43,#15314b);color:#D9C58B;font:600 clamp(1.4rem,5vw,2rem)/1.25 Georgia,serif}
 .viewer-back{display:flex;flex-direction:column;justify-content:flex-end;padding:24px;background:radial-gradient(ellipse at 12% 0%,rgba(255,255,255,.12),transparent 45%),linear-gradient(145deg,#31544b,#1a3040 72%);color:#fffdf8}.viewer-back::before{content:"KINDERLY · FICHA DEL LIBRO";position:absolute;top:22px;left:24px;font:600 .62rem Inter,system-ui,sans-serif;letter-spacing:.13em;color:#d8c893}
 .viewer-back h2{font:600 1.2rem/1.25 Georgia,serif;margin:0 0 6px}.viewer-back .back-author{font-size:.8rem;color:#d9e4de;margin:0 0 18px}.viewer-back .back-summary{font:.82rem/1.55 Inter,system-ui,sans-serif;color:#f4f2e9;overflow:auto;margin:0}.viewer-back .back-source{font-size:.68rem;color:#d9e4de;margin-top:16px}
 @media(max-width:560px){.book{grid-template-columns:62px minmax(0,1fr);gap:10px}.cover-button .cover{width:60px;height:84px}.viewer-page{flex-basis:82vw;height:min(70vh,610px)}.mail-row{flex-direction:column}.mail-row button{min-height:42px}}
