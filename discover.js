@@ -3,6 +3,7 @@
 const $=id=>document.getElementById(id);
 const host=document.querySelector('.view[data-view="descubrir"]');if(!host)return;
 const MOODS=[['😄','Quiero reír','humor'],['💗','Quiero emocionarme','love'],['🧭','Quiero aventura','adventure'],['🔎','Quiero intriga','detective'],['🤔','Quiero pensar','philosophy'],['🌙','Quiero soñar','fantasy'],['👻','Quiero un susto','horror'],['⏱️','Tengo poco tiempo','short stories'],['📜','Quiero historia','history'],['🎭','Quiero teatro','drama'],['🪶','Quiero poesía','poetry'],['🧒','Para chicos','children']];
+const KW={'humor':'humor','love':'amor','adventure':'aventuras','detective':'misterio','philosophy':'filosofía','fantasy':'fantasía','horror':'terror','short stories':'cuentos','history':'historia','drama':'teatro','poetry':'poesía','children':'infantil'};
 const AUTHORS=['Miguel de Cervantes','Benito Pérez Galdós','Gustavo Adolfo Bécquer','Rosalía de Castro','Emilia Pardo Bazán','Rubén Darío','Lope de Vega','Francisco de Quevedo','Leopoldo Alas','José Hernández','Jorge Isaacs','Ricardo Palma','Horacio Quiroga','Juan Valera'];
 host.textContent='';
 const mk=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
@@ -20,11 +21,17 @@ host.append(mk('h3','dz-h','Autores para conocer'));
 const ag=mk('div','dz-a');host.append(ag);
 host.append(mk('p','hint2','Tocá un autor para buscar sus obras en la pestaña Buscar.'));
 
-const j=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout(20000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()};
 const nf=new Intl.NumberFormat('es-AR');
 function gutBook(b){
   const author=(b.authors||[]).map(a=>a.name).join('; '),n=nf.format(b.download_count||0);
   return {title:b.title,author,language:'es',img:b.formats['image/jpeg']||'',opts:[{src:'Project Gutenberg',label:'Project Gutenberg · '+n+' descargas',sendable:true,url:async()=>b.formats['application/epub+zip'],inf:async()=>({author,desc:(b.summaries||[])[0]||'',edition:'Project Gutenberg, dominio público'})}]};
+}
+async function iaFallback(query){
+  const m=/topic=([^&]*)/.exec(query),k=m?(KW[decodeURIComponent(m[1])]||''):'';
+  const p=new URLSearchParams({q:'mediatype:texts AND format:EPUB AND language:spa AND -collection:inlibrary AND -access-restricted-item:true'+(k?' AND ('+k+')':''),rows:24,output:'json'});
+  ['identifier','title','creator','licenseurl','rights','date','language','downloads'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
+  const ia=await j('https://archive.org/advancedsearch.php?'+p);
+  return (ia.response?.docs||[]).filter(x=>isSpanish(x.language)&&hasOpenLicense(x.licenseurl||x.rights)).slice(0,10).map(b=>{const count=nf.format(b.downloads||0),author=[].concat(b.creator||[])[0]||'';return {title:b.title,author,language:b.language,img:'https://archive.org/services/img/'+b.identifier,opts:[{src:'Internet Archive',label:'Internet Archive · '+count+' descargas',sendable:true,url:()=>iaEpub(b.identifier),page:'https://archive.org/details/'+encodeURIComponent(b.identifier),inf:()=>iaInfo(b.identifier)}]}});
 }
 let busy=false;
 async function show(label,query,btn,sc){
@@ -33,11 +40,11 @@ async function show(label,query,btn,sc){
   title.style.display='block';title.textContent=label;res.textContent='';
   const w=mk('div','dz-n','Buscando libros…');res.append(w);
   try{
-    const d=await j('https://gutendex.com/books/?languages=es&sort=popular&'+query);
-    const l=(d.results||[]).filter(b=>b.languages&&b.languages.includes('es')&&b.formats&&b.formats['application/epub+zip']).slice(0,12);
+    let l=[];try{const d=await j('https://gutendex.com/books/?languages=es&sort=popular&'+query);l=(d.results||[]).filter(b=>b.languages&&b.languages.includes('es')&&b.formats&&b.formats['application/epub+zip']).slice(0,12).map(gutBook)}catch(e){}
+    if(l.length<4){try{l=l.concat(await iaFallback(query))}catch(e){}}
     res.textContent='';
     if(!l.length){res.append(mk('div','dz-n','No encontramos libros con ese ánimo en español. Probá con otro o buscá por título.'));return}
-    l.forEach(b=>window.card(gutBook(b),'dz-res'));
+    l.forEach(b=>window.card(b,'dz-res'));
   }catch(e){res.textContent='';res.append(mk('div','dz-n','No se pudo cargar la lista. Probá de nuevo en un momento.'))}
   finally{busy=false}
   if(sc)title.scrollIntoView({behavior:'smooth',block:'start'});
