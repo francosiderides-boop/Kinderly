@@ -138,7 +138,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 <header>
   <svg class="mark" aria-hidden="true"><use href="#lg"/></svg>
   <div><h1>Kinderly</h1><p class="tagline">Regalando el placer de leer</p></div>
-  <span class="beta" title="Versión de prueba">Beta 0.6.0</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
+  <span class="beta" title="Versión de prueba">Beta 0.6.1</span><button class="theme-toggle" id="theme-toggle" type="button" aria-label="Activar modo nocturno" title="Activar modo nocturno">☾</button>
 </header>
 
 
@@ -166,6 +166,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
   <div style="margin-top:12px"><button id="save">Guardar</button></div>
   <p class="hint2">Si usás Kindle, aprobá el mail remitente en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).</p>
 </details>
+<details id="soc" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary id="soc-sum" style="font-weight:600;cursor:pointer">Entrar con Google</summary><div id="soc-body"><p class="hint2">Cargando…</p></div></details>
 <details id="shr" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary style="font-weight:600;cursor:pointer">Compartir Kinderly</summary><p class="hint2">Mandale el link a quien quieras. Desde ahí puede abrirla e instalarla gratis en su celular.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="share-app" type="button">Compartir link</button><button id="install-app" type="button" class="ghost">Instalar en este dispositivo</button></div></details>
 <p class="hint2" id="app-version" style="text-align:center;margin:18px 0 0"></p>
 </div>
@@ -179,7 +180,7 @@ details#cfg{margin-top:28px;border-radius:18px;padding:16px 18px}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v060'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v061'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · versión '+APP_VERSION;
 const CATALOG_API_BASE=(document.querySelector('meta[name="kinderly-catalog-api"]')?.content||'').trim().replace(/\/+$/,'');
 const store={get:k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}}};
@@ -311,6 +312,7 @@ function card(b,target="res"){
   const actions=document.createElement('div');actions.className='actions';
   const hasAuthorizedSource=b.opts.some(o=>o.sendable&&typeof o.url==='function');
   if(hasAuthorizedSource){const dl=document.createElement('button');dl.className='ghost download';dl.textContent='Descargar EPUB';dl.onclick=()=>download(b,dl);actions.append(dl);const btn=document.createElement('button');btn.textContent='Enviar al mail';btn.onclick=()=>send(b,btn);actions.append(btn)}
+  if(hasAuthorizedSource&&window.KSoc)window.KSoc.decorate(b,actions);
   const purchase=b.opts.find(o=>o.buyUrl);if(purchase){const buy=document.createElement('a');buy.className='buy';buy.href=purchase.buyUrl;buy.target='_blank';buy.rel='noopener noreferrer';buy.textContent=purchase.buyLabel||'Buscar opciones de compra';actions.append(buy)}
   if(!hasAuthorizedSource&&!purchase){const note=document.createElement('span');note.className='hint2';note.textContent='Sin EPUB autorizado disponible';actions.append(note)}
   const cv=document.createElement('div');cv.className='cov';
@@ -367,14 +369,16 @@ async function download(b,btn){
   tab.close();say('No se pudo abrir el EPUB: '+err,'err');btn.disabled=false;
 }
 async function send(b,btn){
-  const to=store.get('mail');
+  const K=window.KSoc,own=!!(K&&K.loggedIn());
+  const to=store.get('mail')||(own?K.email():'');
   if(!to){$('cfg').open=true;say('Primero guardá tu mail','err');return}
   btn.disabled=true;let err='';
+  if(own&&!(await K.ensureToken())){btn.disabled=false;return}
   for(const o of b.opts.filter(o=>o.sendable).sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){
     try{
       say(`Enviando “${b.title}” desde ${o.src}…`);
       const file=await o.url();
-      const d=await api({action:'enviar',to,url:file,title:b.title,filename:slug(b.title)+'.epub'});
+      const d=own?await K.sendMail({to,url:file,title:b.title,filename:slug(b.title)+'.epub'}):await api({action:'enviar',to,url:file,title:b.title,filename:slug(b.title)+'.epub'});
       if(d.ok){say('Enviado a '+to+' ('+o.src+')','ok');btn.disabled=false;return}
       err=d.error;if(/límite/i.test(err))break;
     }catch(e){err=e.message}
@@ -455,6 +459,7 @@ $('file').onchange=e=>{
 };
 </script>
 
+<script type="module" src="social.js?v=061"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
