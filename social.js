@@ -149,6 +149,24 @@ css.textContent='.ks-ov{position:fixed;inset:0;background:rgba(10,20,30,.55);dis
 '.ks-sec{margin-top:16px}.ks-sec h4{margin:0 0 6px;font:600 .95rem var(--serif)}.ks-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);flex-wrap:wrap}'+
 '.ks-row>div{flex:1;min-width:150px}.ks-row small{display:block;color:var(--mute)}.ks-row button{padding:8px 12px;font-size:.8rem}.ks-me{display:flex;align-items:center;gap:10px}'+
 '.ks-me img{width:40px;height:40px;border-radius:50%}.ks-add{display:flex;gap:8px;margin-top:8px}.ks-add input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:10px 12px;font:inherit}'+
+
+'#soc{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;margin:0!important}'+
+'.kf-c{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:14px;box-shadow:var(--sh)}'+
+'.kf-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 6px}.kf-t{margin:0;font:600 1.08rem var(--serif);color:var(--ink)}'+
+'.kf-b{min-width:22px;height:22px;border-radius:11px;background:var(--acc);color:#fff;font:600 .74rem var(--sans);display:grid;place-items:center;padding:0 7px}.kf-b0{background:var(--soft);color:var(--mute)}'+
+'.kf-me0{padding:18px 16px 8px}.kf-me{display:flex;align-items:center;gap:14px}.kf-me img,.kf-me .kf-av{width:52px;height:52px;border-radius:50%;flex:none;font-size:1.25rem}.kf-nm{font:600 1.15rem var(--serif);overflow-wrap:anywhere}.kf-tx small{display:block;color:var(--mute);font-size:.86rem;margin-top:2px;overflow-wrap:anywhere}'+
+'.kf-links{display:flex;gap:22px;margin-top:14px;padding-top:4px;border-top:1px solid var(--line)}'+
+'.kf-l{background:none!important;border:0!important;box-shadow:none!important;color:var(--green)!important;font:500 .9rem var(--sans)!important;padding:12px 0!important;min-width:0!important;flex:0 0 auto!important;width:auto!important}'+
+'.kf-a .kf-l{color:var(--mute)!important}.kf-it .kf-s.kf-l{padding:10px 4px!important}'+
+'.kf-list{margin-top:2px}.kf-it{padding:13px 0;border-top:1px solid var(--line)}.kf-list>.kf-it:first-child{border-top:0}'+
+'.kf-top{display:flex;align-items:center;gap:12px}.kf-tx{min-width:0;flex:1}.kf-tx b{display:block;font-weight:600;overflow-wrap:anywhere}'+
+'.kf-av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font:600 1.05rem var(--serif);flex:none}'+
+'.kf-a{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;align-items:center}.kf-a button:not(.kf-l){flex:1 1 0;min-width:92px;padding:11px 12px;font-size:.9rem}'+
+'.kf-top button.kf-s:not(.kf-l){flex:none;padding:9px 14px;font-size:.86rem}'+
+'.kf-x{flex:none!important;width:34px;height:34px;min-width:34px!important;padding:0!important;border-radius:50%!important;font-size:1.15rem!important;line-height:1;background:var(--soft)!important;color:var(--mute)!important;border:0!important}.kf-it.kf-sd .kf-tx b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kf-it.kf-sd .kf-top{gap:10px}'+
+'.kf-add{display:flex;gap:8px;margin:10px 0 6px}.kf-add input{flex:1;min-width:0;height:46px;border:1px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);padding:0 14px;font:inherit}.kf-add button{flex:none;height:46px;padding:0 20px}'+
+'.kf-e{margin:10px 0 0;color:var(--mute);font-size:.9rem;line-height:1.5}'+
+'.kf-d>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;min-height:24px}.kf-d>summary::-webkit-details-marker{display:none}.kf-d>summary::after{content:"›";color:var(--mute);font:400 1.4rem/1 var(--sans);transition:transform .15s;margin-left:auto}.kf-d[open]>summary::after{transform:rotate(90deg)}.kf-d>summary .kf-b0{margin-left:auto}.kf-d>summary .kf-b0+*{}'+
 '.ks-radio{display:flex;align-items:center;gap:8px;padding:8px 0}.ks-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}';
 document.head.append(css);
 
@@ -169,53 +187,79 @@ function render(){
   const sum=$('soc-sum');
   if(!S.user){
     if(sum)sum.textContent='Entrar con Google';const tb0=$('tab-bdg');if(tb0)tb0.style.display='none';
-    body.append(el('p','hint2','Entrá con tu cuenta de Google para enviarte libros desde tu propio Gmail (sin límite compartido) y para pedirle libros a tus amigos o mandárselos.'));
-    body.append(el('p','hint2','Kinderly solo pide permiso para enviar mails con el libro adjunto. Nunca lee tu correo.'));
-    const b=btn('Entrar con Google',login);b.style.marginTop='10px';body.append(b);
-    body.append(el('p','hint2','Mientras la app esté en beta, Google puede mostrar “app no verificada”: tocá “Avanzada” y “Ir a Kinderly”.'));
+    const w=el('div','kf-c');
+    w.append(el('h4','kf-t','Entrá para compartir libros'));
+    w.append(el('p','hint2','Con tu cuenta de Google podés enviarte libros desde tu propio Gmail (sin límite compartido) y pedirle libros a tus amigos o mandárselos.'));
+    w.append(el('p','hint2','Kinderly solo pide permiso para enviar mails con el libro adjunto. Nunca lee tu correo.'));
+    const b=btn('Entrar con Google',login);b.style.cssText='width:100%;margin-top:6px';w.append(b);
+    w.append(el('p','hint2','Mientras la app esté en beta, Google puede mostrar “app no verificada”: tocá “Avanzada” y “Ir a Kinderly”.'));
+    body.append(w);
     return;
   }
   const n=S.reqIn.length+S.sharesIn.filter(s=>s.status==='new').length+S.bookIn.filter(r=>r.status==='open').length;
   if(sum)sum.textContent='Mi cuenta y amigos'+(n?' ('+n+')':'');const tb=$('tab-bdg');if(tb){tb.textContent=n;tb.style.display=n?'grid':'none'}
-  const me=el('div','ks-me2'),head=el('div','ks-me2h');
-  if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;head.append(im)}
-  const who=el('div');who.append(el('b','',S.user.displayName||S.user.email),el('small','hint2',S.username?('@'+S.username):'Todavía no elegiste tu nombre de usuario'));who.querySelector('small').style.display='block';
-  head.append(who);const acts=el('div','ks-me2a');acts.append(btn(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername(),true),btn('Salir',logout,true));me.append(head,acts);body.append(me);
-  body.append(el('p','hint2','Los libros salen desde tu Gmail hacia '+myMail()+'. Si es un Kindle, aprobá tu Gmail en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).'));
+  const TONES=['#5468A3','#7A6A9B','#4F7F73','#A0645C','#7B7F4E'];
+  const tone=t=>{let h=0;for(const c of String(t||'?'))h=(h*31+c.charCodeAt(0))%997;return TONES[h%TONES.length]};
+  const av=t=>{const d=el('div','kf-av',(String(t||'?').replace(/^@/,'').trim()[0]||'?').toUpperCase());d.style.background=tone(t);return d};
+  const card=(title,count)=>{const c=el('section','kf-c'),h=el('div','kf-h');h.append(el('h4','kf-t',title));if(count)h.append(el('span','kf-b',String(count)));c.append(h);return c};
+  const link=(t,fn)=>{const b=btn(t,fn,true);b.className='kf-l';return b};
+  const item=(o)=>{const it=el('div','kf-it'),top=el('div','kf-top');if(o.av)top.append(av(o.av));const tx=el('div','kf-tx');tx.append(el('b','',o.title));if(o.sub)tx.append(el('small','',o.sub));top.append(tx);if(o.side){it.classList.add('kf-sd');o.side.forEach(x=>top.append(x))}it.append(top);if(o.acts&&o.acts.length){const a=el('div','kf-a');o.acts.forEach(x=>a.append(x));it.append(a)}return it};
+  const list=()=>el('div','kf-list');
+  const small=b=>{b.classList.add('kf-s');return b};
 
-  // Recibidos
-  const sec1=el('div','ks-sec');sec1.append(el('h4','','Libros que te mandaron'));
-  if(!S.sharesIn.length)sec1.append(el('p','hint2','Todavía no te mandaron libros. Cuando un amigo te comparta uno, aparece acá.'));
-  S.sharesIn.forEach(s=>{
+  // Perfil
+  const me=el('section','kf-c kf-me0'),mh=el('div','kf-me');
+  if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;mh.append(im)}else mh.append(av(S.user.displayName||'?'));
+  const who=el('div','kf-tx');who.append(el('b','kf-nm',S.user.displayName||S.user.email),el('small','',S.username?('@'+S.username):'Todavía no elegiste tu usuario'));mh.append(who);
+  const lk=el('div','kf-links');lk.append(link(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername()),link('Salir',logout));
+  me.append(mh,lk);body.append(me);
+
+  // Novedades (solo si hay algo que atender)
+  const newShares=S.sharesIn.filter(s=>s.status!=='received'),openIn=S.bookIn.filter(r=>r.status==='open');
+  const shareItem=s=>{
     const sub='de '+(s.fromName||'un amigo')+(s.note?' · “'+s.note+'”':'')+(s.status==='received'?' · ya enviado a tu mail':'');
-    sec1.append(row(s.title,sub,[
+    return item({title:s.title,sub,acts:[
       btn('Enviar a mi mail',async()=>{if(!(await ensureToken()))return;say('Enviando “'+s.title+'”…');const r=await sendMail({to:myMail(),url:s.url,title:s.title,filename:s.title+'.epub'});if(r.ok){say('Enviado a '+myMail(),'ok');guard(()=>updateDoc(doc(db,'shares',s.id),{status:'received'}))}else say('No se pudo enviar: '+r.error,'err')}),
-      btn('Leer en la app',async()=>{if(!hostOk(s.url)){say('El enlace no pertenece a una fuente permitida','err');return}window.KReader?window.KReader.open({title:s.title,author:s.author||'',url:s.url}):say('El lector todavía no cargó','err')}),
+      btn('Leer',async()=>{if(!hostOk(s.url)){say('El enlace no pertenece a una fuente permitida','err');return}window.KReader?window.KReader.open({title:s.title,author:s.author||'',url:s.url}):say('El lector todavía no cargó','err')},true),
       btn('Descargar',async()=>{if(hostOk(s.url))window.open(s.url,'_blank','noopener');else say('El enlace no pertenece a una fuente permitida','err')},true),
-      btn('Quitar',()=>guard(()=>deleteDoc(doc(db,'shares',s.id))),true)]));
-  });
-  body.append(sec1);
-
-  // Pedidos
-  const sec2=el('div','ks-sec');sec2.append(el('h4','','Pedidos de libros'));
-  const openIn=S.bookIn.filter(r=>r.status==='open');
-  if(!openIn.length&&!S.bookOut.length)sec2.append(el('p','hint2','Cuando alguien te pida un libro, aparece acá. Vos podés pedirle uno a un amigo desde su ficha.'));
-  openIn.forEach(r=>sec2.append(row((r.fromName||'Un amigo')+' busca:','“'+r.text+'”',[
-    btn('Buscar',()=>{window.showView('buscar');$('q').value=r.text;$('go').click()}),
-    btn('Listo',()=>guard(()=>updateDoc(doc(db,'bookRequests',r.id),{status:'done'}))),
-    btn('Quitar',()=>guard(()=>deleteDoc(doc(db,'bookRequests',r.id))),true)])));
-  S.bookOut.forEach(r=>sec2.append(row('Le pedí a '+(r.toName||'un amigo')+':','“'+r.text+'” · '+(r.status==='done'?'listo':'abierto'),[btn('Quitar',()=>guard(()=>deleteDoc(doc(db,'bookRequests',r.id))),true)])));
-  body.append(sec2);
+      link('Quitar',()=>guard(()=>deleteDoc(doc(db,'shares',s.id))))]});
+  };
+  const nTot=S.reqIn.length+newShares.length+openIn.length;
+  if(nTot){
+    const c=card('Novedades',nTot),l=list();
+    S.reqIn.forEach(r=>l.append(item({av:r.fromName,title:r.fromName||'Alguien',sub:'quiere ser tu amigo/a',acts:[btn('Aceptar',()=>guard(()=>acceptReq(r),'Ahora son amigos')),btn('Rechazar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)]})));
+    newShares.forEach(s=>l.append(shareItem(s)));
+    openIn.forEach(r=>l.append(item({av:r.fromName,title:(r.fromName||'Un amigo')+' busca',sub:'“'+r.text+'”',acts:[
+      btn('Buscar',()=>{window.showView('buscar');$('q').value=r.text;$('go').click()}),
+      btn('Listo',()=>guard(()=>updateDoc(doc(db,'bookRequests',r.id),{status:'done'})),true),
+      link('Quitar',()=>guard(()=>deleteDoc(doc(db,'bookRequests',r.id))))]})));
+    c.append(l);body.append(c);
+  }
 
   // Amigos
-  const sec3=el('div','ks-sec');sec3.append(el('h4','','Amigos'));
-  const form=el('div','ks-add'),inp=el('input');inp.type='text';inp.placeholder='usuario de tu amigo/a (ej: maria_lee)';inp.autocapitalize='none';inp.spellcheck=false;inp.autocomplete='off';
-  form.append(inp,btn('Agregar',()=>guard(()=>addFriend(inp.value).then(()=>{inp.value=''}))));sec3.append(form);
-  S.reqIn.forEach(r=>sec3.append(row(r.fromName||'alguien','quiere ser tu amigo/a',[btn('Aceptar',()=>guard(()=>acceptReq(r),'Ahora son amigos')),btn('Rechazar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)])));
-  S.reqOut.forEach(r=>sec3.append(row(r.toName||'pendiente','solicitud pendiente',[btn('Cancelar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)])));
-  if(!S.friends.length&&!S.reqIn.length&&!S.reqOut.length)sec3.append(el('p','hint2','Agregá a un amigo con su nombre de usuario. Tiene que haber entrado a Kinderly y elegido uno.'));
-  S.friends.forEach(f=>sec3.append(row(f.name,'Amigo/a',[btn('Pedir libro',()=>askBook(f)),btn('Quitar',()=>{if(confirm('¿Quitar a '+f.name+' de tus amigos?'))return guard(()=>removeFriend(f))},true)])));
-  body.append(sec3);body.insertBefore(sec3,sec1);
+  const fc=card('Mis amigos');
+  const form=el('div','kf-add'),inp=el('input');inp.type='text';inp.placeholder='Su nombre de usuario';inp.autocapitalize='none';inp.spellcheck=false;inp.autocomplete='off';inp.setAttribute('aria-label','Usuario de tu amigo o amiga');
+  form.append(inp,btn('Agregar',()=>guard(()=>addFriend(inp.value).then(()=>{inp.value=''}))));fc.append(form);
+  const fl=list();
+  S.reqOut.forEach(r=>fl.append(item({av:r.toName,title:r.toName||'Pendiente',sub:'Solicitud enviada, esperando respuesta',side:[small(link('Cancelar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id)))))]})));
+  S.friends.forEach(f=>{const q=btn('×',()=>{if(confirm('¿Quitar a '+f.name+' de tus amigos?'))return guard(()=>removeFriend(f))},true);q.className='kf-x';q.setAttribute('aria-label','Quitar a '+f.name);q.title='Quitar';
+    fl.append(item({av:f.name,title:f.name,sub:'Amigo/a',side:[small(btn('Pedir libro',()=>askBook(f))),q]}))});
+  if(fl.children.length)fc.append(fl);
+  if(!S.friends.length&&!S.reqIn.length&&!S.reqOut.length)fc.append(el('p','kf-e','Todavía no agregaste a nadie. Escribí su nombre de usuario arriba. Tiene que haber entrado a Kinderly y elegido uno.'));
+  body.append(fc);
+
+  // Historial (recibidos ya enviados y pedidos hechos)
+  const done=S.sharesIn.filter(s=>s.status==='received');
+  if(done.length||S.bookOut.length){
+    const d=el('details','kf-c kf-d'),sm=el('summary','',''),sp=el('span','kf-t','Historial');sm.append(sp,el('span','kf-b kf-b0',String(done.length+S.bookOut.length)));d.append(sm);
+    const l=list();done.forEach(s=>l.append(shareItem(s)));
+    S.bookOut.forEach(r=>l.append(item({av:r.toName,title:'Le pedí a '+(r.toName||'un amigo'),sub:'“'+r.text+'” · '+(r.status==='done'?'listo':'abierto'),side:[small(link('Quitar',()=>guard(()=>deleteDoc(doc(db,'bookRequests',r.id)))))]})));
+    d.append(l);body.append(d);
+  }
+
+  // Ayuda
+  const hp=el('details','kf-c kf-d'),hs=el('summary','','');hs.append(el('span','kf-t','¿Cómo llegan los libros?'));hp.append(hs,el('p','kf-e','Los libros salen desde tu Gmail hacia '+myMail()+'. Si es un Kindle, aprobá tu Gmail en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).'));
+  body.append(hp);
 }
 
 function askBook(f){
