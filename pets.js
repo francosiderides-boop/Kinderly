@@ -106,6 +106,25 @@ css.textContent=`
 .pet.g-knock .a .arm{opacity:1!important;animation:gknockarm 3.6s ease-in-out!important}
 @keyframes gknockarm{0%,38%{transform:rotate(-10deg)}50%{transform:rotate(30deg)}58%{transform:rotate(-6deg)}100%{transform:rotate(-10deg)}}
 .pet.g-knock .a .gl{transform:translate(0,.6px)!important}
+.pet .brow,.pet .snarl{opacity:0;transition:opacity .15s}
+.pet.g-dangry .a .brow.a,.pet.g-dangry .a .snarl{opacity:1}.pet.g-dangry .a .tongue{opacity:0!important}
+.pet.g-dangry .a .body{animation:gshake .12s linear infinite!important}
+.pet.g-dangry .a .tail{animation:none!important;transform:rotate(-16deg)}
+.pet.g-dangry .a .ear{animation:none!important}
+.pet.g-dangry .a .lk>.ear:nth-of-type(1){transform:rotate(16deg)}.pet.g-dangry .a .lk>.ear:nth-of-type(2){transform:rotate(-16deg)}
+.pet.g-dangry .a .head{animation:gdlow 3.2s ease-in-out!important}
+@keyframes gdlow{0%,100%{transform:none}15%,85%{transform:translateY(2px) rotate(2deg)}}
+.pet.g-dangry .a .gl{transform:translate(0,.6px)!important}
+.pet.g-dplay{animation:ghop 1.1s ease 3}
+.pet.g-dplay .a .head{animation:gnod .55s ease-in-out infinite!important}
+@keyframes gnod{0%,100%{transform:rotate(0)}50%{transform:rotate(7deg) translateY(2px)}}
+.pet.g-dplay .a .gl{animation:gchase 1.3s ease-in-out infinite!important}
+.pet.g-conf .a .brow.q{opacity:1}
+.pet.g-conf .a .head{animation:gconf 3.6s ease-in-out!important}
+@keyframes gconf{0%,100%{transform:rotate(0)}14%,38%{transform:rotate(-17deg)}50%{transform:rotate(0)}62%,88%{transform:rotate(16deg)}}
+.pet.g-conf .a .ear{animation:none!important}
+.pet.g-conf .a .lk>.ear:nth-of-type(2){transform:rotate(-22deg)}
+.pet.g-conf .a .gl{transform:translate(0,-.5px)!important}
 .pet.g-ignore .a .head{animation:gignore 3.2s ease-in-out!important}
 @keyframes gignore{0%,100%{transform:rotate(0)}18%,80%{transform:rotate(9deg) translateX(1px)}}
 .pet.g-ignore .a .gl{transform:translate(2.6px,.4px)!important}
@@ -161,6 +180,8 @@ const DOG_AWAKE=
  P('M24 36 C23 18 36 10 50 10 C64 10 77 18 76 36 C75 50 64 58 50 58 C36 58 25 50 24 36 Z')+
  L('M44 9 L42 3 M50 8 L50.500 2 M56 9 L58.500 3.500')+
  '<g class="eyes"><g class="gl">'+dot(38,37,1.9,2.8,8)+dot(62,36,1.9,2.8,-8)+'</g></g>'+'<g class="nz">'+dot(50,45,2.6,1.8)+'</g>'+
+ '<path class="brow a" d="M32 30 L44 34 M56 34 L68 30" fill="none" stroke="var(--pk-ink)" stroke-width="2.2" stroke-linecap="round"/><path class="brow q" d="M32 30 Q38 25.500 44 29.500 M56 33 Q62 33.500 68 31.500" fill="none" stroke="var(--pk-ink)" stroke-width="1.8" stroke-linecap="round"/>'+
+ '<g class="snarl"><path class="ln" d="M43 50.500 Q50 46.500 57 50.500" style="fill:none"/><path d="M45 49.500 L46.800 53.500 L48.800 48.500 M51.200 48.500 L53.200 53.500 L55 49.500" fill="#fff" stroke="var(--pk-ink)" stroke-width="1" stroke-linejoin="round"/></g>'+
  '<g class="tongue"><path class="ln" d="M46.500 48.500 C46 55.500 54 55.500 53.500 48.500 Z" style="fill:'+PK+'"/></g>'+
  '</g></g>'+
  '<g class="arm">'+P('M64 62 C74 61 80 56 82 48 C83 41 91 42 91.500 48 C92 56 85 67 75 74 L69 72 Z')+dot(87,49,2.8,2.3)+dot(83.300,44.200,1.1,1.1)+dot(87,42.600,1.1,1.1)+dot(90.500,44.600,1.1,1.1)+'</g>';
@@ -256,10 +277,10 @@ function gesture(){
   const v=host.dataset.v,slot=v==='buscar'?sM:v==='descubrir'?sR:null;if(!slot)return;
   const pet=[...slot.children].find(p=>!p.classList.contains('gone'));if(!pet)return;
   const dog=pet.classList.contains('dog'),sl=pet.classList.contains('sleep'),bub=pet.querySelector('.bub');
-  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','wave','wag','tilt','pant','sniff','eflick']):pick(['stretch','miau','wash','blink','flick','purr','eflick','ignore','sideeye','play','angry','knock','ignore','sideeye']);
+  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','wave','wag','tilt','pant','sniff','eflick','dplay','dangry','conf']):pick(['stretch','miau','wash','blink','flick','purr','eflick','ignore','sideeye','play','angry','knock','ignore','sideeye']);
   let cls='',txt='',ms=2300;
   if(g==='hop'){cls='g-hop';ms=1300}else if(g==='stretch'){cls='g-stretch';ms=2300}else if(g==='sigh'){cls='g-sigh';ms=2500}else if(g==='heart'){cls='g-heart';ms=2000}
-  else if(g==='wave'){cls='g-wave';ms=2100}else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau.';ms=2200}else if(g==='play'){cls='g-play say';txt='🧶';ms=4200}else if(g==='angry'){cls='g-angry say';txt='¡ssss!';ms=3000}else if(g==='knock'){cls='g-knock';ms=4200;setTimeout(()=>{try{if(pet.classList.contains('g-knock')){bub.textContent='¿yo?';pet.classList.add('say');setTimeout(()=>pet.classList.remove('say'),1500)}}catch(e){}},2500)}else if(g==='ignore'){cls='g-ignore say';txt='meh';ms=3200}else if(g==='sideeye'){cls='g-side';ms=2600}else if(g==='wag'){cls='g-wag';ms=2400}else if(g==='tilt'){cls='g-tilt';ms=2700}else if(g==='pant'){cls='g-pant';ms=3200}else if(g==='sniff'){cls='g-sniff';ms=2700}else if(g==='eflick'){cls='g-eflick';ms=2100}
+  else if(g==='wave'){cls='g-wave';ms=2100}else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau.';ms=2200}else if(g==='dplay'){cls='g-dplay g-wag g-pant say';txt='🎾';ms=3600}else if(g==='dangry'){cls='g-dangry say';txt='grrr…';ms=3200}else if(g==='conf'){cls='g-conf say';txt='¿?';ms=3700}else if(g==='play'){cls='g-play say';txt='🧶';ms=4200}else if(g==='angry'){cls='g-angry say';txt='¡ssss!';ms=3000}else if(g==='knock'){cls='g-knock';ms=4200;setTimeout(()=>{try{if(pet.classList.contains('g-knock')){bub.textContent='¿yo?';pet.classList.add('say');setTimeout(()=>pet.classList.remove('say'),1500)}}catch(e){}},2500)}else if(g==='ignore'){cls='g-ignore say';txt='meh';ms=3200}else if(g==='sideeye'){cls='g-side';ms=2600}else if(g==='wag'){cls='g-wag';ms=2400}else if(g==='tilt'){cls='g-tilt';ms=2700}else if(g==='pant'){cls='g-pant';ms=3200}else if(g==='sniff'){cls='g-sniff';ms=2700}else if(g==='eflick'){cls='g-eflick';ms=2100}
   else if(g==='wash'){cls='g-wash';ms=3400}else if(g==='blink'){cls='g-blink';ms=2700}else if(g==='flick'){cls='g-flick';ms=1700}else if(g==='purr'){cls='say g-purr';txt='mrr…';ms=3000}
   else if(g==='dream'){cls='say';txt=dog?'🦴':'🐟';ms=2800}
   if(txt)bub.textContent=txt;cls.split(' ').forEach(c=>pet.classList.add(c));
