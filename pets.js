@@ -12,9 +12,15 @@ css.textContent=`
 :root[data-theme="dark"]{--pk-ink:#1D1610;--pk-cream:#E6D5B8;--pk-car:#B27F52;--pk-cat:#B5ACA1;--pk-cat2:#867B70;--pk-white:#EAE3D6}
 .pets{position:fixed;left:0;right:0;bottom:calc(73px + env(safe-area-inset-bottom,0px));height:0;z-index:7;pointer-events:none}
 .pets.off{display:none}
-.pet{position:absolute;bottom:-4px;width:64px;height:58px;opacity:0;transform:translateY(10px);transition:opacity .6s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
+.pets .slot{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:opacity .5s ease}
+.pets[data-v="buscar"] .slot.main,.pets[data-v="descubrir"] .slot.rest{opacity:1}
+.pet{position:absolute;bottom:-4px;left:calc(10% - 20px);width:64px;height:58px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
+.slot.rest .pet{left:auto;right:calc(10% - 20px)}
 .pets.on .pet{opacity:1;transform:none}
-.pet.dog{left:calc(10% - 20px)}.pet.cat{right:calc(10% - 20px)}
+.pets.on .pet.gone{opacity:0;transform:translateY(6px)}
+.pet.dozing{animation:pdoze 1s ease both}.pet.waking{animation:pwake .9s cubic-bezier(.34,1.4,.64,1) both}
+@keyframes pdoze{0%{transform:none}45%{transform:translateY(2px) scale(1.02,.92)}100%{transform:none}}
+@keyframes pwake{0%{transform:scale(1.04,.88)}35%{transform:translateY(-9px) scale(.96,1.1)}65%{transform:translateY(0) scale(1.03,.95)}100%{transform:none}}
 .pet .a,.pet .z{position:absolute;inset:0;transition:opacity .6s}
 .pet .z{opacity:0}.pet.sleep .a{opacity:0}.pet.sleep .z{opacity:1}
 .pet svg{width:100%;height:100%;overflow:visible}
@@ -115,22 +121,52 @@ const mk=(cls,a,z)=>{
   const Z=document.createElement('div');Z.className='z';Z.append(sv(z));
   w.append(A,Z);return w};
 
+// El que está despierto vive en la pantalla principal (Buscar); el que duerme, en Descubrir.
+// De día está despierto el perro; de noche, el gato. Al amanecer o anochecer se "relevan".
 const host=document.createElement('div');host.className='pets';host.setAttribute('aria-hidden','true');
-const dog=mk('dog',DOG_AWAKE,DOG_SLEEP),cat=mk('cat',CAT_AWAKE,CAT_SLEEP);
-host.append(dog,cat);document.body.append(host);
+const sM=document.createElement('div');sM.className='slot main';const sR=document.createElement('div');sR.className='slot rest';
+const mDog=mk('dog',DOG_AWAKE,DOG_SLEEP),mCat=mk('cat',CAT_AWAKE,CAT_SLEEP),rDog=mk('dog',DOG_AWAKE,DOG_SLEEP),rCat=mk('cat',CAT_AWAKE,CAT_SLEEP);
+sM.append(mDog,mCat);sR.append(rDog,rCat);host.append(sM,sR);document.body.append(host);
 
-// el perro duerme de noche; el gato (nocturno) duerme de día
 const night=()=>{const h=new Date().getHours();return document.documentElement.dataset.theme==='dark'||h>=21||h<7};
-const sync=()=>{host.classList.toggle('off',off());const n=night();dog.classList.toggle('sleep',n);cat.classList.toggle('sleep',!n)};
-sync();setTimeout(()=>host.classList.add('on'),600);
-setInterval(sync,60000);
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let shown=null,busy=false;
+const setPlain=n=>{ // estado sin animación
+  const mm=n?mCat:mDog,mo=n?mDog:mCat,rr=n?rDog:rCat,ro=n?rCat:rDog;
+  [mDog,mCat,rDog,rCat].forEach(p=>p.classList.remove('dozing','waking'));
+  mm.classList.remove('gone','sleep');mo.classList.add('gone');mo.classList.remove('sleep');
+  rr.classList.remove('gone');rr.classList.add('sleep');ro.classList.add('gone');ro.classList.remove('sleep');
+  shown=n;try{localStorage.setItem('k_pets_ph',n?'night':'day')}catch(e){}};
+async function swap(n){
+  if(busy||shown===n)return;busy=true;
+  const oldM=n?mDog:mCat,newM=n?mCat:mDog,oldR=n?rCat:rDog,newR=n?rDog:rCat;
+  oldM.classList.add('dozing');oldR.classList.add('waking');await wait(450);
+  oldM.classList.add('sleep');oldR.classList.remove('sleep');await wait(1300);
+  oldM.classList.add('gone');oldR.classList.add('gone');await wait(700);
+  [oldM,oldR].forEach(p=>p.classList.remove('dozing','waking'));
+  newM.classList.add('sleep');newM.classList.remove('gone');newR.classList.remove('sleep','gone');await wait(1000);
+  newM.classList.add('waking');newR.classList.add('dozing');await wait(450);
+  newM.classList.remove('sleep');newR.classList.add('sleep');await wait(1300);
+  [newM,newR].forEach(p=>p.classList.remove('dozing','waking'));
+  shown=n;try{localStorage.setItem('k_pets_ph',n?'night':'day')}catch(e){}busy=false;
+  if(night()!==n)swap(night())}
+const sync=()=>{host.classList.toggle('off',off());const n=night();if(shown===null){setPlain(n);return}if(n!==shown)swap(n)};
+// vista activa → qué mascota se ve
+const vw=()=>{const v=document.querySelector('.view.on');host.dataset.v=v?v.dataset.view:''};
+vw();document.querySelectorAll('.view').forEach(v=>{try{new MutationObserver(vw).observe(v,{attributes:true,attributeFilter:['class']})}catch(e){}});
+// al abrir: si cambió el momento del día desde la última vez, se muestra el cambio
+let prev=null;try{prev=localStorage.getItem('k_pets_ph')}catch(e){}
+const nowN=night();
+if(prev&&(prev==='night')!==nowN){setPlain(!nowN);host.classList.toggle('off',off());setTimeout(()=>{host.classList.add('on');setTimeout(()=>swap(night()),1400)},500)}
+else{setPlain(nowN);host.classList.toggle('off',off());setTimeout(()=>host.classList.add('on'),600)}
+setInterval(sync,30000);
 try{new MutationObserver(sync).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
-window.KPets={refresh:sync,set:v=>{try{localStorage.setItem(KEY,v?'0':'1')}catch(e){}sync()},on:()=>!off()};
+window.KPets={refresh:sync,set:v=>{try{localStorage.setItem(KEY,v?'0':'1')}catch(e){}sync();host.classList.toggle('off',off())},on:()=>!off()};
 
 // interruptor en Ajustes
 (function(){const h=document.querySelector('.view[data-view="ajustes"]');if(!h||document.getElementById('ex-pets'))return;
   const c=document.createElement('div');c.className='card';c.id='ex-pets';c.style.marginTop='14px';
-  const b=document.createElement('b');b.textContent='Mascotas de compañía';const p=document.createElement('p');p.className='hint2';p.textContent='Un perrito y un gatito te acompañan sobre la barra de abajo. El perro está despierto de día y duerme de noche; el gato, al revés.';
+  const b=document.createElement('b');b.textContent='Mascotas de compañía';const p=document.createElement('p');p.className='hint2';p.textContent='Un perrito y un gatito te acompañan sobre la barra de abajo. El que está despierto te espera en Buscar y el que duerme, en Descubrir. De día está despierto el perro; al anochecer se turnan con el gato.';
   const t=document.createElement('button');t.type='button';t.className='ghost';const upd=()=>{t.textContent=window.KPets.on()?'Ocultar mascotas':'Mostrar mascotas'};upd();
   t.onclick=()=>{window.KPets.set(!window.KPets.on());upd()};c.append(b,p,t);h.append(c)})();
 })();
