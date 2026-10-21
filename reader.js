@@ -151,7 +151,7 @@ function streakPill(){
 }
 async function open(o){
   if(cur)return;
-  const id=o.id||idOf(o.url||'');let title=o.title||'Libro';
+  const id=o.id||idOf(o.url||'');let title=(window.kTitle?window.kTitle(o.title):o.title)||'Libro';
   if(!o.buf&&!o.cached&&!hostOk(o.url)){say('El enlace no pertenece a una fuente permitida','err');return}
   const root=el('div');root.id='kr';root.setAttribute('role','dialog');root.setAttribute('aria-label','Lector de '+title);
   const apply=()=>{const t=resolveTheme();root.style.setProperty('--krbg',t.bg);root.style.setProperty('--krfg',t.fg)};apply();
@@ -532,7 +532,7 @@ function renderLib(){
   const sec=el('div','card');sec.style.marginTop='14px';sec.append(el('b','','Leídos recientemente'));
   if(!l.length){sec.append(el('p','hint2','Todavía no abriste ningún libro. Buscá uno y tocá “Leer en la app”, o abrí un archivo.'));const g=btn('Buscar mi primer libro',()=>window.showView&&window.showView('buscar'));g.classList.add('empty-cta');sec.append(g)};
   l.forEach(x=>{
-    const r=el('div','lib-item'),d=el('div');d.append(el('b','',x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
+    const r=el('div','lib-item'),d=el('div');d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
     const bar=el('div','lib-bar'),i=el('i');i.style.width=Math.round((x.pct||0)*100)+'%';bar.append(i);d.append(bar);
     const open1=btn('Leer',()=>open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local}));
     const rv=btn('Reseñas',()=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})},'Reseñas del libro','ghost');
@@ -551,7 +551,7 @@ function cont(){
   if(!l){if(box)box.remove();return}
   if(!box){box=el('div','card');box.id='kr-cont';const lead=host.querySelector('.lead');const an=$('kr-st')||lead;an?an.after(box):host.prepend(box)}
   box.textContent='';
-  const d=el('div');d.append(el('small','','Seguí leyendo'),el('b','',l.title),el('small','',Math.round((l.pct||0)*100)+'% leído'));
+  const d=el('div');d.append(el('small','','Seguí leyendo'),el('b','',window.kTitle?window.kTitle(l.title):l.title),el('small','',Math.round((l.pct||0)*100)+'% leído'));
   const b=btn('Continuar',()=>open({id:l.id,url:l.url,title:l.title,author:l.author,cached:true,local:l.local}));
   box.append(d,b);
 }

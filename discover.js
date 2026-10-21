@@ -38,7 +38,7 @@ host.append(mk('p','hint2','Tocá un autor para buscar sus obras en la pestaña 
 const nf=new Intl.NumberFormat('es-AR');
 function gutBook(b){
   const author=(b.authors||[]).map(a=>a.name).join('; '),n=nf.format(b.download_count||0);
-  return {title:b.title,author,language:'es',img:b.formats['image/jpeg']||'',opts:[{src:'Project Gutenberg',label:'Project Gutenberg · '+n+' descargas',sendable:true,url:async()=>b.formats['application/epub+zip'],inf:async()=>({author,desc:(b.summaries||[])[0]||'',edition:'Project Gutenberg, dominio público'})}]};
+  return {title:(window.kTitle?window.kTitle(b.title):b.title),author,language:'es',img:b.formats['image/jpeg']||'',opts:[{src:'Project Gutenberg',label:'Project Gutenberg · '+n+' descargas',sendable:true,url:async()=>b.formats['application/epub+zip'],inf:async()=>({author,desc:(b.summaries||[])[0]||'',edition:'Project Gutenberg, dominio público'})}]};
 }
 async function iaFallback(query){
   const m=/topic=([^&]*)/.exec(query),k=m?(KW[decodeURIComponent(m[1])]||''):'';

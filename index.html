@@ -250,9 +250,39 @@ nav.tabs .bdg,.kf-b{animation:pop .5s var(--spring) both}
 .kr-gbar i,.kr-wb i{transition:width .8s var(--ease),height .8s var(--ease)}
 details[open]>:not(summary){animation:in .3s var(--ease) both}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* v118 · liquid glass estilo iOS: refracción en los bordes, brillo de canto, lente deslizante */
+:root{--glass:color-mix(in srgb,var(--card) 50%,transparent);--glass-b:rgba(255,255,255,.55);--glass-sh:0 8px 28px rgba(30,40,80,.15),inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.95),inset -1px -1px 1px -.5px rgba(255,255,255,.65),inset 0 0 14px rgba(255,255,255,.25)}
+:root[data-theme="dark"]{--glass:color-mix(in srgb,var(--card) 46%,transparent);--glass-b:rgba(255,255,255,.12);--glass-sh:0 10px 30px rgba(0,0,0,.4),inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.35),inset -1px -1px 1px -.5px rgba(255,255,255,.18),inset 0 0 14px rgba(255,255,255,.05)}
+nav.tabs,#status,.ex-sh,.ks-box,.theme-toggle{-webkit-backdrop-filter:blur(10px) saturate(1.9) brightness(1.04);backdrop-filter:blur(10px) saturate(1.9) brightness(1.04)}
+html.rfx nav.tabs,html.rfx #status,html.rfx .theme-toggle{-webkit-backdrop-filter:none;backdrop-filter:url(#lg) blur(2.5px) saturate(1.9) brightness(1.05)}
+.theme-toggle{background:var(--glass)!important;border:1px solid var(--glass-b)!important;box-shadow:var(--glass-sh)!important}
+nav.tabs{border-radius:999px;padding:5px}
+nav.tabs::before{background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 40%)}
+nav.tabs .in{position:relative}
+nav.tabs button{position:relative;z-index:1;border-radius:999px}
+nav.tabs button.on{background:transparent!important;box-shadow:none!important}
+nav.tabs button:active{transform:none}
+.lens{position:absolute;z-index:0;left:0;top:0;height:100%;border-radius:999px;pointer-events:none;background:rgba(255,255,255,.34);-webkit-backdrop-filter:blur(1px) saturate(2) brightness(1.12);backdrop-filter:blur(1px) saturate(2) brightness(1.12);box-shadow:inset 1.5px 1.5px 1px -.5px rgba(255,255,255,1),inset -1.5px -1.5px 1px -.5px rgba(255,255,255,.8),inset 0 0 12px rgba(255,255,255,.4),0 3px 12px rgba(30,40,80,.14);transform:translateX(var(--lx,0px)) scale(var(--ls,1));transition:transform .6s var(--spring),width .6s var(--spring),opacity .2s;opacity:0}
+.lens.on{opacity:1}
+:root[data-theme="dark"] .lens{background:rgba(255,255,255,.13);box-shadow:inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.55),inset -1.5px -1.5px 1px -.5px rgba(255,255,255,.3),inset 0 0 12px rgba(255,255,255,.1),0 3px 12px rgba(0,0,0,.3)}
+nav.tabs:has(button:active){--ls:1.14}
+/* botones principales: cápsula de vidrio teñido */
+.actions button,.search button,.kf-add button,.kf-a button,.inst>button,.ex-foot button.main,#kr-cont button,.lib-item button,.ex-la button,.dz-g button,button.ghost,button{border-radius:999px}
+.dz-g button{border-radius:20px}.ks-box button,.ex-opt,.ex-seg,.ex-seg button,.kf-x,.ex-chips button{border-radius:16px}.kf-x{border-radius:50%}
+button:not(.ghost):not(.kf-l):not(.kr-gl):not(.ex-skip):not(.inst-x):not(.ex-opt):not(.kf-x){box-shadow:inset 0 1.5px 1px -.5px rgba(255,255,255,.55),inset 0 -1px 1px -.5px rgba(0,0,0,.14),0 6px 14px color-mix(in srgb,var(--btn) 28%,transparent)}
+button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-backdrop-filter:blur(8px) saturate(1.6);backdrop-filter:blur(8px) saturate(1.6);box-shadow:inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.85),inset -1px -1px 1px -.5px rgba(255,255,255,.5)}
+:root[data-theme="dark"] button.ghost{box-shadow:inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.22),inset -1px -1px 1px -.5px rgba(255,255,255,.1)}
+.search{border-radius:999px}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<filter id="lg" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+<feImage href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='a'%3E%3Cstop offset='0' stop-color='rgb(255,128,128)'/%3E%3Cstop offset='1' stop-color='rgb(128,128,128)'/%3E%3C/linearGradient%3E%3ClinearGradient id='b'%3E%3Cstop offset='0' stop-color='rgb(128,128,128)'/%3E%3Cstop offset='1' stop-color='rgb(0,128,128)'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='rgb(128,255,128)'/%3E%3Cstop offset='1' stop-color='rgb(128,128,128)'/%3E%3C/linearGradient%3E%3ClinearGradient id='d' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='rgb(128,128,128)'/%3E%3Cstop offset='1' stop-color='rgb(128,0,128)'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' fill='rgb(128,128,128)'/%3E%3Crect width='14' height='100' fill='url(%23a)'/%3E%3Crect x='86' width='14' height='100' fill='url(%23b)'/%3E%3Crect x='14' width='72' height='34' fill='url(%23c)'/%3E%3Crect x='14' y='66' width='72' height='34' fill='url(%23d)'/%3E%3C/svg%3E" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/>
+<feDisplacementMap in="SourceGraphic" in2="map" scale="22" xChannelSelector="R" yChannelSelector="G"/>
+</filter></defs></svg>
+
 <svg width="0" height="0" style="position:absolute"><symbol id="lg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#3E5287"/><defs><clipPath id="kc"><rect x="0" y="15" width="64" height="35"/></clipPath></defs><g transform="translate(2.2 0)"><path d="M20 0h8.4v50l-4.2-4.8L20 50z" fill="#F4F1E8"/><g clip-path="url(#kc)" stroke="#F4F1E8" stroke-width="7.6" fill="none"><path d="M25 34.5 46.5 11"/><path d="M25 33 47 56"/></g></g></symbol></svg>
 <div class="app">
 <header>
@@ -307,9 +337,18 @@ details[open]>:not(summary){animation:in .3s var(--ease) both}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v117'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.7 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v118'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.8 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
+// liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra
+(function(){try{
+  const ua=navigator.userAgent||'';if(/Chrome\//.test(ua)&&!/OPR|Edg\/|CriOS|FxiOS/.test(ua)||/SamsungBrowser/.test(ua))document.documentElement.classList.add('rfx');
+  const nav=document.querySelector('nav.tabs'),inn=nav&&nav.querySelector('.in');if(!inn)return;
+  const lens=document.createElement('i');lens.className='lens';inn.prepend(lens);
+  const place=()=>{const on=inn.querySelector('button.on');if(!on)return;const r=on.getBoundingClientRect(),p=inn.getBoundingClientRect();if(!r.width)return;lens.style.width=r.width+'px';inn.style.setProperty('--lx',(r.left-p.left)+'px');lens.style.setProperty('--lx',(r.left-p.left)+'px');lens.classList.add('on')};
+  new MutationObserver(place).observe(inn,{subtree:true,attributes:true,attributeFilter:['class']});
+  addEventListener('resize',place);addEventListener('load',()=>setTimeout(place,50));setTimeout(place,120);
+}catch(e){}})();
 // saludo, frase del día y vibración suave (personalidad)
 (function(){try{
   const h=new Date().getHours(),g=h<6?'Buenas noches':h<13?'Buenos días':h<20?'Buenas tardes':'Buenas noches';
@@ -338,6 +377,7 @@ if(!store.get('mail'))$('cfg').open=true;
 
 function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
+window.kTitle=function(s){return String(s||'').replace(/\s*:?\s*\$[a-z]\s+/gi,': ').replace(/\s*\$[a-z]\s*$/i,'').replace(/\s{2,}/g,' ').trim()};
 const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
 const GET_CACHE=new Map();
 const j=async u=>{const hit=GET_CACHE.get(u);if(hit&&Date.now()-hit.at<30*60*1000)return hit.data;if(hit)GET_CACHE.delete(u);const r=await fetch(u,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');const d=await r.json();if(d&&d.ok===false)throw new Error(d.error||'La fuente no respondió');GET_CACHE.set(u,{at:Date.now(),data:d});if(GET_CACHE.size>80)GET_CACHE.delete(GET_CACHE.keys().next().value);return d};
@@ -438,7 +478,7 @@ function score(b){
   return (authorPhrase?120:fullTitle?100:titlePrefix?80:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+coverage*10-Math.max(0,t.length-query.length)*.12;
 }
 function isSpanish(value){const codes=(Array.isArray(value)?value:[value]).flatMap(v=>String(v||'').toLowerCase().split(/[;,\s]+/)).map(v=>v.trim().replace(/^.*\//,'')).filter(Boolean);return codes.some(v=>v==='es'||v==='spa'||v==='spanish'||v==='espanol'||v==='español'||v==='castellano'||v==='castilian'||v.startsWith('es-'))}
-function add(src,list){list.forEach(b=>{if(!b.title||!isSpanish(b.language))return;
+function add(src,list){list.forEach(b=>{if(b.title)b.title=window.kTitle(b.title);if(!b.title||!isSpanish(b.language))return;
   const directBuy=!!b.buyUrl,query=[b.title,b.author||''].filter(Boolean).join(' '),buyUrl=b.buyUrl||('https://books.google.com/books?hl=es&q='+encodeURIComponent(query));
   const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false,buyUrl,buyLabel:directBuy?'Comprar en Google Books':'Buscar opciones de compra'},e=all.find(x=>x.k===k);
   if(e){if(!e.opts.some(p=>p.src===src))e.opts.push(o);else{const old=e.opts.find(p=>p.src===src);if(directBuy&&!old.buyUrl){old.buyUrl=buyUrl;old.buyLabel='Comprar en Google Books'}}if(!e.author&&b.author)e.author=b.author;if(!e.img&&b.img)e.img=b.img}
@@ -447,7 +487,7 @@ function card(b,target="res"){
   const el=document.createElement('div');el.className='item';
   const top=document.createElement('div');top.className='top';
   const t=document.createElement('div');
-  const h=document.createElement('b');h.textContent=b.title;
+  const h=document.createElement('b');h.textContent=b.title=window.kTitle(b.title);
   const sm=document.createElement('small');sm.textContent=b.author;
   t.append(h,sm,document.createElement('br'));
   b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.label||o.src;t.append(g)});
@@ -617,10 +657,10 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=117"></script>
-<script src="discover.js?v=117"></script>
-<script src="extras.js?v=117"></script>
-<script type="module" src="social.js?v=117"></script>
+<script src="reader.js?v=118"></script>
+<script src="discover.js?v=118"></script>
+<script src="extras.js?v=118"></script>
+<script type="module" src="social.js?v=118"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;

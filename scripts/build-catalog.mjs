@@ -39,7 +39,7 @@ await Promise.all(MOODS.map(async ([id,topics,re])=>{
   const seen=new Map();
   const urls=[];topics.forEach(t=>{for(let p=1;p<=PAGES;p++)urls.push('https://gutendex.com/books/?languages=es&sort=popular&page='+p+(t?'&topic='+encodeURIComponent(t):''))});
   const res=await Promise.all(urls.map(get));
-  res.forEach(d=>{if(!d)return;(d.results||[]).forEach(b=>{if(!seen.has(b.id)&&ok(b,re))seen.set(b.id,{i:b.id,t:b.title,a:(b.authors||[]).map(x=>x.name).join('; '),c:b.formats['image/jpeg']||'',e:b.formats['application/epub+zip'],d:b.download_count||0,s:((b.summaries||[])[0]||'').slice(0,600)})})});
+  res.forEach(d=>{if(!d)return;(d.results||[]).forEach(b=>{if(!seen.has(b.id)&&ok(b,re))seen.set(b.id,{i:b.id,t:b.title.replace(/\s*:?\s*\$[a-z]\s+/gi,': ').replace(/\s*\$[a-z]\s*$/i,'').trim(),a:(b.authors||[]).map(x=>x.name).join('; '),c:b.formats['image/jpeg']||'',e:b.formats['application/epub+zip'],d:b.download_count||0,s:((b.summaries||[])[0]||'').slice(0,600)})})});
   const list=[...seen.values()].sort((x,y)=>y.d-x.d).slice(0,MAX);
   if(list.length){await writeFile('catalog/'+id+'.json',JSON.stringify(list));total+=list.length}
   console.log(id,list.length);
