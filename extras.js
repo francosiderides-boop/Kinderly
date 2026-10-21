@@ -146,5 +146,13 @@ try{if(!localStorage.getItem('k_welcome'))intro()}catch(e){}
 (function(){const h=document.querySelector('.view[data-view="ajustes"]');if(!h||$('ex-set'))return;
   const c=el('div','card');c.id='ex-set';c.style.marginTop='14px';c.append(el('b','','Introducción y meta diaria'),el('p','hint2','Volvé a ver la bienvenida o cambiá cuánto querés leer por día.'));
   const a=el('div','ex-la'),b1=el('button','ghost','Ver introducción'),b2=el('button','ghost','Cambiar meta');b1.type=b2.type='button';b1.onclick=()=>intro();b2.onclick=()=>pickGoal();a.append(b1,b2);c.append(a);h.append(c)})();
+(function(){const h=document.querySelector('.view[data-view="ajustes"]');if(!h||$('ex-rem'))return;
+  const c=el('div','card');c.id='ex-rem';c.style.marginTop='14px';c.append(el('b','','Recordatorio diario de lectura'),el('p','hint2','Elegí una hora y lo agregamos a tu calendario como evento diario con aviso. Se maneja desde la app de calendario de tu celular.'));
+  const t=el('input');t.type='time';let v='21:00';try{v=localStorage.getItem('kr_rem')||v}catch(e){}t.value=v;t.style.cssText='max-width:140px;margin:6px 0';
+  const b=el('button','ghost','Agregar al calendario');b.type='button';b.onclick=()=>{const [H,M]=(t.value||'21:00').split(':');try{localStorage.setItem('kr_rem',t.value)}catch(e){}
+    const d=new Date(),p=n=>String(n).padStart(2,'0'),day=''+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate());
+    const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Kinderly//ES','BEGIN:VEVENT','UID:kinderly-lectura-'+Date.now()+'@kinderly','DTSTAMP:'+day+'T000000Z','DTSTART:'+day+'T'+H+M+'00','DURATION:PT15M','RRULE:FREQ=DAILY','SUMMARY:Leer en Kinderly','DESCRIPTION:Tu ratito de lectura de hoy.','BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Leer en Kinderly','TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const u=URL.createObjectURL(new Blob([ics],{type:'text/calendar'})),a=document.createElement('a');a.href=u;a.download='recordatorio-kinderly.ics';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)};
+  c.append(t,el('br'),b);h.append(c)})();
 rerender();
 })();

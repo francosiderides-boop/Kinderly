@@ -18,7 +18,7 @@ const resolveTheme=()=>{const t=prefs().theme;if(t!=='auto')return THEMES[t]||TH
 const lib=()=>store.get('kr_lib',[]);
 const saveLib=l=>store.set('kr_lib',l.slice(0,40));
 const idOf=u=>String(u).replace(/[?#].*$/,'');
-const hlKey=id=>'kr_hl_'+id;
+const hlKey=id=>'kr_hl_'+id;const bmKey=id=>'kr_bm_'+id;
 
 // ---- almacenamiento offline (IndexedDB) ----
 const idb=()=>new Promise((ok,ko)=>{try{const r=indexedDB.open('kinderly-books',1);r.onupgradeneeded=()=>r.result.createObjectStore('b');r.onsuccess=()=>ok(r.result);r.onerror=()=>ko(r.error)}catch(e){ko(e)}});
@@ -113,7 +113,7 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr .kr-panel{position:absolute;left:0;right:0;bottom:0;max-height:78%;display:flex;flex-direction:column;background:color-mix(in srgb,var(--krbg) 84%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5);color:var(--krfg);border-top:1px solid rgba(128,128,128,.3);box-shadow:0 -10px 30px rgba(0,0,0,.22);transform:translateY(105%);transition:transform .22s;z-index:5}'+
 '#kr .kr-panel.on{transform:none}#kr .kr-ph{display:flex;align-items:center;gap:8px;padding:12px 16px 4px}#kr .kr-ph h4{flex:1;margin:0;font:600 1rem var(--serif)}'+
 '#kr .kr-pb{overflow:auto;padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px))}'+
-'#kr .kr-tabs{display:flex;gap:6px;margin:4px 0 10px}#kr .kr-tabs button{flex:1}'+
+'#kr .kr-tabs{display:flex;gap:6px;margin:4px 0 10px}#kr .kr-tabs button{flex:1;padding:0 4px;font-size:.82rem;min-width:0}'+
 '#kr .kr-panel{border-radius:22px 22px 0 0;max-height:68%}#kr .kr-panel::before{content:"";display:block;width:38px;height:4px;border-radius:2px;background:rgba(128,128,128,.4);margin:8px auto 0;flex:none}'+
 '#kr .ap-s{margin:0 0 16px}#kr .ap-l{font:600 .68rem var(--sans);letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:0 2px 8px}'+
 '#kr .ap-size{display:flex;align-items:center;gap:10px;background:rgba(128,128,128,.12);border-radius:14px;padding:4px}#kr .ap-size .ap-st{flex:1;height:44px;border:0;border-radius:11px;background:rgba(128,128,128,.14);font-size:1.05rem}#kr .ap-pct{min-width:56px;text-align:center;font:600 .95rem var(--sans);font-variant-numeric:tabular-nums}'+
@@ -289,14 +289,22 @@ async function open(o){
 
   // ----- panel de contenido (índice, marcas, búsqueda) -----
   const contents=(tab)=>panel('Contenido',b=>{
-    const tabs=el('div','kr-tabs'),body=el('div');const names=[['toc','Índice'],['marks','Marcas ('+marks.length+')'],['find','Buscar']];
+    const tabs=el('div','kr-tabs'),body=el('div');const bms=()=>store.get(bmKey(id),[]);const names=[['toc','Índice'],['bm','Marcas'+(bms().length?' ('+bms().length+')':'')],['marks','Notas'+(marks.length?' ('+marks.length+')':'')],['find','Buscar']];
     const show=t=>{[...tabs.children].forEach((x,i)=>x.classList.toggle('sel',names[i][0]===t));body.textContent='';
       if(t==='toc'){if(!tocItems.length)body.append(el('p','','Este libro no tiene índice.'));tocItems.forEach(it=>{const x=btn('',()=>{rend.display(it.href);closePanel()},it.label,'li');x.append(document.createTextNode((it.d?'— ':'')+it.label));body.append(x)})}
-      if(t==='marks'){if(!marks.length)body.append(el('p','','Todavía no subrayaste nada. Mantené apretado un texto del libro para seleccionarlo.'));marks.slice().sort((a,c)=>a.t-c.t).forEach(m=>{const x=btn('',()=>{rend.display(m.cfi);editMark(m)},'Subrayado','li');const sw=el('span','sw');sw.style.background=HL[m.color]||HL.amarillo;x.append(sw,document.createTextNode(m.text.slice(0,140)));if(m.note){const s=el('small','','📝 '+m.note);x.append(s)}body.append(x)})}
+      if(t==='bm'){const add=btn('🔖 Marcar esta página',()=>{const l=bms(),h=Math.round((pct||0)*100);if(l.some(x=>x.cfi===lastCfi)){say('Esta página ya está marcada','ok');return}let lab='';try{const lc=rend.currentLocation();const h0=lc&&lc.start&&lc.start.href;const t0=tocItems.filter(x=>x.href&&String(x.href).split('#')[0]===String(h0).split('#')[0])[0];lab=t0?t0.label:''}catch(e){}l.push({cfi:lastCfi,pct:pct||0,label:lab,t:Date.now()});store.set(bmKey(id),l);say('Marcador guardado','ok');contents('bm')});add.style.cssText='width:100%;margin-bottom:8px';body.append(add);
+        const l=bms().slice().sort((a,c)=>a.pct-c.pct);if(!l.length)body.append(el('p','','Todavía no marcaste ninguna página. Tocá el botón para guardar tu lugar y volver cuando quieras.'));
+        l.forEach(m=>{const x=btn('',()=>{rend.display(m.cfi);closePanel()},'Ir al marcador','li');x.append(document.createTextNode('🔖 '+Math.round(m.pct*100)+'%'+(m.label?' · '+m.label:'')));const s=el('small','',new Date(m.t).toLocaleDateString('es-AR'));x.append(s);const d=btn('Quitar',e=>{e.stopPropagation();store.set(bmKey(id),bms().filter(y=>y.cfi!==m.cfi));contents('bm')},'Quitar marcador','ghost');d.style.cssText='margin:4px 0 8px';body.append(x,d)})}
+      if(t==='marks'){if(!marks.length)body.append(el('p','','Todavía no subrayaste nada. Mantené apretado un texto del libro para seleccionarlo.'));if(marks.length){const exp=el('div','row');exp.append(btn('Copiar o compartir',()=>exportMarks(false),'Copiar subrayados'),btn('Descargar .md',()=>exportMarks(true),'Descargar subrayados'));body.append(exp)}marks.slice().sort((a,c)=>a.t-c.t).forEach(m=>{const x=btn('',()=>{rend.display(m.cfi);editMark(m)},'Subrayado','li');const sw=el('span','sw');sw.style.background=HL[m.color]||HL.amarillo;x.append(sw,document.createTextNode(m.text.slice(0,140)));if(m.note){const s=el('small','','📝 '+m.note);x.append(s)}body.append(x)})}
       if(t==='find'){const i=el('input');i.type='search';i.placeholder='Buscar en el libro…';const list=el('div');i.onkeydown=e=>{if(e.key==='Enter'&&i.value.trim().length>1)searchBook(i.value.trim(),list)};const go=btn('Buscar',()=>{if(i.value.trim().length>1)searchBook(i.value.trim(),list)});go.style.marginTop='8px';body.append(i,go,list);setTimeout(()=>i.focus(),50)}};
     names.forEach(([t,n])=>tabs.append(btn(n,()=>show(t))));b.append(tabs,body);show(tab||'toc');
   });
   let tocItems=[];
+  const exportMarks=async dl=>{const ti=(o.title||entry().title||'Libro'),au=(o.author||entry().author||'');
+    const md='# '+ti+(au?'\n_'+au+'_':'')+'\n\nMis subrayados en Kinderly\n\n'+marks.slice().sort((a,c)=>a.t-c.t).map(m=>'> '+m.text.replace(/\s+/g,' ').trim()+(m.note?'\n\nNota: '+m.note:'')).join('\n\n---\n\n')+'\n';
+    if(dl){const u=URL.createObjectURL(new Blob([md],{type:'text/markdown'})),a=document.createElement('a');a.href=u;a.download=(ti.replace(/[^\wáéíóúñü ]+/gi,'').trim().slice(0,50)||'subrayados')+' - subrayados.md';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);say('Descargado','ok');return}
+    try{if(navigator.share){await navigator.share({title:ti,text:md});return}}catch(e){if(e&&e.name==='AbortError')return}
+    try{await navigator.clipboard.writeText(md);say('Subrayados copiados','ok')}catch(e){say('No pude copiar; probá con Descargar','err')}};
 
   // ----- apariencia -----
   const looks=()=>panel('Apariencia',b=>{
@@ -557,7 +565,7 @@ function renderLib(){
     const bar=el('div','lib-bar'),i=el('i');i.style.width=Math.round((x.pct||0)*100)+'%';bar.append(i);d.append(bar);
     const open1=btn('Leer',()=>open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local}));
     const rv=btn('Reseñas',()=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})},'Reseñas del libro','ghost');
-    const del=btn('Quitar',async()=>{if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));store.del(hlKey(x.id));store.del('kr_sum_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
+    const del=btn('Quitar',async()=>{if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
     r.append(d,open1,rv,del);sec.append(r);
   });
   host.append(sec);
