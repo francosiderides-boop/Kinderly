@@ -217,6 +217,39 @@ body,.card,.kf-c,nav.tabs,input,textarea{transition:background-color .25s,border
 button.saved{color:var(--green);border-color:var(--green)}
 
 .inst{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;margin-bottom:12px}.inst-t{flex:1;min-width:0}.inst-t b{display:block;font:600 1rem var(--serif)}.inst-t small{display:block;color:var(--mute);font-size:.82rem;margin-top:1px}.inst>button:not(.inst-x){flex:none;padding:10px 16px}.inst-x{flex:none;width:32px;height:32px;padding:0!important;border-radius:50%;background:transparent!important;color:var(--mute)!important;font-size:1.3rem;line-height:1}
+
+/* v117 · liquid glass y curvas de movimiento */
+:root{--ease:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.45,.64,1);--glass:color-mix(in srgb,var(--card) 64%,transparent);--glass-b:rgba(255,255,255,.75);--glass-sh:0 10px 32px rgba(30,40,80,.16),inset 0 1px 0 rgba(255,255,255,.7),inset 0 -1px 0 rgba(255,255,255,.2)}
+@supports (transition-timing-function:linear(0,1)){:root{--spring:linear(0,.18 6%,.56 15%,.9 26%,1.07 36%,1.1 42%,1.06 52%,1.01 68%,.99 82%,1)}}
+:root[data-theme="dark"]{--glass:color-mix(in srgb,var(--card) 58%,transparent);--glass-b:rgba(255,255,255,.14);--glass-sh:0 12px 34px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 0 rgba(255,255,255,.04)}
+body{background-image:radial-gradient(60vmax 40vmax at 8% -6%,color-mix(in srgb,var(--green) 13%,transparent),transparent 62%),radial-gradient(50vmax 36vmax at 105% 22%,color-mix(in srgb,var(--acc) 8%,transparent),transparent 60%),radial-gradient(60vmax 40vmax at 40% 112%,color-mix(in srgb,var(--gold) 16%,transparent),transparent 60%);background-attachment:fixed}
+nav.tabs,#status,.ex-sh,.ks-box{background:var(--glass)!important;-webkit-backdrop-filter:blur(24px) saturate(1.7);backdrop-filter:blur(24px) saturate(1.7);border:1px solid var(--glass-b)!important;box-shadow:var(--glass-sh)!important}
+nav.tabs{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-width:736px;margin:0 auto;border-radius:28px;padding:6px}
+nav.tabs::before,.ex-sh::before{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0) 46%);pointer-events:none;opacity:.8}
+:root[data-theme="dark"] nav.tabs::before,:root[data-theme="dark"] .ex-sh::before{opacity:.22}
+.ex-sh{position:relative;overflow:hidden}
+nav.tabs button{border-radius:20px;transition:background-color .3s var(--ease),color .3s var(--ease),transform .5s var(--spring)}
+nav.tabs button.on{background:color-mix(in srgb,var(--green) 15%,transparent)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.5)!important;border-radius:20px!important;color:var(--green)}
+nav.tabs button svg{transition:transform .5s var(--spring)}nav.tabs button.on svg{transform:translateY(-1px) scale(1.12)}
+nav.tabs button:active{transform:scale(.92)}
+#status{bottom:calc(94px + env(safe-area-inset-bottom,0px))!important;border-radius:18px}
+body{padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))!important}
+.card,.kf-c,.search{box-shadow:0 1px 0 rgba(255,255,255,.6) inset,var(--sh)}
+:root[data-theme="dark"] .card,:root[data-theme="dark"] .kf-c{box-shadow:0 1px 0 rgba(255,255,255,.05) inset,var(--sh)}
+/* curvas: salida suave y resorte al soltar */
+.view.on{animation:in .42s var(--ease) both}
+.item,.kf-c,#dz-res>*{animation:in .45s var(--ease) both}
+.item:nth-child(2),.kf-c:nth-child(2){animation-delay:.05s}.item:nth-child(3),.kf-c:nth-child(3){animation-delay:.1s}.item:nth-child(4),.kf-c:nth-child(4){animation-delay:.15s}.item:nth-child(n+5),.kf-c:nth-child(n+5){animation-delay:.2s}
+button{transition:background-color .2s var(--ease),border-color .2s var(--ease),color .2s var(--ease),box-shadow .2s var(--ease),transform .5s var(--spring)}
+button:active:not(:disabled){transform:scale(.955);transition-duration:.2s,.2s,.2s,.2s,.08s}
+@keyframes sheet{from{transform:translateY(110%)}}@keyframes pop2{from{opacity:0;transform:scale(.93) translateY(8px)}}
+.ex-sh{animation:sheet .55s var(--spring) both}.ks-box{animation:pop2 .45s var(--spring) both}.ex-ov,.ks-ov{animation:fade .25s var(--ease) both}
+#status{animation:in .45s var(--spring) both}
+nav.tabs .bdg,.kf-b{animation:pop .5s var(--spring) both}
+.ex-dots i{transition:all .4s var(--spring)}.ex-slide{animation:in .45s var(--ease) both}
+.kr-gbar i,.kr-wb i{transition:width .8s var(--ease),height .8s var(--ease)}
+details[open]>:not(summary){animation:in .3s var(--ease) both}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -274,8 +307,8 @@ button.saved{color:var(--green);border-color:var(--green)}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v116'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.6 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v117'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.7 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // saludo, frase del día y vibración suave (personalidad)
 (function(){try{
@@ -584,10 +617,10 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=116"></script>
-<script src="discover.js?v=116"></script>
-<script src="extras.js?v=116"></script>
-<script type="module" src="social.js?v=116"></script>
+<script src="reader.js?v=117"></script>
+<script src="discover.js?v=117"></script>
+<script src="extras.js?v=117"></script>
+<script type="module" src="social.js?v=117"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
