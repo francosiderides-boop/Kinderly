@@ -43,9 +43,9 @@ function gutBook(b){
 async function iaFallback(query){
   const m=/topic=([^&]*)/.exec(query),k=m?(KW[decodeURIComponent(m[1])]||''):'';
   const p=new URLSearchParams({q:'mediatype:texts AND format:EPUB AND language:spa AND -collection:inlibrary AND -access-restricted-item:true'+(k?' AND ('+k+')':''),rows:24,output:'json'});
-  ['identifier','title','creator','licenseurl','rights','date','language','downloads'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
+  ['identifier','title','creator','licenseurl','rights','date','language','downloads','possible-copyright-status'].forEach(f=>p.append('fl[]',f));p.append('sort[]','downloads desc');
   const ia=await j('https://archive.org/advancedsearch.php?'+p);
-  return (ia.response?.docs||[]).filter(x=>isSpanish(x.language)&&hasOpenLicense(x.licenseurl||x.rights)).slice(0,10).map(b=>{const count=nf.format(b.downloads||0),author=[].concat(b.creator||[])[0]||'';return {title:b.title,author,language:b.language,img:'https://archive.org/services/img/'+b.identifier,opts:[{src:'Internet Archive',label:'Internet Archive · '+count+' descargas',sendable:true,url:()=>iaEpub(b.identifier),page:'https://archive.org/details/'+encodeURIComponent(b.identifier),inf:()=>iaInfo(b.identifier)}]}});
+  return (ia.response?.docs||[]).filter(x=>isSpanish(x.language)&&(hasOpenLicense(x.licenseurl||x.rights)||isPD(x))).slice(0,10).map(b=>{const count=nf.format(b.downloads||0),author=[].concat(b.creator||[])[0]||'';return {title:b.title,author,language:b.language,img:'https://archive.org/services/img/'+b.identifier,opts:[{src:'Internet Archive',label:'Internet Archive · '+count+' descargas',sendable:true,url:()=>iaEpub(b.identifier),page:'https://archive.org/details/'+encodeURIComponent(b.identifier),inf:()=>iaInfo(b.identifier)}]}});
 }
 let cur=null,run=0,loadingMore=false;
 const ok=(b,re)=>{
