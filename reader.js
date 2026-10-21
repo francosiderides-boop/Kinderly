@@ -17,6 +17,12 @@ const setPref=(k,v)=>{const q=prefs();q[k]=v;store.set('kr_cfg',q)};
 const resolveTheme=()=>{const t=prefs().theme;if(t!=='auto')return THEMES[t]||THEMES.claro;const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);return dark?THEMES.noche:THEMES.claro};
 const lib=()=>store.get('kr_lib',[]);
 const saveLib=l=>store.set('kr_lib',l.slice(0,40));
+function fixOrphans(d){try{const bl=[...d.body.querySelectorAll('p')];let n=0;
+  for(let i=1;i<bl.length;i++){const p=bl[i],q=bl[i-1];if(p.parentNode!==q.parentNode)continue;const t=p.textContent.trim(),qt=q.textContent.trim();
+    if(!t||!qt||!/^[a-záéíóúñü]/.test(t)||/[.!?…:»”"')\]]$/.test(qt)||qt.length<30)continue;
+    if(t.length<=60||q.dataset.m){q.append(' ');while(p.firstChild)q.append(p.firstChild);q.dataset.m='1';p.remove();bl[i]=q;n++}}
+  return n}catch(e){return 0}}
+window.__krFix=fixOrphans;
 const idOf=u=>String(u).replace(/[?#].*$/,'');
 const hlKey=id=>'kr_hl_'+id;const bmKey=id=>'kr_bm_'+id;
 
@@ -43,23 +49,25 @@ async function fetchBook(url){
 // ---- IA con la clave del usuario (se guarda solo en este dispositivo) ----
 const GEMINI=['gemini-3.8-flash','gemini-3.6-flash','gemini-3.1-flash-lite'];
 const ai=()=>store.get('kr_ai',null);
-async function askAI(prompt){
+async function askAI(prompt,onTry){
   const c=ai();if(!c||!c.key)throw new Error('Primero cargá tu clave de IA en Ajustes.');
   if(c.p==='claude'){
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':c.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-5-5',max_tokens:900,messages:[{role:'user',content:prompt}]}),signal:AbortSignal.timeout(90000)});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':c.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-5-5',max_tokens:1200,messages:[{role:'user',content:prompt}]}),signal:AbortSignal.timeout(60000)});
     const d=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error((d.error&&d.error.message)||('Error '+r.status));
     return (d.content||[]).map(x=>x.text||'').join('').trim();
   }
   let last='';
+  let n=0;
   for(const m of GEMINI){
+    n++;if(onTry)onTry(n,GEMINI.length);
     try{
-      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':c.key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:900}}),signal:AbortSignal.timeout(90000)});
+      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':c.key},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{maxOutputTokens:2048}}),signal:AbortSignal.timeout(40000)});
       const d=await r.json().catch(()=>({}));
       if(r.ok){const t=((((d.candidates||[])[0]||{}).content||{}).parts||[]).map(p=>p.text||'').join('').trim();if(t)return t;last='Respuesta vacía';continue}
       last=(d.error&&d.error.message)||('Error '+r.status);
       if(r.status===400||r.status===401||r.status===403)break;
-    }catch(e){last=e.message}
+    }catch(e){last=(e&&e.name==='TimeoutError')?'La IA tardó demasiado en responder':e.message}
   }
   throw new Error(last||'No se pudo consultar la IA');
 }
@@ -351,8 +359,8 @@ async function open(o){
         if(ch.text.length<600){out.textContent='Este tramo es muy corto para resumir (portada, índice o título). Pasá a un capítulo y probá de nuevo.';return}
         if(!force&&cache[ch.key]){out.textContent=cache[ch.key];return}
         out.textContent='Resumiendo con tu IA…';
-        const text=ch.text.slice(0,48000);
-        const r=await askAI('Sos un asistente de lectura. Resumí en español rioplatense, en 120 a 180 palabras, este capítulo del libro «'+title+'»'+(o.author?' de '+o.author:'')+(ch.label?' (capítulo: '+ch.label+')':'')+'. Contá solo lo que ocurre en el texto, sin inventar ni adelantar lo que sigue. Texto del capítulo:\n\n'+text);
+        const text=ch.text.slice(0,30000);
+        const r=await askAI('Sos un asistente de lectura. Resumí en español rioplatense, en 120 a 180 palabras, este capítulo del libro «'+title+'»'+(o.author?' de '+o.author:'')+(ch.label?' (capítulo: '+ch.label+')':'')+'. Contá solo lo que ocurre en el texto, sin inventar ni adelantar lo que sigue. Texto del capítulo:\n\n'+text,(i,t)=>{out.textContent='Resumiendo con tu IA… '+(i>1?'(intento '+i+' de '+t+')':'')});
         cache[ch.key]=r;store.set(key,cache);out.textContent=r;
       }catch(e){out.textContent='No se pudo resumir: '+(e&&e.message||'error')}
     };
@@ -487,7 +495,7 @@ async function open(o){
       rend=book.renderTo(view,sc?{width:'100%',height:'100%',flow:'scrolled',manager:'continuous',allowScriptedContent:false}:{width:'100%',height:'100%',flow:'paginated',spread:'none',allowScriptedContent:false});
       rend.hooks.content.register(c=>{try{const d=c.document;
         // seleccionar solo manteniendo apretado (un toque suelto ya no marca palabras)
-        const ss=d.createElement('style');ss.textContent='body{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}body.kr-sel,body.kr-sel *{-webkit-user-select:text!important;user-select:text!important}';d.head.append(ss);
+        fixOrphans(d);const ss=d.createElement('style');ss.textContent='body{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}body.kr-sel,body.kr-sel *{-webkit-user-select:text!important;user-select:text!important}';d.head.append(ss);
         let tm=null,sx=0,sy=0,lastT=0;const cancel=()=>{if(tm){clearTimeout(tm);tm=null}};
         d.addEventListener('touchstart',e=>{lastT=Date.now();const t=e.touches[0];if(!t||e.touches.length>1){cancel();return}sx=t.clientX;sy=t.clientY;cancel();
           tm=setTimeout(()=>{tm=null;try{d.body.classList.add('kr-sel');let rg=null;if(d.caretRangeFromPoint)rg=d.caretRangeFromPoint(sx,sy);else if(d.caretPositionFromPoint){const p=d.caretPositionFromPoint(sx,sy);if(p){rg=d.createRange();rg.setStart(p.offsetNode,p.offset);rg.collapse(true)}}
