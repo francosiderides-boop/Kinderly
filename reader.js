@@ -209,12 +209,17 @@ let cur=null;
 // ---- racha y tiempo de lectura (solo en este dispositivo) ----
 const ST_K='kr_st',dk=d=>d.toLocaleDateString('sv');
 const stGet=()=>{try{return JSON.parse(localStorage.getItem(ST_K)||'{}')}catch(e){return {}}};
-function addSec(s){try{const st=stGet(),k=dk(new Date()),g=((window.KEx&&window.KEx.goal())||10)*60,before=st[k]||0;st[k]=before+s;if(before<g&&st[k]>=g&&localStorage.getItem('kr_gd')!==k){localStorage.setItem('kr_gd',k);setTimeout(()=>{try{window.say('Meta de hoy cumplida. ¡Bien ahí!','ok')}catch(e){}},300)}const ks=Object.keys(st).sort();while(ks.length>120)delete st[ks.shift()];localStorage.setItem(ST_K,JSON.stringify(st))}catch(e){}}
+function addSec(s){try{localStorage.setItem('kr_tot',String((+localStorage.getItem('kr_tot')||0)+s));const st=stGet(),k=dk(new Date()),g=((window.KEx&&window.KEx.goal())||10)*60,before=st[k]||0;st[k]=before+s;if(before<g&&st[k]>=g&&localStorage.getItem('kr_gd')!==k){localStorage.setItem('kr_gd',k);setTimeout(()=>{try{window.say('Meta de hoy cumplida. ¡Bien ahí!','ok')}catch(e){}},300)}const ks=Object.keys(st).sort();while(ks.length>120)delete st[ks.shift()];localStorage.setItem(ST_K,JSON.stringify(st))}catch(e){}}
 function stats(){const st=stGet(),now=new Date(),d=new Date(now);let streak=0;
   if((st[dk(d)]||0)<60)d.setDate(d.getDate()-1);
   while((st[dk(d)]||0)>=60){streak++;d.setDate(d.getDate()-1)}
   let week=0;for(let i=0;i<7;i++){const x=new Date(now);x.setDate(x.getDate()-i);week+=st[dk(x)]||0}
   return {streak,today:st[dk(now)]||0,week}}
+// velocidad de lectura personal (palabras por minuto), solo en este dispositivo
+const SP_K='kr_wpm';
+const spGet=()=>{try{return JSON.parse(localStorage.getItem(SP_K)||'null')||{w:0,m:0}}catch(e){return {w:0,m:0}}};
+function addSpeed(w,m){try{const q=spGet();q.w+=w;q.m+=m;if(q.m>90){q.w/=2;q.m/=2}localStorage.setItem(SP_K,JSON.stringify(q))}catch(e){}}
+function wpm(){const q=spGet();if(q.m<1.5||q.w<250)return 0;const v=Math.round(q.w/q.m);return v>=40&&v<=900?v:0}
 const fmtMin=s=>{const m=Math.floor(s/60);return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')}
 function streakPill(){
   const host=document.querySelector('.view[data-view="buscar"]');if(!host)return;
@@ -242,7 +247,8 @@ async function open(o){
   const hideSel=()=>{selbar.classList.remove('on');curSel=null};
 
   // ----- progreso: porcentaje, páginas y tiempo restante -----
-  const CPL=1500,CPM=1100;let chEnd=[];
+  const CPL=1500,CPM0=1100;let chEnd=[];const cpm=()=>{const v=wpm();return v?v*6:CPM0};let sp={i:null,t:0};
+  const trackSpeed=()=>{try{const L=book.locations;if(!L||!L.length()||!lastCfi)return;const i=L.locationFromCfi(lastCfi);if(i==null||i<0)return;const now=Date.now();if(sp.i===null){sp={i,t:now};return}if(i===sp.i)return;const di=i-sp.i,dt=(now-sp.t)/1000;if(di>0&&di<=2&&dt>=6&&dt<=300&&document.visibilityState==='visible')addSpeed(di*CPL/6,dt/60);sp={i,t:now}}catch(e){}};
   const spineOf=c=>{const m=/\/6\/(\d+)/.exec(c||'');return m?(+m[1]/2-1):-1};
   const buildCh=()=>{const L=(book.locations&&book.locations._locations)||[];chEnd=new Array(L.length);let end=L.length-1;for(let i=L.length-1;i>=0;i--){if(i===L.length-1||spineOf(L[i])!==spineOf(L[i+1]))end=i;chEnd[i]=end}};
   const fmtT=m=>m<1?'menos de 1 min':m<60?Math.round(m)+' min':Math.floor(m/60)+' h '+String(Math.round(m%60)).padStart(2,'0')+' min';
@@ -252,8 +258,8 @@ async function open(o){
       const L=book.locations;const n=L&&L.length();
       if(n&&lastCfi){
         const i=Math.max(0,Math.min(n-1,L.locationFromCfi(lastCfi)||0)),ch=Math.max(0,(chEnd[i]!=null?chEnd[i]:n-1)-i);
-        pt.textContent=P+' · pág. '+(i+1)+' de '+n+' · cap.: '+fmtT(ch*CPL/CPM)+' · libro: '+fmtT((n-1-i)*CPL/CPM);
-        foot.textContent=P+' · pág. '+(i+1)+' de '+n+' · '+fmtT(ch*CPL/CPM)+' para el fin del capítulo';
+        pt.textContent=P+' · pág. '+(i+1)+' de '+n+' · cap.: '+fmtT(ch*CPL/cpm())+' · libro: '+fmtT((n-1-i)*CPL/cpm());
+        foot.textContent=P+' · pág. '+(i+1)+' de '+n+' · '+fmtT(ch*CPL/cpm())+' para el fin del capítulo'+(wpm()?' · tu ritmo: '+wpm()+' ppm':'');
         return;
       }
     }catch(e){}
@@ -610,7 +616,7 @@ async function open(o){
         const l=d.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600&family=Lora:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Bitter:ital,wght@0,400;0,700;1,400&family=Nunito:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;600&display=swap';d.head.append(l)}catch(e){}});
       style();
       await rend.display(cfi||undefined);
-    rend.on('relocated',loc=>{lastCfi=loc.start.cfi;if(book.locations&&book.locations.length()){pct=book.locations.percentageFromCfi(lastCfi)||0;range.value=Math.round(pct*1000);upd()}hideSel();save()});
+    rend.on('relocated',loc=>{lastCfi=loc.start.cfi;if(book.locations&&book.locations.length()){pct=book.locations.percentageFromCfi(lastCfi)||0;range.value=Math.round(pct*1000);upd()}hideSel();trackSpeed();save()});
     rend.on('click',e=>{if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();if(!sc&&x<w*0.28)rend.prev();else if(!sc&&x>w*0.72)rend.next();else root.classList.toggle('hide')});
     let sx=0;rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX});rend.on('touchend',e=>{const dx=e.changedTouches[0].screenX-sx;if(!sc&&Math.abs(dx)>60){dx<0?rend.next():rend.prev()}});
     rend.on('keyup',e=>{if(e.key==='ArrowRight')rend.next();if(e.key==='ArrowLeft')rend.prev()});
@@ -663,7 +669,7 @@ function renderLib(){
   const gbar=el('div','kr-gbar'),gi=el('i');gi.style.width=Math.round(pctG*100)+'%';if(pctG>=1)gi.className='done';gbar.append(gi);gw.append(gh,gbar);
   const wk=el('div','kr-wk'),stt=stGet(),maxS=Math.max(gS,...Array.from({length:7},(_,i)=>{const x=new Date();x.setDate(x.getDate()-i);return stt[dk(x)]||0}));
   for(let i=6;i>=0;i--){const x=new Date();x.setDate(x.getDate()-i);const v=stt[dk(x)]||0,col=el('div','kr-wc'),bar=el('div','kr-wb'),f=el('i');f.style.height=Math.max(v?8:3,Math.round(v/maxS*100))+'%';if(v>=gS)f.className='done';bar.append(f);col.append(bar,el('small',i===0?'on':'','DLMMJVS'[x.getDay()]));wk.append(col)}
-  sc.append(gw,wk);host.append(sc);
+  sc.append(gw,wk);{const mb=btn('Ver todas mis estadísticas',()=>{if(window.KEx&&window.KEx.statsPage)window.KEx.statsPage()},'Estadísticas','ghost');mb.style.cssText='width:100%;margin-top:12px';sc.append(mb)}host.append(sc);
   if(!S0.week)host.append(el('p','hint2 kr-sn','Leé un minuto hoy en la app y empieza tu racha.'));
   const top=el('div','card');
   top.append(el('b','','Abrir un libro de tu celular'),el('p','hint2','Elegí un archivo .epub que ya tengas guardado (descargas, Drive, mail…). Queda en esta biblioteca y no sale de tu dispositivo.'));
