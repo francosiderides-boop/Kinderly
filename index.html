@@ -206,12 +206,12 @@ body,.card,.kf-c,nav.tabs,input,textarea{transition:background-color .25s,border
 /* v110 · personalidad */
 .greet{font:600 .72rem var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin:10px 0 6px}
 .kr-st{display:inline-block;margin:0 0 12px;padding:5px 12px;border-radius:999px;background:var(--soft);color:var(--green);font:600 .8rem var(--sans)}
-.kr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;padding:14px 8px;margin-bottom:14px}
-.kr-sc b{display:block;font:600 1.35rem var(--serif);color:var(--ink)}.kr-sc small{display:block;color:var(--mute);font-size:.78rem;margin-top:2px}
+.kr-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center;padding:14px 8px;margin-bottom:14px}
+.kr-sc b{display:block;font:600 1.3rem var(--serif);color:var(--ink);white-space:nowrap}.kr-sc small{display:block;color:var(--mute);font-size:.76rem;line-height:1.25;margin-top:3px}
 .kr-sc+.kr-sc{border-left:1px solid var(--line)}.kr-sn{margin:-6px 4px 14px}
 .qd{margin:30px 8px 4px;text-align:center}.qd q{display:block;quotes:none;font:italic 400 1.12rem/1.45 var(--serif);color:var(--ink)}.qd q::before{content:"“"}.qd q::after{content:"”"}.qd small{display:block;margin-top:8px;color:var(--mute);font-size:.8rem;letter-spacing:.04em}
 
-.kr-stats{grid-template-columns:repeat(3,1fr)}.kr-goal{grid-column:1/-1;margin:12px 8px 0;text-align:left;padding-top:12px;border-top:1px solid var(--line)}.kr-gh{display:flex;justify-content:space-between;align-items:center;font-size:.86rem;color:var(--mute)}.kr-gl{background:none!important;border:0!important;color:var(--green)!important;padding:4px 0!important;font:600 .84rem var(--sans)!important}
+.kr-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.kr-goal{grid-column:1/-1;margin:12px 8px 0;text-align:left;padding-top:12px;border-top:1px solid var(--line)}.kr-gh{display:flex;justify-content:space-between;align-items:center;font-size:.86rem;color:var(--mute)}.kr-gl{background:none!important;border:0!important;color:var(--green)!important;padding:4px 0!important;font:600 .84rem var(--sans)!important}
 .kr-gbar{height:8px;border-radius:4px;background:var(--soft);overflow:hidden;margin-top:6px}.kr-gbar i{display:block;height:100%;background:var(--green);border-radius:4px;transition:width .5s ease}.kr-gbar i.done,.kr-wb i.done{background:var(--ok)}
 .kr-wk{grid-column:1/-1;display:flex;gap:8px;align-items:flex-end;height:74px;margin:14px 8px 0}.kr-wc{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}.kr-wb{flex:1;width:100%;max-width:26px;display:flex;align-items:flex-end;background:var(--soft);border-radius:6px;overflow:hidden}.kr-wb i{display:block;width:100%;background:var(--green);opacity:.75;border-radius:6px;transition:height .5s ease}.kr-wc small{font-size:.68rem;color:var(--mute)}.kr-wc small.on{color:var(--ink);font-weight:700}
 button.saved{color:var(--green);border-color:var(--green)}
@@ -338,8 +338,8 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v144'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.34 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v145'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.35 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra
 (function(){try{
@@ -659,11 +659,11 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=144"></script>
-<script src="discover.js?v=144"></script>
-<script src="extras.js?v=144"></script>
-<script src="pets.js?v=144"></script>
-<script type="module" src="social.js?v=144"></script>
+<script src="reader.js?v=145"></script>
+<script src="discover.js?v=145"></script>
+<script src="extras.js?v=145"></script>
+<script src="pets.js?v=145"></script>
+<script type="module" src="social.js?v=145"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
