@@ -228,6 +228,27 @@ function streakPill(){
   if(!p){p=el('div','kr-st');p.id='kr-st';const lead=host.querySelector('.lead');lead?lead.after(p):host.prepend(p)}
   p.textContent=s.streak===1?'1 día leyendo seguido':s.streak+' días leyendo seguido';
 }
+// Aviso suave: leer en modo avión. Máx. una vez cada 4 días, 3 veces en total, y se puede silenciar.
+function airTip(root,isClosed){
+  try{
+    const K='kr_air';let st={};try{st=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+    if(st.off||(st.n||0)>=3||Date.now()-(st.t||0)<4*864e5||navigator.onLine===false)return;
+    setTimeout(()=>{
+      if(isClosed()||!document.body.contains(root))return;
+      if(!document.getElementById('kr-air-css')){const c=document.createElement('style');c.id='kr-air-css';c.textContent='#kr .kr-air{position:absolute;left:50%;top:calc(66px + env(safe-area-inset-top,0px));transform:translate(-50%,-8px);width:min(92%,380px);z-index:5;background:var(--krfg,#222);color:var(--krbg,#fff);border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:500 13.5px/1.4 "Instrument Sans",system-ui,sans-serif;opacity:0;transition:opacity .35s,transform .45s cubic-bezier(.34,1.4,.64,1)}#kr .kr-air.on{opacity:1;transform:translate(-50%,0)}#kr .kr-air b{font-weight:700}#kr .kr-air .r{display:flex;gap:14px;margin-top:8px;justify-content:flex-end}#kr .kr-air button{background:none!important;border:0!important;box-shadow:none!important;min-height:0!important;height:auto!important;width:auto!important;color:inherit;font:600 12.5px "Instrument Sans",system-ui,sans-serif;opacity:.8;padding:4px 2px;cursor:pointer;white-space:nowrap}';document.head.append(c)}
+      const t=el('div','kr-air');t.setAttribute('role','status');
+      const p=el('div');p.innerHTML='✈️ <b>Para leer sin distracciones, probá el modo avión.</b> Tu libro ya está cargado (sin música ni resumen con IA mientras tanto).';
+      const r=el('div','r');
+      const hide=()=>{t.classList.remove('on');setTimeout(()=>t.remove(),500)};
+      const no=el('button','','No mostrar más');no.type='button';no.onclick=()=>{try{localStorage.setItem(K,JSON.stringify({off:1,t:Date.now(),n:9}))}catch(e){}hide()};
+      const ok=el('button','','Entendido');ok.type='button';ok.onclick=hide;
+      r.append(no,ok);t.append(p,r);root.append(t);
+      try{localStorage.setItem(K,JSON.stringify({t:Date.now(),n:(st.n||0)+1}))}catch(e){}
+      requestAnimationFrame(()=>requestAnimationFrame(()=>t.classList.add('on')));
+      setTimeout(hide,12000);
+    },7000);
+  }catch(e){}
+}
 async function open(o){
   if(cur)return;
   const id=o.id||idOf(o.url||'');let title=(window.kTitle?window.kTitle(o.title):o.title)||'Libro';
@@ -587,7 +608,7 @@ async function open(o){
     Object.keys(HL).forEach(c=>{const x=btn('',()=>{if(!curSel)return;const q0=curSel.text;addMark(curSel.cfi,curSel.text,c);try{curSel.contents.window.getSelection().removeAllRanges()}catch(e){}hideSel();if(q0.trim().length>=20&&store.get('kr_qs_off',false)!==true)setTimeout(()=>quoteCard(q0,title,o.author||entry().author||''),250)},'Subrayar '+c,'dot');x.style.background=HL[c];selbar.append(x)});
     selbar.append(btn('Nota',()=>{if(!curSel)return;const m=addMark(curSel.cfi,curSel.text,'amarillo');hideSel();editMark(m)}),btn('Definir',()=>{if(!curSel)return;const w=curSel.text,cx=curSel.ctx;hideSel();define(w,cx)}),btn('Copiar',()=>{if(curSel){try{navigator.clipboard.writeText(curSel.text);say('Copiado','ok')}catch(e){}}hideSel()}),btn('Imagen',()=>{if(!curSel)return;const q=curSel.text;hideSel();quoteCard(q,title,o.author||entry().author||'')},'Compartir como imagen'),btn('✕',hideSel,'Cancelar'));};
   selBtns();
-  root.append(top,view,bot,selbar,pnl,foot);view.append(msg);root.append(warmEl,dimEl);comfort();document.body.append(root);document.body.style.overflow='hidden';cur=root;
+  root.append(top,view,bot,selbar,pnl,foot);view.append(msg);root.append(warmEl,dimEl);comfort();document.body.append(root);document.body.style.overflow='hidden';cur=root;airTip(root,()=>closed);
   try{history.pushState({kr:1},'')}catch(e){}
   window.addEventListener('popstate',pop);document.addEventListener('keydown',key);
 
