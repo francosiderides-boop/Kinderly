@@ -23,7 +23,8 @@ css.textContent=`
 @keyframes pwake{0%{transform:scale(1.04,.88)}35%{transform:translateY(-9px) scale(.96,1.1)}65%{transform:translateY(0) scale(1.03,.95)}100%{transform:none}}
 .pet .a,.pet .z{position:absolute;inset:0;transition:opacity .6s}
 .pet .z{opacity:0}.pet.sleep .a{opacity:0}.pet.sleep .z{opacity:1}
-.pet svg{width:100%;height:100%;overflow:visible}
+.pet svg{width:100%;height:100%;overflow:visible;filter:url(#kpwob)}
+.pet .ln.sk{stroke-width:.9;opacity:.55}
 .pet .z svg{transform:translateY(-9%)}
 .pet .ln{stroke:var(--pk-ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
 .pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pwag 1.7s ease-in-out infinite}
@@ -74,11 +75,13 @@ css.textContent=`
 `;
 document.head.append(css);
 
-const sv=h=>{const d=document.createElement('div');d.innerHTML='<svg xmlns="'+NS+'" viewBox="0 -5 100 105" stroke-width="1.9">'+h+'</svg>';return d.firstChild};
+if(!document.getElementById('kpwob')){const f=document.createElement('div');f.style.cssText='position:absolute;width:0;height:0;overflow:hidden';f.innerHTML='<svg xmlns="'+NS+'" width="0" height="0"><filter id="kpwob" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".035 .05" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.4" xChannelSelector="R" yChannelSelector="G"/></filter></svg>';document.body.appendChild(f)}
+const sv=h=>{const d=document.createElement('div');d.innerHTML='<svg xmlns="'+NS+'" viewBox="0 -5 100 105" stroke-width="2.1">'+h+'</svg>';return d.firstChild};
 const F='var(--pk-fill)',PK='var(--pk-pink)',INK='var(--pk-ink)';
 // línea limpia con relleno blanco, estilo dibujo simple
-const P=(d,x)=>'<path class="ln" d="'+d+'" style="fill:'+F+'" '+(x||'')+'/>';
-const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/>';
+// trazo "a mano": relleno corrido (mal registrado), línea doble levemente desfasada
+const P=(d,x)=>'<path d="'+d+'" style="fill:'+F+';stroke:none" transform="translate(1.3 1.5)"/><path class="ln" d="'+d+'" '+(x||'')+'/><path class="ln sk" d="'+d+'" transform="translate(.7 -.6) rotate(.6 50 50)"/>';
+const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/><path class="ln sk" d="'+d+'" transform="translate(.5 .6)"/>';
 const tube=(d,w)=>'<path class="ln" d="'+d+'" stroke-width="'+(w+3.6)+'"/><path d="'+d+'" fill="none" stroke="'+F+'" stroke-width="'+w+'" stroke-linecap="round"/>';
 const eye=(x,y,r)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="1.75" ry="2.65" fill="'+INK+'" transform="rotate('+r+' '+x+' '+y+')"/>';
 const shut=(x,y,w)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+INK+'" stroke-width="1.9" stroke-linecap="round"/>';
