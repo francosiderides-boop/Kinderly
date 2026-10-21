@@ -1,4 +1,4 @@
-const CACHE='kinderly-shell-v151';
+const CACHE='kinderly-shell-v152';
 const SHELL=['./','./index.html','./manifest.webmanifest','./descubrir.html','./social.js','./reader.js','./discover.js','./instalar.html','./extras.js','./pets.js','./k2-icon.svg','./k2-180.png','./k2-192.png','./k2-512.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('kinderly-shell-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));

@@ -179,7 +179,7 @@ const DOG_AWAKE=
  '<g class="ear" style="animation-delay:2.4s">'+P('M69 17 C77 13 86 17 88 26 C90 35 87 44 81 45.500 C75 47 72 41 71.500 35 Z')+'</g>'+
  P('M24 36 C23 18 36 10 50 10 C64 10 77 18 76 36 C75 50 64 58 50 58 C36 58 25 50 24 36 Z')+
  L('M44 9 L42 3 M50 8 L50.500 2 M56 9 L58.500 3.500')+
- '<g class="eyes"><g class="gl">'+dot(38,37,1.9,2.8,8)+dot(62,36,1.9,2.8,-8)+'</g></g>'+'<g class="nz">'+dot(50,45,2.6,1.8)+'</g>'+
+ '<g class="eyes"><g class="gl">'+dot(38,36.5,1.9,2.8,8)+dot(62,36.5,1.9,2.8,-8)+'</g></g>'+'<g class="nz">'+dot(50,45,2.6,1.8)+'</g>'+
  '<path class="brow a" d="M32 30 L44 34 M56 34 L68 30" fill="none" stroke="var(--pk-ink)" stroke-width="2.2" stroke-linecap="round"/><path class="brow q" d="M32 30 Q38 25.500 44 29.500 M56 33 Q62 33.500 68 31.500" fill="none" stroke="var(--pk-ink)" stroke-width="1.8" stroke-linecap="round"/>'+
  '<g class="snarl"><path class="ln" d="M43 50.500 Q50 46.500 57 50.500" style="fill:none"/><path d="M45 49.500 L46.800 53.500 L48.800 48.500 M51.200 48.500 L53.200 53.500 L55 49.500" fill="#fff" stroke="var(--pk-ink)" stroke-width="1" stroke-linejoin="round"/></g>'+
  '<g class="tongue"><path class="ln" d="M46.500 48.500 C46 55.500 54 55.500 53.500 48.500 Z" style="fill:'+PK+'"/></g>'+
@@ -206,7 +206,7 @@ const CAT_AWAKE=
  '<g class="ear">'+B('M26 28 C24 18 24 8 28 1 C34 3 42 9 47 15 Z')+'<path d="M30 22 C29 15 29 10 31 6.500 C35 8.500 39 11.500 41.500 15 Z" fill="var(--pk-lav)"/></g>'+
  '<g class="ear" style="animation-delay:4.2s">'+B('M74 28 C76 18 76 8 72 1 C66 3 58 9 53 15 Z')+'<path d="M70 22 C71 15 71 10 69 6.500 C65 8.500 61 11.500 58.500 15 Z" fill="var(--pk-lav)"/></g>'+
  B('M24 35 C24 21 36 13 50 13 C64 13 76 21 76 35 C76 48 65 56 50 56 C35 56 24 48 24 35 Z')+
- '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,37.6,.2)+eyeP(61.5,37.6,-.2)+'</g>'+lid(38.5,36,-2,'l')+lid(61.5,36,2,'r')+'</g>'+
+ '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,37.6,.2)+eyeP(61.5,37.6,-.2)+'</g>'+lid(38.5,36,0,'l')+lid(61.5,36,0,'r')+'</g>'+
  '<g class="nz"><path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/></g>'+'<path d="M45 51.800 Q50 48.200 55 51.800" fill="none" stroke="var(--pk-lav)" stroke-width="1" stroke-linecap="round" opacity=".85"/>'+
  '<g class="wh">'+WH('M24 43 L9 39.500 M24 47 L8 49 M26 51 L13 57.500')+WH('M76 43 L91 39.500 M76 47 L92 49 M74 51 L87 57.500')+'</g>'+
  '</g></g>'+
