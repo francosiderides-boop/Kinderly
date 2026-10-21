@@ -8,7 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="k2-icon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="k2-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="k2-180.png">
-<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:title" content="Kinderly · libros en español, gratis"><meta property="og:description" content="Buscá, leé y compartí libros en español. Instalala gratis con un toque."><meta property="og:image" content="https://francosiderides-boop.github.io/Kinderly/k2-512.png"><link rel="manifest" href="manifest.webmanifest">
 
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Kinderly"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#FFFFFF"><meta name="color-scheme" id="cs" content="only light">
@@ -255,7 +255,7 @@ button.saved{color:var(--green);border-color:var(--green)}
   <div style="margin-top:12px"><button id="save">Guardar</button></div>
   <p class="hint2">Si usás Kindle, aprobá el mail remitente en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).</p>
 </details>
-<details id="shr" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary style="font-weight:600;cursor:pointer">Compartir Kinderly</summary><p class="hint2">Mandale el link a quien quieras. Desde ahí puede abrirla e instalarla gratis en su celular.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="share-app" type="button">Compartir link</button><button id="install-app" type="button" class="ghost">Instalar en este dispositivo</button></div></details>
+<details id="shr" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary style="font-weight:600;cursor:pointer">Compartir Kinderly</summary><p class="hint2">Mandale el link a quien quieras. Al abrirlo, la instala con un toque.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="share-app" type="button">Compartir link</button><button id="install-app" type="button" class="ghost">Instalar en este dispositivo</button></div></details>
 </section>
 <section class="view" data-view="biblioteca"></section>
 <section class="view" data-view="sugerencias"><h2 class="vt">Sugerencias</h2><p class="vs">Contanos qué mejorarías o qué te gustaría que Kinderly tenga. Las más votadas son las primeras que hacemos.</p><div id="sug-body"></div></section>
@@ -272,8 +272,8 @@ button.saved{color:var(--green);border-color:var(--green)}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v112'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.2 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v113'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.3 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // saludo, frase del día y vibración suave (personalidad)
 (function(){try{
@@ -580,12 +580,12 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=112"></script>
-<script src="discover.js?v=112"></script>
-<script src="extras.js?v=112"></script>
-<script type="module" src="social.js?v=112"></script>
+<script src="reader.js?v=113"></script>
+<script src="discover.js?v=113"></script>
+<script src="extras.js?v=113"></script>
+<script type="module" src="social.js?v=113"></script>
 <script>
-document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
+document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
 </script>
 </body>

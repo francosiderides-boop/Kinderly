@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Instalar Kinderly</title>
+<meta name="description" content="Libros en español, gratis y legales. Instalá Kinderly en tu celular con un toque.">
+<meta property="og:title" content="Kinderly · libros en español, gratis"><meta property="og:description" content="Buscá, leé y compartí libros en español. Instalala gratis con un toque.">
+<meta property="og:image" content="https://francosiderides-boop.github.io/Kinderly/k2-512.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#FFFFFF"><meta name="color-scheme" content="only light">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="k2-icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="k2-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#30353F;--mute:#737985;--line:#E8E6E0;--soft:#F5F4F0;--btn:#5468A3;--serif:"Newsreader",Georgia,serif;--sans:"Instrument Sans",system-ui,sans-serif}
+*{box-sizing:border-box}html,body{margin:0;background:#fff;color:var(--ink);font:16px/1.5 var(--sans)}
+main{min-height:100svh;display:flex;flex-direction:column;justify-content:center;max-width:440px;margin:0 auto;padding:32px 24px calc(28px + env(safe-area-inset-bottom,0px));animation:in .4s ease both}
+@keyframes in{from{opacity:0;transform:translateY(10px)}}
+img{width:88px;height:88px;border-radius:21px;margin-bottom:26px;box-shadow:0 10px 30px rgba(62,82,135,.25)}
+h1{font:600 2rem/1.15 var(--serif);margin:0 0 10px}p.lead{color:var(--mute);margin:0 0 28px;font-size:1.05rem}
+button,a.btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;background:var(--btn);color:#fff;font:600 1.05rem var(--sans);text-align:center;text-decoration:none;cursor:pointer;transition:transform .12s}
+button:active,a.btn:active{transform:scale(.98)}button:disabled{opacity:.6}
+a.sec{display:block;text-align:center;margin-top:14px;color:var(--mute);font-size:.95rem}
+.box{display:none;background:var(--soft);border-radius:16px;padding:16px 18px;margin-top:18px;font-size:.96rem;line-height:1.55}.box b{font-weight:600}.box ol{margin:8px 0 0;padding-left:20px}.box li{margin:4px 0}
+.ok{color:#2E6B4F;font-weight:600}
+</style></head><body>
+<main>
+  <img src="k2-192.png" alt="">
+  <h1>Kinderly</h1>
+  <p class="lead">Libros en español, gratis y legales. Instalala en tu celular para abrirla como cualquier app.</p>
+  <button id="go" type="button">Instalar Kinderly</button>
+  <a id="chrome" class="btn" style="display:none" href="#">Abrir en Chrome para instalar</a>
+  <div class="box" id="how"></div>
+  <a class="sec" href="./">Prefiero usarla desde el navegador</a>
+</main>
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)},ua=navigator.userAgent||'';
+  var go=$('go'),how=$('how'),chrome=$('chrome'),ev=null;
+  var standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(standalone){location.replace('./');return}
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(function(){});
+  var ios=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  var samsung=/SamsungBrowser/.test(ua),android=/Android/.test(ua),inapp=/FBAN|FBAV|Instagram|Line\/|Snapchat|TikTok|MicroMessenger/.test(ua);
+  function steps(h,items){how.style.display='block';how.textContent='';var b=document.createElement('b');b.textContent=h;how.append(b);var ol=document.createElement('ol');items.forEach(function(t){var l=document.createElement('li');l.textContent=t;ol.append(l)});how.append(ol)}
+  window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();ev=e;go.disabled=false});
+  window.addEventListener('appinstalled',function(){go.style.display='none';how.style.display='block';how.innerHTML='<span class="ok">Listo, Kinderly quedó instalada.</span><br>Buscala en tu pantalla de inicio o en tus aplicaciones.'});
+  var path=location.host+location.pathname.replace(/[^/]*$/,'');
+  if(android&&(samsung||inapp)){
+    // Samsung Internet y navegadores incrustados solo crean accesos directos: abrimos Chrome, que instala la app de verdad
+    go.style.display='none';chrome.style.display='block';
+    chrome.href='intent://'+path+'instalar.html#Intent;scheme=https;package=com.android.chrome;end';
+    how.style.display='block';how.textContent='Este navegador solo crea un acceso directo. Chrome instala la app completa, sin la barra del navegador.';
+    return;
+  }
+  if(ios){
+    go.style.display='none';
+    if(/CriOS|FxiOS|EdgiOS/.test(ua)||inapp)steps('Abrí este link en Safari',['Copiá el link y pegalo en Safari.','Después seguí los pasos de instalación.']);
+    else steps('Para instalarla en iPhone',['Tocá el botón Compartir, abajo en Safari.','Elegí “Agregar a inicio”.','Tocá “Agregar”.']);
+    return;
+  }
+  go.onclick=function(){
+    if(ev){ev.prompt();ev.userChoice.finally(function(){ev=null})}
+    else steps('Para instalarla',['Abrí el menú del navegador (los tres puntos).','Tocá “Instalar app” o “Agregar a la pantalla de inicio”.'])
+  };
+  // si el navegador no ofrece la instalación directa, mostramos los pasos manuales
+  setTimeout(function(){if(!ev&&how.style.display!=='block')steps('Si no aparece el botón',['Abrí el menú del navegador (los tres puntos).','Tocá “Instalar app” o “Agregar a la pantalla de inicio”.'])},4000);
+})();
+</script></body></html>
