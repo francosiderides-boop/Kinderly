@@ -8,8 +8,8 @@ const NS='http://www.w3.org/2000/svg';
 
 const css=document.createElement('style');
 css.textContent=`
-:root{--pk-ink:#5A4636;--pk-cream:#F5E6CC;--pk-car:#C9915E;--pk-cat:#C9BFB3;--pk-cat2:#9C9084;--pk-white:#F8F2E8;--pk-pink:#EFA9A4}
-:root[data-theme="dark"]{--pk-ink:#1D1610;--pk-cream:#E6D5B8;--pk-car:#B27F52;--pk-cat:#B5ACA1;--pk-cat2:#867B70;--pk-white:#EAE3D6}
+:root{--pk-ink:#5A4636;--pk-cream:#F5E6CC;--pk-car:#C9915E;--pk-cat:#EEA867;--pk-cat2:#CF7E3B;--pk-white:#FCEED8;--pk-pink:#EFA9A4}
+:root[data-theme="dark"]{--pk-ink:#1D1610;--pk-cream:#E6D5B8;--pk-car:#B27F52;--pk-cat:#D69A5B;--pk-cat2:#B06F2F;--pk-white:#EADBC0}
 .pets{position:fixed;left:0;right:0;bottom:calc(73px + env(safe-area-inset-bottom,0px));height:0;z-index:7;pointer-events:none}
 .pets.off{display:none}
 .pets .slot{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:opacity .5s ease}
@@ -36,6 +36,27 @@ css.textContent=`
 .pet .zz{font:700 11px 'Instrument Sans',system-ui,sans-serif;fill:#6F7BAA;opacity:0;animation:pzz 3.8s ease-in-out infinite}
 .pet .zz:nth-of-type(2){animation-delay:1.25s}.pet .zz:nth-of-type(3){animation-delay:2.5s}
 .pet .glint{animation:ptw 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes phead{0%,100%{transform:rotate(0)}22%{transform:rotate(-5deg)}48%{transform:rotate(0)}70%{transform:rotate(4deg)}}
+@keyframes pglance{0%,38%,100%{transform:translateX(0)}44%,60%{transform:translateX(-1.8px)}68%,86%{transform:translateX(1.8px)}}
+@keyframes pwhisk{0%,90%,100%{transform:rotate(0)}94%{transform:rotate(3deg)}97%{transform:rotate(-2deg)}}
+@keyframes pswish{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(14deg)}}
+.pet .head{transform-box:view-box;transform-origin:50px 64px;animation:phead 9s ease-in-out infinite}
+.pet.cat .head{animation-duration:11s}
+.pet .gl{animation:pglance 7s ease-in-out infinite}
+.pet.cat .tail{animation:pswish 2.8s ease-in-out infinite}
+.pet .wh{transform-box:fill-box;transform-origin:0% 50%;animation:pwhisk 6s ease-in-out infinite}
+/* gestos ocasionales */
+.pet .bub{position:absolute;left:50%;bottom:calc(100% - 2px);transform:translate(-50%,6px) scale(.6);opacity:0;background:#FFFDF8;color:#5A4636;border:1.6px solid #5A4636;border-radius:11px;padding:1px 7px;font:700 10.5px 'Instrument Sans',system-ui,sans-serif;white-space:nowrap;transition:opacity .25s,transform .45s cubic-bezier(.34,1.5,.64,1)}
+.pet.say .bub{opacity:1;transform:translate(-50%,-1px) scale(1)}
+.pet .heart{position:absolute;left:50%;top:8px;color:#E5707A;font-size:15px;line-height:1;opacity:0}
+.pet.g-heart .heart{animation:gheart 1.9s ease-out}
+.pet.g-hop{animation:ghop 1.2s ease}
+.pet.g-stretch .a{transform-origin:50% 100%;animation:gstretch 2.2s ease-in-out}
+.pet.g-sigh .z{transform-origin:50% 100%;animation:gsigh 2.4s ease-in-out}
+@keyframes ghop{0%,100%{transform:none}18%{transform:translateY(-10px)}34%{transform:none}52%{transform:translateY(-7px)}68%{transform:none}}
+@keyframes gstretch{0%,100%{transform:none}30%{transform:scale(1.1,.88)}60%{transform:scale(.94,1.12)}80%{transform:scale(1.02,.98)}}
+@keyframes gsigh{0%,100%{transform:none}40%{transform:scale(1.05,1.13)}}
+@keyframes gheart{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-22px) scale(1)}}
 @keyframes pwag{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(18deg)}}
 @keyframes psway{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(10deg)}}
 @keyframes pblink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
@@ -65,7 +86,7 @@ const DOG_AWAKE=
  P('M23 43 Q21 22 50 21 Q79 22 77 43 Q77 61 50 62 Q23 61 23 43 Z',CR)+
  '<ellipse cx="62" cy="39" rx="9.5" ry="9" fill="'+CA+'" opacity=".9"/>'+
  '<g class="ear">'+P('M25 28 Q9 31 12 53 Q23 57 29 42 Z',CA)+'</g><g class="ear" style="animation-delay:2.4s">'+P('M75 28 Q91 31 88 53 Q77 57 71 42 Z',CA)+'</g>'+
- '<g class="eyes">'+dot(39,42,2.6,3.1)+dot(61,42,2.6,3.1)+'</g>'+
+ '<g class="eyes"><g class="gl">'+dot(39,42,2.6,3.1)+dot(61,42,2.6,3.1)+'</g></g>'+
  '<ellipse cx="50" cy="50" rx="5.8" ry="4.2" fill="'+INK+'"/>'+
  '<path class="ln" d="M50 54 Q50 59.5 44.5 59.5 M50 54 Q50 59.5 55.5 59.5" stroke-width="2"/>'+
  '<path d="M47.5 59.5 Q50 68 52.5 59.5 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.6" stroke-linejoin="round"/>'+
@@ -87,18 +108,22 @@ const DOG_SLEEP=
 
 // ---------- gatito despierto (de noche) ----------
 const CAT_AWAKE=
- '<g class="tail">'+tube('M68 84 Q93 86 91 64 Q90 54 83 57',CT,7)+'</g>'+
+ '<g class="tail">'+tube('M67 84 Q95 88 92 62 Q90 50 82 55',CT,8)+'<path d="M92 62 Q90 50 82 55" fill="none" stroke="'+CT2+'" stroke-width="3.4" stroke-linecap="round" opacity=".9"/></g>'+
  '<g class="body">'+
- P('M31 87 Q27 65 50 60 Q73 65 69 87 Q50 91 31 87 Z',CT)+E(50,78,9,9,WH)+E(41,87,8,4.3,WH)+E(59,87,8,4.3,WH)+
- '<g class="ear">'+P('M23 40 L24 13 Q36 15 47 28 Z',CT)+'<path d="M28 31 L28 20 L37 26 Z" fill="'+PK+'" opacity=".8"/></g>'+
- '<g class="ear" style="animation-delay:4.2s">'+P('M77 40 L76 13 Q64 15 53 28 Z',CT)+'<path d="M72 31 L72 20 L63 26 Z" fill="'+PK+'" opacity=".8"/></g>'+
- P('M22 46 Q20 28 50 27 Q80 28 78 46 Q78 62 50 63 Q22 62 22 46 Z',CT)+
- '<path d="M44 29 L44 35 M50 28 L50 34 M56 29 L56 35" fill="none" stroke="'+CT2+'" stroke-width="2.6" stroke-linecap="round"/>'+
- E(50,54,10.5,7.2,WH)+
- '<g class="eyes">'+dot(37,43,2.8,3.4)+dot(63,43,2.8,3.4)+'</g>'+
- '<path d="M47.5 49 L52.5 49 L50 52 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
- '<path class="ln" d="M50 52 Q50 56 46 56 M50 52 Q50 56 54 56" stroke-width="1.9"/>'+
- '<path class="ln" d="M38 53 L25 51 M38 56 L26 58.5 M62 53 L75 51 M62 56 L74 58.5" stroke-width="1.4"/>'+
+ P('M29 88 Q24 64 50 60 Q76 64 71 88 Q50 92 29 88 Z',CT)+E(50,79,9.5,9.5,WH)+E(40,88,8.5,4.6,WH)+E(60,88,8.5,4.6,WH)+
+ '<path d="M30 74 L36 75 M31 80 L37 80 M70 74 L64 75 M69 80 L63 80" fill="none" stroke="'+CT2+'" stroke-width="2.2" stroke-linecap="round"/>'+
+ '</g>'+
+ '<g class="head">'+
+ '<g class="ear">'+P('M24 35 Q17 12 26 8 Q39 11 47 22 Z',CT)+'<path d="M27 28 Q24 17 28 14 Q35 16 40 23 Z" fill="'+PK+'" opacity=".85"/></g>'+
+ '<g class="ear" style="animation-delay:4.2s">'+P('M76 35 Q83 12 74 8 Q61 11 53 22 Z',CT)+'<path d="M73 28 Q76 17 72 14 Q65 16 60 23 Z" fill="'+PK+'" opacity=".85"/></g>'+
+ P('M21 42 Q19 21 50 20 Q81 21 79 42 Q85 48 78 53 Q80 60 72 61 Q62 67 50 66 Q38 67 28 61 Q20 60 22 53 Q15 48 21 42 Z',CT)+
+ '<path d="M45 22 L45 29 M50 21 L50 28 M55 22 L55 29" fill="none" stroke="'+CT2+'" stroke-width="2.8" stroke-linecap="round"/>'+
+ E(50,56,11.5,8,WH)+
+ '<ellipse cx="31" cy="53" rx="5" ry="3.2" fill="'+PK+'" opacity=".55"/><ellipse cx="69" cy="53" rx="5" ry="3.2" fill="'+PK+'" opacity=".55"/>'+
+ '<g class="eyes"><g class="gl">'+dot(36,45,3.2,4)+dot(64,45,3.2,4)+'</g></g>'+
+ '<path d="M47 51 L53 51 L50 54.2 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
+ '<path class="ln" d="M50 54.2 Q50 59 45.5 58.6 M50 54.2 Q50 59 54.5 58.6" stroke-width="2"/>'+
+ '<g class="wh"><path class="ln" d="M38 55 L24 52.5 M38 58 L25 61.5" stroke-width="1.4"/></g><g class="wh" style="animation-delay:.2s"><path class="ln" d="M62 55 L76 52.5 M62 58 L75 61.5" stroke-width="1.4"/></g>'+
  '</g>';
 
 // ---------- gatito dormido (de día) ----------
@@ -119,7 +144,8 @@ const mk=(cls,a,z)=>{
   const w=document.createElement('div');w.className='pet '+cls;w.setAttribute('aria-hidden','true');
   const A=document.createElement('div');A.className='a';A.append(sv(a));
   const Z=document.createElement('div');Z.className='z';Z.append(sv(z));
-  w.append(A,Z);return w};
+  const bb=document.createElement('span');bb.className='bub';const hh=document.createElement('span');hh.className='heart';hh.textContent='♥';
+  w.append(A,Z,bb,hh);return w};
 
 // El que está despierto vive en la pantalla principal (Buscar); el que duerme, en Descubrir.
 // De día está despierto el perro; de noche, el gato. Al amanecer o anochecer se "relevan".
@@ -160,6 +186,22 @@ const nowN=night();
 if(prev&&(prev==='night')!==nowN){setPlain(!nowN);host.classList.toggle('off',off());setTimeout(()=>{host.classList.add('on');setTimeout(()=>swap(night()),1400)},500)}
 else{setPlain(nowN);host.classList.toggle('off',off());setTimeout(()=>host.classList.add('on'),600)}
 setInterval(sync,30000);
+// de vez en cuando, un gestito
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function gesture(){
+  if(busy||host.classList.contains('off')||document.hidden)return;
+  const v=host.dataset.v,slot=v==='buscar'?sM:v==='descubrir'?sR:null;if(!slot)return;
+  const pet=[...slot.children].find(p=>!p.classList.contains('gone'));if(!pet)return;
+  const dog=pet.classList.contains('dog'),sl=pet.classList.contains('sleep'),bub=pet.querySelector('.bub');
+  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','woof']):pick(['stretch','miau','heart','miau']);
+  let cls='',txt='',ms=2300;
+  if(g==='hop'){cls='g-hop';ms=1300}else if(g==='stretch'){cls='g-stretch';ms=2300}else if(g==='sigh'){cls='g-sigh';ms=2500}else if(g==='heart'){cls='g-heart';ms=2000}
+  else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau~';ms=2200}else if(g==='dream'){cls='say';txt=dog?'🦴':'🐟';ms=2800}
+  if(txt)bub.textContent=txt;cls.split(' ').forEach(c=>pet.classList.add(c));
+  setTimeout(()=>cls.split(' ').forEach(c=>pet.classList.remove(c)),ms)}
+(function loop(){setTimeout(()=>{try{gesture()}catch(e){}loop()},14000+Math.random()*26000)})();
+// primer gesto temprano para que se note
+setTimeout(()=>{try{gesture()}catch(e){}},7000);
 try{new MutationObserver(sync).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
 window.KPets={refresh:sync,set:v=>{try{localStorage.setItem(KEY,v?'0':'1')}catch(e){}sync();host.classList.toggle('off',off())},on:()=>!off()};
 
