@@ -8,14 +8,14 @@ const NS='http://www.w3.org/2000/svg';
 
 const css=document.createElement('style');
 css.textContent=`
-:root{--pk-ink:#2B2A33;--pk-cream:#FFF4E2;--pk-car:#F2D3AE;--pk-cat:#FFE0C2;--pk-cat2:#EBB88A;--pk-white:#FFFBF4;--pk-pink:#FAC3C3;--pk-ld:#2B2A33;--pk-lc:#2B2A33;--pk-muz:#FFFBF4}
-:root[data-theme="dark"]{--pk-ink:#17151C;--pk-cream:#EADFCB;--pk-car:#D2B18C;--pk-cat:#E6CBAE;--pk-cat2:#C79F78;--pk-white:#F0E8DA;--pk-ld:#17151C;--pk-lc:#17151C;--pk-muz:#F0E8DA}
+:root{--pk-ink:#1E1E24;--pk-fill:#FFFFFF;--pk-pink:#F6B9B9}
+:root[data-theme="dark"]{--pk-ink:#14131A;--pk-fill:#F1E9DB;--pk-pink:#E8A9A9}
 .pets{position:fixed;left:0;right:0;bottom:calc(73px + env(safe-area-inset-bottom,0px));height:0;z-index:7;pointer-events:none}
 .pets.off{display:none}
 .pets .slot{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:opacity .5s ease}
 .pets[data-v="buscar"] .slot.main,.pets[data-v="descubrir"] .slot.rest{opacity:1}
-.pet{position:absolute;bottom:8px;left:calc(10% - 22px);width:72px;height:66px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
-.slot.rest .pet{left:auto;right:calc(10% - 22px)}
+.pet{position:absolute;bottom:-2px;left:calc(10% - 24px);width:78px;height:78px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
+.slot.rest .pet{left:auto;right:calc(10% - 24px)}
 .pets.on .pet{opacity:1;transform:none}
 .pets.on .pet.gone{opacity:0;transform:translateY(6px)}
 .pet.dozing{animation:pdoze 1s ease both}.pet.waking{animation:pwake .9s cubic-bezier(.34,1.4,.64,1) both}
@@ -26,7 +26,6 @@ css.textContent=`
 .pet svg{width:100%;height:100%;overflow:visible}
 .pet .z svg{transform:translateY(-9%)}
 .pet .ln{stroke:var(--pk-ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
-.pet.dog .ln{stroke:var(--pk-ld)}.pet.cat .ln{stroke:var(--pk-lc)}
 .pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pwag 1.7s ease-in-out infinite}
 .pet.cat .tail{animation:psway 4s ease-in-out infinite}
 .pet .eyes{transform-box:fill-box;transform-origin:center;animation:pblink 5.5s infinite}
@@ -41,7 +40,7 @@ css.textContent=`
 @keyframes pglance{0%,38%,100%{transform:translateX(0)}44%,60%{transform:translateX(-1.8px)}68%,86%{transform:translateX(1.8px)}}
 @keyframes pwhisk{0%,90%,100%{transform:rotate(0)}94%{transform:rotate(3deg)}97%{transform:rotate(-2deg)}}
 @keyframes pswish{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(14deg)}}
-.pet .head{transform-box:view-box;transform-origin:50px 60px;animation:phead 9s ease-in-out infinite}
+.pet .head{transform-box:view-box;transform-origin:48px 56px;animation:phead 9s ease-in-out infinite}
 .pet.cat .head{animation-duration:11s}
 .pet .gl{animation:pglance 7s ease-in-out infinite}
 .pet.cat .tail{animation:pswish 2.8s ease-in-out infinite}
@@ -60,7 +59,7 @@ css.textContent=`
 @keyframes gheart{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-22px) scale(1)}}
 @keyframes pwave{0%,62%,100%{transform:rotate(0)}68%{transform:rotate(-16deg)}76%{transform:rotate(10deg)}84%{transform:rotate(-14deg)}92%{transform:rotate(6deg)}}
 @keyframes gwave{0%,100%{transform:rotate(0)}12%{transform:rotate(-18deg)}28%{transform:rotate(12deg)}44%{transform:rotate(-18deg)}60%{transform:rotate(12deg)}76%{transform:rotate(-14deg)}90%{transform:rotate(4deg)}}
-.pet .arm{transform-box:view-box;transform-origin:64px 73px}
+.pet .arm{transform-box:view-box;transform-origin:72px 66px}
 .pet.dog .a .arm{animation:pwave 8s ease-in-out infinite}
 .pet.cat .a .arm{opacity:0}
 .pet.g-wave .arm{opacity:1!important;animation:gwave 2s ease-in-out!important}
@@ -75,76 +74,72 @@ css.textContent=`
 `;
 document.head.append(css);
 
-const sv=h=>{const d=document.createElement('div');d.innerHTML='<svg xmlns="'+NS+'" viewBox="0 0 100 92" stroke-width="2.7">'+h+'</svg>';return d.firstChild};
-const CR='var(--pk-cream)',CA='var(--pk-car)',CT='var(--pk-cat)',CT2='var(--pk-cat2)',WH='var(--pk-white)',PK='var(--pk-pink)',INK='var(--pk-ink)';
-const sh=(tag,at,fill)=>'<g><'+tag+' '+at+' fill="'+fill+'" stroke="none" transform="translate(1 .8)"/><'+tag+' class="ln" '+at+'/></g>';
-const E=(cx,cy,rx,ry,fill)=>sh('ellipse','cx="'+cx+'" cy="'+cy+'" rx="'+rx+'" ry="'+ry+'"',fill);
-const P=(d,fill)=>sh('path','d="'+d+'"',fill);
-const tube=(d,fill,w)=>'<path class="ln" d="'+d+'" stroke-width="'+(w+5.4)+'"/><path d="'+d+'" fill="none" stroke="'+fill+'" stroke-width="'+w+'" stroke-linecap="round"/>';
-const dot=(x,y,rx,ry)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" fill="'+INK+'"/>';
-const shut=(x,y,w)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+INK+'" stroke-width="2.2" stroke-linecap="round"/>';
-const blush=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="5.5" ry="3.4" fill="'+PK+'" opacity=".7"/>';
-// patita levantada con almohadilla (saluda)
-const arm=f=>'<g class="arm">'+tube('M64 73 Q87 73 88 57',f,7)+'<ellipse cx="88" cy="51" rx="6.2" ry="5.6" fill="'+f+'" stroke="none"/><path class="ln" d="M82 52 Q82 45 88 45 Q94 45 94 52" stroke-width="2.7"/>'+
-  '<ellipse cx="88.3" cy="53" rx="2.7" ry="2.2" fill="'+INK+'"/><circle cx="84.6" cy="49.4" r="1.1" fill="'+INK+'"/><circle cx="88.2" cy="47.8" r="1.1" fill="'+INK+'"/><circle cx="91.8" cy="49.4" r="1.1" fill="'+INK+'"/></g>';
+const sv=h=>{const d=document.createElement('div');d.innerHTML='<svg xmlns="'+NS+'" viewBox="0 -5 100 105" stroke-width="1.9">'+h+'</svg>';return d.firstChild};
+const F='var(--pk-fill)',PK='var(--pk-pink)',INK='var(--pk-ink)';
+// línea limpia con relleno blanco, estilo dibujo simple
+const P=(d,x)=>'<path class="ln" d="'+d+'" style="fill:'+F+'" '+(x||'')+'/>';
+const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/>';
+const tube=(d,w)=>'<path class="ln" d="'+d+'" stroke-width="'+(w+3.6)+'"/><path d="'+d+'" fill="none" stroke="'+F+'" stroke-width="'+w+'" stroke-linecap="round"/>';
+const eye=(x,y,r)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="1.75" ry="2.65" fill="'+INK+'" transform="rotate('+r+' '+x+' '+y+')"/>';
+const shut=(x,y,w)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+INK+'" stroke-width="1.9" stroke-linecap="round"/>';
+const nose=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="2.5" ry="1.7" fill="'+INK+'"/>';
+// patita levantada con almohadilla
+const ARM='<g class="arm">'+P('M70 59 C79 58 85 53 85.5 46 C86 39 94.5 39.5 95 46.5 C95.5 54 87 66 77 72 L72 74 Z')+
+  '<ellipse cx="90" cy="47.5" rx="2.9" ry="2.4" fill="'+INK+'"/><circle cx="86.4" cy="43.6" r="1.15" fill="'+INK+'"/><circle cx="90" cy="42" r="1.15" fill="'+INK+'"/><circle cx="93.4" cy="43.8" r="1.15" fill="'+INK+'"/></g>';
+const BODY='M32 48 C21 56 16 70 19 82 C21 93 30 99 42 99.5 C54 100 66 99 71 92 C75 86 74 76 73 66 C72 58 71 52 68 48 Z';
 
 // ---------- perrito despierto ----------
 const DOG_AWAKE=
- '<g class="tail">'+P('M30 82 Q14 82 12 70 Q22 66 32 74 Z',CR)+'</g>'+
- '<g class="body">'+P('M32 58 Q26 74 30 85 Q44 91 60 89 Q71 88 71 77 Q69 66 66 58 Z',CR)+
- '<path class="ln" d="M46 72 Q44 82 48 89 M56 72 Q60 81 56 89" stroke-width="2.3"/></g>'+
+ '<g class="tail">'+P('M19 82 C10 84 3 80 2 73 C9 70 16 73 19 78 Z')+'</g>'+
+ '<g class="body">'+P(BODY)+L('M46 75 C45 84 47 91 51 98')+L('M34 85 C33 91 36 96 40 99')+'</g>'+
  '<g class="head">'+
- P('M25 24 Q8 18 7 38 Q7 56 19 54 Q27 51 27 38 Z',CA)+P('M75 24 Q92 18 93 38 Q93 56 81 54 Q73 51 73 38 Z',CA)+
- P('M20 40 Q20 15 50 15 Q80 15 80 40 Q80 61 50 61 Q20 61 20 40 Z',CR)+
- '<path class="ln" d="M44 12 L43 6 M50 11 L50 4.5 M56 12 L58 6" stroke-width="2.2"/>'+
- blush(31,50)+blush(69,50)+
- '<g class="eyes"><g class="gl">'+dot(37,40,2.7,3.5)+dot(63,40,2.7,3.5)+'</g></g>'+
- '<ellipse cx="50" cy="47.5" rx="3.8" ry="2.5" fill="'+INK+'"/>'+
- '</g>'+arm(CR);
+ '<g class="ear">'+P('M28 12 C22 8 14 10 9 17 C5 24 6 34 10 39 C14 43 20 41 22.5 36 C24 32 24 26 24.5 22 Z')+'</g>'+
+ '<g class="ear" style="animation-delay:2.4s">'+P('M64 8 C72 6 80 10 82 18 C84 26 81 33 77 37 C73 40 70 36 70.5 31 C71 26 69 22 67 20 Z')+'</g>'+
+ P('M22 34 C21 14 38 5 52 6 C66 7 74 18 73 36 C72 52 62 58 48 58 C32 58 23 50 22 34 Z')+
+ L('M42 4 L40.5 -1.5 M48 3.5 L48.5 -2.5 M53.5 4.5 L56 -.5')+
+ '<g class="eyes"><g class="gl">'+eye(41.6,38.5,8)+eye(61.4,36.5,8)+'</g></g>'+nose(54.8,45)+
+ '</g>'+ARM;
 
 // ---------- perrito dormido ----------
 const DOG_SLEEP=
  '<g class="body">'+
- '<g class="tail">'+P('M82 78 Q96 74 94 62 Q86 62 80 70 Z',CR)+'</g>'+
- P('M24 70 Q20 58 44 56 Q74 54 84 66 Q90 84 66 88 Q40 91 26 84 Q20 80 24 70 Z',CR)+
- '<path class="ln" d="M60 88 Q62 80 58 74" stroke-width="2.2"/>'+
- P('M14 56 Q2 58 3 74 Q4 86 17 82 Q22 78 22 66 Z',CA)+
- P('M12 66 Q10 52 32 52 Q52 52 52 70 Q52 86 32 86 Q12 86 12 66 Z',CR)+
- '<path class="ln" d="M28 50 L27 45 M33 49 L33 44 M38 50 L40 45" stroke-width="2.1"/>'+
- blush(21,76)+shut(27,68,4.4)+shut(43,68,4.4)+
- '<ellipse cx="35" cy="75" rx="3.6" ry="2.4" fill="'+INK+'"/>'+
+ '<g class="tail">'+P('M83 82 C92 84 99 80 100 73 C93 70 86 73 83 78 Z')+'</g>'+
+ P('M12 82 C10 66 26 58 46 58 C68 58 84 66 85 80 C85 92 76 98 56 98 L30 98 C18 98 13 92 12 82 Z')+
+ L('M66 98 C68 90 66 84 62 80')+
+ P('M8 56 C0 58 -2 72 3 82 C7 88 14 86 17 80 C19 74 18 64 16 58 Z')+
+ P('M10 74 C8 58 22 50 38 51 C52 52 58 62 56 76 C54 90 40 94 26 92 C16 90 11 84 10 74 Z')+
+ L('M28 49 L27 44 M34 48 L34.5 43 M40 49.5 L42.5 44.5')+
+ shut(24,68,4.2)+shut(41,69,4.2)+nose(36,77)+
  '</g>'+
- '<text class="zz" x="56" y="46">z</text><text class="zz" x="63" y="37">z</text><text class="zz" x="70" y="28">Z</text>';
+ '<text class="zz" x="58" y="46">z</text><text class="zz" x="65" y="37">z</text><text class="zz" x="72" y="28">Z</text>';
 
 // ---------- gatito despierto ----------
 const CAT_AWAKE=
- '<g class="tail">'+tube('M68 86 Q95 88 92 62 Q90 50 82 54',CT,6)+'</g>'+
- '<g class="body">'+P('M32 58 Q26 74 30 85 Q44 91 60 89 Q71 88 71 77 Q69 66 66 58 Z',CT)+'<ellipse cx="50" cy="79" rx="8.5" ry="8" fill="'+WH+'"/>'+
- '<path class="ln" d="M46 76 Q44 84 48 89 M54 76 Q58 84 54 89" stroke-width="2.2"/></g>'+
+ '<g class="tail">'+tube('M20 90 C2 96 -3 74 8 66 C13 62 19 66 16 71',6)+'</g>'+
+ '<g class="body">'+P(BODY)+L('M46 75 C45 84 47 91 51 98')+L('M34 85 C33 91 36 96 40 99')+'</g>'+
  '<g class="head">'+
- '<g class="ear">'+P('M22 36 Q16 14 22 8 Q36 10 46 22 Z',CT)+'<path class="ln" d="M26 28 Q25 19 28 15" stroke-width="1.8"/></g>'+
- '<g class="ear" style="animation-delay:4.2s">'+P('M78 36 Q84 14 78 8 Q64 10 54 22 Z',CT)+'<path class="ln" d="M74 28 Q75 19 72 15" stroke-width="1.8"/></g>'+
- P('M19 42 Q18 20 50 19 Q82 20 81 42 Q81 62 50 62 Q19 62 19 42 Z',CT)+
- '<path class="ln" d="M45 21 L45 27 M50 20 L50 26 M55 21 L55 27" stroke-width="2.1"/>'+
- blush(30,52)+blush(70,52)+
- '<g class="eyes"><g class="gl">'+dot(37,42,2.7,3.5)+dot(63,42,2.7,3.5)+'</g></g>'+
- '<path d="M47.6 48 L52.4 48 L50 50.8 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.5" stroke-linejoin="round"/>'+
- '<g class="wh"><path class="ln" d="M33 49 L20 46.5 M33 52 L21 55" stroke-width="1.5"/></g><g class="wh" style="animation-delay:.25s"><path class="ln" d="M67 49 L80 46.5 M67 52 L79 55" stroke-width="1.5"/></g>'+
- '</g>'+arm(CT);
+ '<g class="ear">'+P('M27 20 C25 12 24 6 25 2 C33 4 41 8 46 12 Z')+L('M29 14 C29 10 29 8 30 6',1.5)+'</g>'+
+ '<g class="ear" style="animation-delay:4.2s">'+P('M69 20 C71 12 72 6 71 2 C63 4 55 8 50 12 Z')+L('M67 14 C67 10 67 8 66 6',1.5)+'</g>'+
+ P('M22 34 C21 14 38 7 50 7 C66 7 74 18 73 36 C72 52 62 58 48 58 C32 58 23 50 22 34 Z')+
+ L('M44 9 L44.5 15 M50 8 L50 14.5 M56 9 L55.5 15')+
+ '<g class="eyes"><g class="gl">'+eye(40.5,38.5,6)+eye(61.5,37,6)+'</g></g>'+
+ '<path d="M52.6 43.6 L57.6 43.6 L55.1 46.6 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
+ '<g class="wh">'+L('M36 46 L24 43.5 M36 49 L25 52',1.4)+'</g><g class="wh" style="animation-delay:.25s">'+L('M72 45 L84 42.5 M72 48 L83 51',1.4)+'</g>'+
+ '</g>'+ARM;
 
 // ---------- gatito dormido ----------
 const CAT_SLEEP=
  '<g class="body">'+
- P('M12 74 Q12 56 50 56 Q88 56 88 74 Q88 88 50 88 Q12 88 12 74 Z',CT)+
- '<path class="ln" d="M56 58 Q60 65 57 72 M67 59 Q71 66 68 74 M77 62 Q80 69 77 76" stroke-width="2.2"/>'+
- tube('M80 84 Q54 95 24 87',CT,6)+
- P('M14 60 L13 44 Q22 44 31 53 Z',CT)+P('M42 54 L50 43 Q54 46 54 60 Z',CT)+
- P('M12 70 Q12 52 33 52 Q54 52 54 70 Q54 86 33 86 Q12 86 12 70 Z',CT)+
- '<path class="ln" d="M28 54 L28 49 M33 53 L33 48 M38 54 L38 49" stroke-width="2.1"/>'+
- blush(21,77)+shut(26,70,4.2)+shut(41,70,4.2)+
- '<path d="M31 75 L36 75 L33.5 77.6 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
+ P('M8 78 C8 62 26 56 50 56 C76 56 92 64 92 78 C92 92 76 98 50 98 C24 98 8 92 8 78 Z')+
+ L('M58 58 C62 66 60 74 56 80 M70 60 C74 68 72 77 68 82 M81 64 C84 71 82 79 78 84')+
+ tube('M84 90 C60 102 30 100 16 90',6)+
+ P('M14 62 L13 44 C20 45 28 50 32 54 Z')+P('M44 54 C48 49 52 46 55 43 C57 50 57 58 55 64 Z')+
+ P('M10 74 C8 58 22 50 36 51 C52 52 58 62 56 76 C54 90 40 94 26 92 C16 90 11 84 10 74 Z')+
+ L('M27 50 L27 45 M33 49 L33 44 M39 50 L40.5 45')+
+ shut(24,68,4.2)+shut(41,69,4.2)+
+ '<path d="M32.5 75 L38 75 L35.2 78.2 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
  '</g>'+
- '<text class="zz" x="58" y="46">z</text><text class="zz" x="65" y="37">z</text><text class="zz" x="72" y="28">Z</text>';
+ '<text class="zz" x="60" y="42">z</text><text class="zz" x="67" y="33">z</text><text class="zz" x="74" y="24">Z</text>';
 
 const mk=(cls,a,z)=>{
   const w=document.createElement('div');w.className='pet '+cls;w.setAttribute('aria-hidden','true');

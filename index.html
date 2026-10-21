@@ -338,8 +338,8 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v132'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.22 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v133'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.23 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra
 (function(){try{
@@ -659,11 +659,11 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=132"></script>
-<script src="discover.js?v=132"></script>
-<script src="extras.js?v=132"></script>
-<script src="pets.js?v=132"></script>
-<script type="module" src="social.js?v=132"></script>
+<script src="reader.js?v=133"></script>
+<script src="discover.js?v=133"></script>
+<script src="extras.js?v=133"></script>
+<script src="pets.js?v=133"></script>
+<script type="module" src="social.js?v=133"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
