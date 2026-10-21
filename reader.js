@@ -12,17 +12,38 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.
 const THEMES={auto:{name:'Automático'},claro:{bg:'#F7F6F1',fg:'#161A22',name:'Claro'},sepia:{bg:'#f1e6cf',fg:'#4b3b2a',name:'Sepia'},noche:{bg:'#12151C',fg:'#d9dee2',name:'Noche'},negro:{bg:'#000000',fg:'#c4c9cd',name:'Negro'}};
 const FONTS={clasica:{name:'Clásica',css:'Georgia,"Iowan Old Style",serif'},literata:{name:'Literata',css:'Literata,Georgia,serif'},merri:{name:'Merriweather',css:'Merriweather,Georgia,serif'},inter:{name:'Moderna',css:'Inter,system-ui,sans-serif'},atkinson:{name:'Accesible',css:'"Atkinson Hyperlegible",Inter,sans-serif'},lora:{name:'Lora',css:'Lora,Georgia,serif'},garamond:{name:'Garamond',css:'"EB Garamond",Garamond,Georgia,serif'},crimson:{name:'Crimson',css:'"Crimson Pro",Georgia,serif'},source:{name:'Source Serif',css:'"Source Serif 4",Georgia,serif'},bask:{name:'Baskerville',css:'"Libre Baskerville",Baskerville,Georgia,serif'},bitter:{name:'Bitter',css:'Bitter,Georgia,serif'},nunito:{name:'Nunito',css:'Nunito,system-ui,sans-serif'},lexend:{name:'Lexend',css:'Lexend,system-ui,sans-serif'}};
 const HL={amarillo:'#f5d142',verde:'#7fd18b',azul:'#7db7f0',rosa:'#f29bb3'};
-const prefs=()=>Object.assign({mode:'paginated',size:110,theme:'auto',font:'clasica',lh:1.6,margin:18,just:false},store.get('kr_cfg',{}));
+const prefs=()=>Object.assign({mode:'paginated',size:110,theme:'auto',font:'clasica',lh:1.6,margin:18,just:false,dim:0,warm:0},store.get('kr_cfg',{}));
 const setPref=(k,v)=>{const q=prefs();q[k]=v;store.set('kr_cfg',q)};
 const resolveTheme=()=>{const t=prefs().theme;if(t!=='auto')return THEMES[t]||THEMES.claro;const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);return dark?THEMES.noche:THEMES.claro};
 const lib=()=>store.get('kr_lib',[]);
 const saveLib=l=>store.set('kr_lib',l.slice(0,40));
+async function quoteCard(text,title,author){
+  try{
+    const W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+    const g=x.createLinearGradient(0,0,W,H);g.addColorStop(0,'#3E5287');g.addColorStop(1,'#232B45');x.fillStyle=g;x.fillRect(0,0,W,H);
+    x.fillStyle='rgba(255,255,255,.07)';x.beginPath();x.arc(W-120,160,300,0,7);x.fill();x.beginPath();x.arc(80,H-60,260,0,7);x.fill();
+    x.fillStyle='rgba(217,197,139,.95)';x.font='bold 220px Georgia,serif';x.fillText('“',80,300);
+    let t=text.replace(/\s+/g,' ').trim();if(t.length>380)t=t.slice(0,377).replace(/\s+\S*$/,'')+'…';
+    const fs=t.length<110?68:t.length<220?56:t.length<320?47:41,lh=Math.round(fs*1.38),maxW=W-200;
+    x.font='italic '+fs+'px Newsreader,Georgia,serif';x.fillStyle='#FFFFFF';
+    const words=t.split(' '),lines=[];let ln='';words.forEach(w=>{const tt=ln?ln+' '+w:w;if(x.measureText(tt).width>maxW&&ln){lines.push(ln);ln=w}else ln=tt});if(ln)lines.push(ln);
+    let y=Math.max(380,(H-lines.length*lh)/2-30);lines.forEach(l=>{x.fillText(l,100,y);y+=lh});
+    x.fillStyle='rgba(217,197,139,.95)';x.fillRect(100,H-250,90,4);
+    x.fillStyle='#FFFFFF';x.font='600 40px Newsreader,Georgia,serif';x.fillText(String(title||'').slice(0,40),100,H-190);
+    x.fillStyle='rgba(255,255,255,.72)';x.font='32px Instrument Sans,system-ui,sans-serif';x.fillText(String(author||'').slice(0,46),100,H-140);
+    x.fillStyle='rgba(255,255,255,.5)';x.font='600 28px Instrument Sans,system-ui,sans-serif';x.fillText('Kinderly · leer es un placer',100,H-70);
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));if(!blob)throw 0;
+    const f=new File([blob],'cita-kinderly.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],title:'Cita de '+title});return}catch(e){if(e&&e.name==='AbortError')return}}
+    const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='cita-kinderly.png';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),3000);say('Imagen descargada','ok');
+  }catch(e){say('No pude armar la imagen','err')}
+}
 function fixOrphans(d){try{const bl=[...d.body.querySelectorAll('p')];let n=0;
   for(let i=1;i<bl.length;i++){const p=bl[i],q=bl[i-1];if(p.parentNode!==q.parentNode)continue;const t=p.textContent.trim(),qt=q.textContent.trim();
     if(!t||!qt||!/^[a-záéíóúñü]/.test(t)||/[.!?…:»”"')\]]$/.test(qt)||qt.length<30)continue;
     if(t.length<=60||q.dataset.m){q.append(' ');while(p.firstChild)q.append(p.firstChild);q.dataset.m='1';p.remove();bl[i]=q;n++}}
   return n}catch(e){return 0}}
-window.__krFix=fixOrphans;
+window.__krFix=fixOrphans;window.__krQuote=(t,a,b)=>quoteCard(t,a,b);
 const idOf=u=>String(u).replace(/[?#].*$/,'');
 const hlKey=id=>'kr_hl_'+id;const bmKey=id=>'kr_bm_'+id;
 
@@ -123,6 +144,8 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr .kr-pb{overflow:auto;padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px))}'+
 '#kr .kr-tabs{display:flex;gap:6px;margin:4px 0 10px}#kr .kr-tabs button{flex:1;padding:0 4px;font-size:.82rem;min-width:0}'+
 '#kr .kr-panel{border-radius:22px 22px 0 0;max-height:68%}#kr .kr-panel::before{content:"";display:block;width:38px;height:4px;border-radius:2px;background:rgba(128,128,128,.4);margin:8px auto 0;flex:none}'+
+'#kr .kr-dim,#kr .kr-warm{position:absolute;inset:0;pointer-events:none;z-index:2}#kr .kr-warm{mix-blend-mode:multiply}#kr .ap-sl{display:flex;align-items:center;gap:10px;margin:2px 0 8px}#kr .ap-sl input{flex:1;accent-color:#5468A3}'+
+'#kr .kr-q{padding:12px 0;border-bottom:1px solid rgba(128,128,128,.2)}#kr .kr-q p{margin:0 0 6px;font:italic 1rem/1.5 var(--serif)}#kr .kr-q .row{margin:4px 0 0}'+
 '#kr .ap-s{margin:0 0 16px}#kr .ap-l{font:600 .68rem var(--sans);letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:0 2px 8px}'+
 '#kr .ap-size{display:flex;align-items:center;gap:10px;background:rgba(128,128,128,.12);border-radius:14px;padding:4px}#kr .ap-size .ap-st{flex:1;height:44px;border:0;border-radius:11px;background:rgba(128,128,128,.14);font-size:1.05rem}#kr .ap-pct{min-width:56px;text-align:center;font:600 .95rem var(--sans);font-variant-numeric:tabular-nums}'+
 '#kr .ap-fonts,#kr .ap-themes{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px;scroll-snap-type:x proximity}#kr .ap-fonts::-webkit-scrollbar,#kr .ap-themes::-webkit-scrollbar{display:none}'+
@@ -225,6 +248,8 @@ async function open(o){
     if(q.just){rules['p,li,blockquote']={'text-align':'justify'+im,'text-justify':'inter-word'+im,'hyphens':'auto'+im,'-webkit-hyphens':'auto'+im}}
     const nm='k_'+q.theme+'_'+q.font+'_'+q.lh+'_'+q.margin+'_'+t.bg+(q.just?'_j':'');rend.themes.register(nm,rules);rend.themes.select(nm);rend.themes.fontSize(q.size+'%');
   };
+  const dimEl=el('div','kr-dim'),warmEl=el('div','kr-warm');
+  const comfort=()=>{const q=prefs();dimEl.style.background='rgba(0,0,0,'+(q.dim/100)+')';warmEl.style.background='rgba(255,140,30,'+(q.warm/100*.5)+')'};
   const restyle=()=>{apply();style()};
 
   // ----- marcas (subrayados y notas) -----
@@ -297,9 +322,10 @@ async function open(o){
 
   // ----- panel de contenido (índice, marcas, búsqueda) -----
   const contents=(tab)=>panel('Contenido',b=>{
-    const tabs=el('div','kr-tabs'),body=el('div');const bms=()=>store.get(bmKey(id),[]);const names=[['toc','Índice'],['bm','Marcas'+(bms().length?' ('+bms().length+')':'')],['marks','Notas'+(marks.length?' ('+marks.length+')':'')],['find','Buscar']];
+    const tabs=el('div','kr-tabs'),body=el('div');const bms=()=>store.get(bmKey(id),[]);const names=[['toc','Índice'],['bm','Marcas'+(bms().length?' ('+bms().length+')':'')],['marks','Notas'+(marks.length?' ('+marks.length+')':'')],['q','Frases'],['find','Buscar']];
     const show=t=>{[...tabs.children].forEach((x,i)=>x.classList.toggle('sel',names[i][0]===t));body.textContent='';
       if(t==='toc'){if(!tocItems.length)body.append(el('p','','Este libro no tiene índice.'));tocItems.forEach(it=>{const x=btn('',()=>{rend.display(it.href);closePanel()},it.label,'li');x.append(document.createTextNode((it.d?'— ':'')+it.label));body.append(x)})}
+      if(t==='q'){body.append(el('p','hint2','Frases célebres de este libro o de su autor, tomadas de Wikiquote.'));const box=el('div');body.append(box);loadQuotes(box)}
       if(t==='bm'){const add=btn('🔖 Marcar esta página',()=>{const l=bms(),h=Math.round((pct||0)*100);if(l.some(x=>x.cfi===lastCfi)){say('Esta página ya está marcada','ok');return}let lab='';try{const lc=rend.currentLocation();const h0=lc&&lc.start&&lc.start.href;const t0=tocItems.filter(x=>x.href&&String(x.href).split('#')[0]===String(h0).split('#')[0])[0];lab=t0?t0.label:''}catch(e){}l.push({cfi:lastCfi,pct:pct||0,label:lab,t:Date.now()});store.set(bmKey(id),l);say('Marcador guardado','ok');contents('bm')});add.style.cssText='width:100%;margin-bottom:8px';body.append(add);
         const l=bms().slice().sort((a,c)=>a.pct-c.pct);if(!l.length)body.append(el('p','','Todavía no marcaste ninguna página. Tocá el botón para guardar tu lugar y volver cuando quieras.'));
         l.forEach(m=>{const x=btn('',()=>{rend.display(m.cfi);closePanel()},'Ir al marcador','li');x.append(document.createTextNode('🔖 '+Math.round(m.pct*100)+'%'+(m.label?' · '+m.label:'')));const s=el('small','',new Date(m.t).toLocaleDateString('es-AR'));x.append(s);const d=btn('Quitar',e=>{e.stopPropagation();store.set(bmKey(id),bms().filter(y=>y.cfi!==m.cfi));contents('bm')},'Quitar marcador','ghost');d.style.cssText='margin:4px 0 8px';body.append(x,d)})}
@@ -308,6 +334,32 @@ async function open(o){
     names.forEach(([t,n])=>tabs.append(btn(n,()=>show(t))));b.append(tabs,body);show(tab||'toc');
   });
   let tocItems=[];
+  const nq=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+  const wq=async p=>{const r=await fetch('https://es.wikiquote.org/w/api.php?'+new URLSearchParams(Object.assign({format:'json',origin:'*'},p)),{signal:AbortSignal.timeout(12000)});return r.json()};
+  const cleanQ=s=>s.replace(/<ref[^>]*>.*?<\/ref>/g,'').replace(/<[^>]+>/g,'').replace(/\[\[(?:[^\]|]*\|)?([^\]]*)\]\]/g,'$1').replace(/\{\{[^}]*\}\}/g,'').replace(/'{2,}/g,'').replace(/\s+/g,' ').trim();
+  async function findQuotes(){
+    const ti=String(o.title||entry().title||'').split(/[:(]/)[0].trim(),au=String(o.author||entry().author||'').split(/[;(]/)[0].trim();
+    const au2=au.includes(',')?au.split(',').slice(1).join(' ').trim()+' '+au.split(',')[0].trim():au;
+    const tries=[[ti,'book'],[au2,'author']].filter(x=>x[0]);
+    for(const [q,kind] of tries){
+      const s=await wq({action:'query',list:'search',srsearch:q,srlimit:4});const hits=(s.query&&s.query.search)||[];
+      const w=nq(q).split(' ').filter(x=>x.length>2);
+      const hit=hits.find(h=>{const t=nq(h.title);return w.length&&w.filter(x=>t.includes(x)).length>=Math.min(2,w.length)});
+      if(!hit)continue;
+      const d=await wq({action:'parse',page:hit.title,prop:'wikitext'});const wt=(d.parse&&d.parse.wikitext&&d.parse.wikitext['*'])||'';
+      const out=[];wt.split('\n').forEach(l=>{const m=/^\*(?![*:#])\s*(.+)$/.exec(l);if(!m)return;const t=cleanQ(m[1]).replace(/^[«"“]|[»"”]$/g,'').trim();if(t.length>=25&&t.length<=420&&!/^(http|Wikipedia|Commons)/i.test(t)&&!/^\w+:\s*$/.test(t))out.push(t)});
+      if(out.length)return {kind,page:hit.title,list:out.slice(0,40)};
+    }
+    return null;
+  }
+  async function loadQuotes(box){
+    const ck='kr_q_'+id;let r=store.get(ck,null);
+    if(!r){box.append(el('p','','Buscando frases…'));try{r=await findQuotes();if(r)store.set(ck,r)}catch(e){box.textContent='';box.append(el('p','','No pude consultar Wikiquote ahora. Probá de nuevo con conexión.'));return}}
+    box.textContent='';
+    if(!r){box.append(el('p','','No encontré frases publicadas de este libro ni de su autor.'));return}
+    box.append(el('p','note',r.kind==='book'?'De la página “'+r.page+'”.':'No hay página del libro; estas son frases de “'+r.page+'”.'));
+    r.list.forEach(q=>{const w=el('div','kr-q');w.append(el('p','',q));const a=el('div','row');a.append(btn('Copiar',()=>{try{navigator.clipboard.writeText('“'+q+'”');say('Copiado','ok')}catch(e){}},'Copiar frase','ghost'),btn('Imagen',()=>quoteCard(q,title,o.author||entry().author||''),'Compartir como imagen','ghost'));w.append(a);box.append(w)});
+  }
   const exportMarks=async dl=>{const ti=(o.title||entry().title||'Libro'),au=(o.author||entry().author||'');
     const md='# '+ti+(au?'\n_'+au+'_':'')+'\n\nMis subrayados en Kinderly\n\n'+marks.slice().sort((a,c)=>a.t-c.t).map(m=>'> '+m.text.replace(/\s+/g,' ').trim()+(m.note?'\n\nNota: '+m.note:'')).join('\n\n---\n\n')+'\n';
     if(dl){const u=URL.createObjectURL(new Blob([md],{type:'text/markdown'})),a=document.createElement('a');a.href=u;a.download=(ti.replace(/[^\wáéíóúñü ]+/gi,'').trim().slice(0,50)||'subrayados')+' - subrayados.md';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);say('Descargado','ok');return}
@@ -330,6 +382,8 @@ async function open(o){
     const tr=el('div','ap-themes');const tb={};
     Object.keys(THEMES).forEach(k=>{const T=THEMES[k];const x=btn('',()=>{setPref('theme',k);restyle();Object.keys(tb).forEach(j=>tb[j].classList.toggle('sel',j===k))},T.name,'ap-t');const c=el('span','ap-tc','Aa');if(k==='auto'){c.style.background='linear-gradient(135deg,#F7F6F1 50%,#12151C 50%)';c.style.color='#7d8590'}else{c.style.background=T.bg;c.style.color=T.fg}x.append(c,el('span','ap-tn',T.name));x.classList.toggle('sel',prefs().theme===k);tb[k]=x;tr.append(x)});
     sec('Tema',tr);
+    const sl=(label,key,max)=>{const w=el('div','ap-sl');const i=el('input');i.type='range';i.min=0;i.max=max;i.value=prefs()[key]||0;i.setAttribute('aria-label',label);i.oninput=()=>{setPref(key,+i.value);comfort()};w.append(el('span','',key==='dim'?'☀':'🔥'),i,el('span','',key==='dim'?'☾':'🌙'));return w};
+    const cf=el('div');cf.append(sl('Atenuar pantalla','dim',55),sl('Luz cálida','warm',100));sec('Brillo y luz cálida',cf);
     // segmentados
     const seg=(label,opts,get,set)=>{const r=el('div','ap-seg');const bs=[];opts.forEach(([txt,val])=>{const x=btn(txt,()=>{set(val);bs.forEach(y=>y[1].classList.toggle('sel',y[0]===val))});bs.push([val,x]);x.classList.toggle('sel',get()===val);r.append(x)});sec(label,r)};
     seg('Modo de lectura',[['Páginas','paginated'],['Scroll','scrolled']],()=>prefs().mode||'paginated',v=>{setPref('mode',v);if(remount)remount()});
@@ -476,9 +530,9 @@ async function open(o){
   // barra de selección
   const selBtns=()=>{selbar.textContent='';
     Object.keys(HL).forEach(c=>{const x=btn('',()=>{if(!curSel)return;addMark(curSel.cfi,curSel.text,c);try{curSel.contents.window.getSelection().removeAllRanges()}catch(e){}hideSel()},'Subrayar '+c,'dot');x.style.background=HL[c];selbar.append(x)});
-    selbar.append(btn('Nota',()=>{if(!curSel)return;const m=addMark(curSel.cfi,curSel.text,'amarillo');hideSel();editMark(m)}),btn('Definir',()=>{if(!curSel)return;const w=curSel.text,cx=curSel.ctx;hideSel();define(w,cx)}),btn('Copiar',()=>{if(curSel){try{navigator.clipboard.writeText(curSel.text);say('Copiado','ok')}catch(e){}}hideSel()}),btn('✕',hideSel,'Cancelar'));};
+    selbar.append(btn('Nota',()=>{if(!curSel)return;const m=addMark(curSel.cfi,curSel.text,'amarillo');hideSel();editMark(m)}),btn('Definir',()=>{if(!curSel)return;const w=curSel.text,cx=curSel.ctx;hideSel();define(w,cx)}),btn('Copiar',()=>{if(curSel){try{navigator.clipboard.writeText(curSel.text);say('Copiado','ok')}catch(e){}}hideSel()}),btn('Imagen',()=>{if(!curSel)return;const q=curSel.text;hideSel();quoteCard(q,title,o.author||entry().author||'')},'Compartir como imagen'),btn('✕',hideSel,'Cancelar'));};
   selBtns();
-  root.append(top,view,bot,selbar,pnl,foot);view.append(msg);document.body.append(root);document.body.style.overflow='hidden';cur=root;
+  root.append(top,view,bot,selbar,pnl,foot);view.append(msg);root.append(warmEl,dimEl);comfort();document.body.append(root);document.body.style.overflow='hidden';cur=root;
   try{history.pushState({kr:1},'')}catch(e){}
   window.addEventListener('popstate',pop);document.addEventListener('keydown',key);
 

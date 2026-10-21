@@ -101,6 +101,25 @@ function render(host){
     a.append(go,rm);r.append(a);c.append(r);
   });
   host.append(c);
+  try{ach(host)}catch(e){}
+}
+
+// ---------- logros ----------
+function ach(host){
+  const lib=get('kr_lib',[]),stt=get('kr_st',{}),days=Object.keys(stt).sort();
+  const tot=days.reduce((a,k)=>a+(stt[k]||0),0);
+  let best=0,run=0,prev=null;days.forEach(k=>{if((stt[k]||0)>=60){const d=new Date(k+'T12:00:00');run=prev&&Math.round((d-prev)/864e5)===1?run+1:1;prev=d;best=Math.max(best,run)}else{run=0;prev=null}});
+  const done=lib.filter(b=>(b.pct||0)>=.97).length;
+  let hl=0;try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^kr_hl_/.test(k)){try{hl+=JSON.parse(localStorage.getItem(k)).length}catch(e){}}}}catch(e){}
+  const lists=get('kr_lists',{toread:{},fav:{}}),nl=Object.keys(lists.toread||{}).length+Object.keys(lists.fav||{}).length;
+  const B=[['📖','Primera página','Abrí tu primer libro',lib.length>=1],['🔥','Racha de 3','3 días leyendo seguido',best>=3],['🌟','Racha de 7','Una semana sin faltar',best>=7],['🏆','Racha de 30','Un mes de lectura',best>=30],
+    ['⏱️','Una hora','1 hora leída en total',tot>=3600],['🕰️','Diez horas','10 horas de lectura',tot>=36000],['🏁','Libro terminado','Llegá al final de un libro',done>=1],['📚','Tres libros','Terminá 3 libros',done>=3],
+    ['🖍️','Subrayador','Subrayá 5 pasajes',hl>=5],['🗂️','Coleccionista','Tené 5 libros en tu biblioteca',lib.length>=5],['🔖','Curador','Guardá 5 libros en tus listas',nl>=5]];
+  const c=el('div','card ex-ach');c.style.marginTop='14px';const got=B.filter(b=>b[3]).length;
+  c.append(el('b','','Logros · '+got+' de '+B.length));
+  const g=el('div','ex-agrid');B.forEach(([e,n,d,ok])=>{const x=el('div','ex-ab'+(ok?' on':''));x.title=d;x.append(el('span','ex-ae',e),el('small','',n));g.append(x)});c.append(g);
+  c.append(el('p','hint2','Se desbloquean leyendo: '+(B.find(b=>!b[3])?B.find(b=>!b[3])[2]+'.':'¡los tenés todos!')));
+  host.append(c);
 }
 
 // ---------- mini biografía del autor (Wikipedia en español) ----------
@@ -137,7 +156,8 @@ function bioView(host,author){
     if(b.url){const a=el('a','','Leer más en Wikipedia');a.href=b.url;a.target='_blank';a.rel='noopener noreferrer';a.className='ex-bio-a';host.append(a)}
   }).catch(()=>{host.textContent='No se pudo cargar la biografía. Revisá tu conexión y probá de nuevo.'});
 }
-st.textContent+=`.ex-bio{display:flex;gap:12px;align-items:center;margin-bottom:8px}.ex-bio-img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}.ex-bio b{display:block}.ex-bio small{display:block;opacity:.7;font-size:.84rem}.ex-bio-t{margin:6px 0;line-height:1.55}.ex-bio-a{font-size:.88rem;color:inherit;text-decoration:underline}`;
+st.textContent+=`.ex-agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.ex-ab{text-align:center;opacity:.35;filter:grayscale(1);transition:opacity .3s,filter .3s}.ex-ab.on{opacity:1;filter:none}.ex-ae{display:grid;place-items:center;width:46px;height:46px;margin:0 auto 4px;border-radius:50%;background:var(--soft);font-size:1.4rem}.ex-ab.on .ex-ae{background:color-mix(in srgb,var(--gold) 38%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 70%,transparent)}.ex-ab small{display:block;font-size:.66rem;line-height:1.15;color:var(--mute)}.ex-ab.on small{color:var(--ink);font-weight:600}
+.ex-bio{display:flex;gap:12px;align-items:center;margin-bottom:8px}.ex-bio-img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}.ex-bio b{display:block}.ex-bio small{display:block;opacity:.7;font-size:.84rem}.ex-bio-t{margin:6px 0;line-height:1.55}.ex-bio-a{font-size:.88rem;color:inherit;text-decoration:underline}`;
 
 window.KEx={intro,pickGoal,goal,decorate,render,bioView};
 
@@ -154,5 +174,13 @@ try{if(!localStorage.getItem('k_welcome'))intro()}catch(e){}
     const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Kinderly//ES','BEGIN:VEVENT','UID:kinderly-lectura-'+Date.now()+'@kinderly','DTSTAMP:'+day+'T000000Z','DTSTART:'+day+'T'+H+M+'00','DURATION:PT15M','RRULE:FREQ=DAILY','SUMMARY:Leer en Kinderly','DESCRIPTION:Tu ratito de lectura de hoy.','BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Leer en Kinderly','TRIGGER:PT0M','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
     const u=URL.createObjectURL(new Blob([ics],{type:'text/calendar'})),a=document.createElement('a');a.href=u;a.download='recordatorio-kinderly.ics';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)};
   c.append(t,el('br'),b);h.append(c)})();
+(function(){const h=document.querySelector('.view[data-view="ajustes"]');if(!h||$('ex-bk'))return;
+  const c=el('div','card');c.id='ex-bk';c.style.marginTop='14px';c.append(el('b','','Copia de seguridad'),el('p','hint2','Guardá tu biblioteca, subrayados, marcadores, listas y estadísticas en un archivo, y pasalos a otro celular cuando quieras. No incluye tu clave de IA.'));
+  const a=el('div','ex-la'),e1=el('button','ghost','Guardar copia'),e2=el('button','ghost','Restaurar copia');e1.type=e2.type='button';
+  e1.onclick=()=>{const o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^(kr_|k_)/.test(k)&&k!=='kr_ai')o[k]=localStorage.getItem(k)}}catch(e){}
+    const u=URL.createObjectURL(new Blob([JSON.stringify({app:'kinderly',v:1,t:Date.now(),data:o})],{type:'application/json'})),l=document.createElement('a');l.href=u;l.download='kinderly-copia-'+new Date().toLocaleDateString('sv')+'.json';document.body.append(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);say('Copia guardada','ok')};
+  const f=el('input');f.type='file';f.accept='application/json,.json';f.hidden=true;
+  f.onchange=async()=>{try{const j=JSON.parse(await f.files[0].text());if(j.app!=='kinderly'||!j.data)throw 0;let n=0;Object.keys(j.data).forEach(k=>{if(/^(kr_|k_)/.test(k)&&k!=='kr_ai'){localStorage.setItem(k,j.data[k]);n++}});say('Copia restaurada ('+n+' datos). Reiniciando…','ok');setTimeout(()=>location.reload(),900)}catch(e){say('Ese archivo no es una copia de Kinderly','err')}};
+  e2.onclick=()=>f.click();a.append(e1,e2);c.append(a,f);h.append(c)})();
 rerender();
 })();
