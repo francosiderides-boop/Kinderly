@@ -134,7 +134,7 @@ let cur=null;
 // ---- racha y tiempo de lectura (solo en este dispositivo) ----
 const ST_K='kr_st',dk=d=>d.toLocaleDateString('sv');
 const stGet=()=>{try{return JSON.parse(localStorage.getItem(ST_K)||'{}')}catch(e){return {}}};
-function addSec(s){try{const st=stGet(),k=dk(new Date());st[k]=(st[k]||0)+s;const ks=Object.keys(st).sort();while(ks.length>120)delete st[ks.shift()];localStorage.setItem(ST_K,JSON.stringify(st))}catch(e){}}
+function addSec(s){try{const st=stGet(),k=dk(new Date()),g=((window.KEx&&window.KEx.goal())||10)*60,before=st[k]||0;st[k]=before+s;if(before<g&&st[k]>=g&&localStorage.getItem('kr_gd')!==k){localStorage.setItem('kr_gd',k);setTimeout(()=>{try{window.say('Meta de hoy cumplida. ¡Bien ahí!','ok')}catch(e){}},300)}const ks=Object.keys(st).sort();while(ks.length>120)delete st[ks.shift()];localStorage.setItem(ST_K,JSON.stringify(st))}catch(e){}}
 function stats(){const st=stGet(),now=new Date(),d=new Date(now);let streak=0;
   if((st[dk(d)]||0)<60)d.setDate(d.getDate()-1);
   while((st[dk(d)]||0)>=60){streak++;d.setDate(d.getDate()-1)}
@@ -485,7 +485,13 @@ function renderLib(){
   host.append(el('h2','vt','Mi biblioteca'),el('p','vs','Tus libros, incluso sin conexión.'));
   const S0=stats(),sc=el('div','card kr-stats');
   [[String(S0.streak),S0.streak===1?'día seguido':'días seguidos'],[fmtMin(S0.today),'hoy'],[fmtMin(S0.week),'esta semana']].forEach(([v,k])=>{const c=el('div','kr-sc');c.append(el('b','',v),el('small','',k));sc.append(c)});
-  host.append(sc);
+  const goalM=(window.KEx&&window.KEx.goal())||10,gS=goalM*60,pctG=Math.min(1,S0.today/gS);
+  const gw=el('div','kr-goal'),gh=el('div','kr-gh');gh.append(el('span','',pctG>=1?'Meta de hoy cumplida':'Meta de hoy: '+Math.floor(S0.today/60)+' de '+goalM+' min'));
+  const gb=el('button','kr-gl','Cambiar');gb.type='button';gb.onclick=()=>window.KEx&&window.KEx.pickGoal();gh.append(gb);
+  const gbar=el('div','kr-gbar'),gi=el('i');gi.style.width=Math.round(pctG*100)+'%';if(pctG>=1)gi.className='done';gbar.append(gi);gw.append(gh,gbar);
+  const wk=el('div','kr-wk'),stt=stGet(),maxS=Math.max(gS,...Array.from({length:7},(_,i)=>{const x=new Date();x.setDate(x.getDate()-i);return stt[dk(x)]||0}));
+  for(let i=6;i>=0;i--){const x=new Date();x.setDate(x.getDate()-i);const v=stt[dk(x)]||0,col=el('div','kr-wc'),bar=el('div','kr-wb'),f=el('i');f.style.height=Math.max(v?8:3,Math.round(v/maxS*100))+'%';if(v>=gS)f.className='done';bar.append(f);col.append(bar,el('small',i===0?'on':'','DLMMJVS'[x.getDay()]));wk.append(col)}
+  sc.append(gw,wk);host.append(sc);
   if(!S0.week)host.append(el('p','hint2 kr-sn','Leé un minuto hoy en la app y empieza tu racha.'));
   const top=el('div','card');
   top.append(el('b','','Abrir un libro de tu celular'),el('p','hint2','Elegí un archivo .epub que ya tengas guardado (descargas, Drive, mail…). Queda en esta biblioteca y no sale de tu dispositivo.'));
@@ -502,6 +508,7 @@ function renderLib(){
     r.append(d,open1,rv,del);sec.append(r);
   });
   host.append(sec);
+  if(window.KEx)window.KEx.render(host);
 }
 
 // ---- tarjeta “Seguí leyendo” (inicio) ----
