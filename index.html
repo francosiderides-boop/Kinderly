@@ -202,6 +202,14 @@ details[open]>:not(summary){animation:in .2s ease both}
 body,.card,.kf-c,nav.tabs,input,textarea{transition:background-color .25s,border-color .25s,color .25s}
 .theme-toggle:active{transform:rotate(25deg) scale(.95)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* v110 · personalidad */
+.greet{font:600 .72rem var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin:10px 0 6px}
+.kr-st{display:inline-block;margin:0 0 12px;padding:5px 12px;border-radius:999px;background:var(--soft);color:var(--green);font:600 .8rem var(--sans)}
+.kr-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;padding:14px 8px;margin-bottom:14px}
+.kr-sc b{display:block;font:600 1.35rem var(--serif);color:var(--ink)}.kr-sc small{display:block;color:var(--mute);font-size:.78rem;margin-top:2px}
+.kr-sc+.kr-sc{border-left:1px solid var(--line)}.kr-sn{margin:-6px 4px 14px}
+.qd{margin:30px 8px 4px;text-align:center}.qd q{display:block;quotes:none;font:italic 400 1.12rem/1.45 var(--serif);color:var(--ink)}.qd q::before{content:"“"}.qd q::after{content:"”"}.qd small{display:block;margin-top:8px;color:var(--mute);font-size:.8rem;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -259,8 +267,20 @@ body,.card,.kf-c,nav.tabs,input,textarea{transition:background-color .25s,border
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v109'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.10.9 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v110'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.0 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+
+// saludo, frase del día y vibración suave (personalidad)
+(function(){try{
+  const h=new Date().getHours(),g=h<6?'Buenas noches':h<13?'Buenos días':h<20?'Buenas tardes':'Buenas noches';
+  const lead=document.querySelector('.view[data-view="buscar"] .lead');
+  if(lead&&!document.querySelector('.greet')){const e=document.createElement('div');e.className='greet';e.textContent=g;lead.before(e)}
+  const Q=[['La libertad, Sancho, es uno de los más preciosos dones que a los hombres dieron los cielos.','Miguel de Cervantes'],['El que lee mucho y anda mucho, ve mucho y sabe mucho.','Miguel de Cervantes'],['Cada uno es artífice de su ventura.','Miguel de Cervantes'],['Caminante, no hay camino, se hace camino al andar.','Antonio Machado'],['Lo bueno, si breve, dos veces bueno.','Baltasar Gracián'],['La verdad adelgaza y no quiebra.','Miguel de Cervantes'],['Poesía… eres tú.','Gustavo Adolfo Bécquer']];
+  const day=Math.floor((Date.now()-new Date().getTimezoneOffset()*60000)/864e5),q=Q[day%Q.length];
+  const v=document.getElementById('app-version');
+  if(v&&!document.querySelector('.qd')){const d=document.createElement('div');d.className='qd';const t=document.createElement('q');t.textContent=q[0];const s=document.createElement('small');s.textContent=q[1];d.append(t,s);v.before(d)}
+  document.querySelectorAll('nav.tabs button,.theme-toggle').forEach(b=>b.addEventListener('click',()=>{try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}}));
+}catch(e){}})();
 const VIEWS=['buscar','descubrir','biblioteca','amigos','ajustes','sugerencias'];
 window.showView=(v,keep)=>{if(!VIEWS.includes(v))v='buscar';document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.go===v);b.setAttribute('aria-current',b.dataset.go===v?'page':'false')});if(!keep){try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo({top:0})}};
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>window.showView(b.dataset.go));
@@ -554,9 +574,9 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=109"></script>
-<script src="discover.js?v=109"></script>
-<script type="module" src="social.js?v=109"></script>
+<script src="reader.js?v=110"></script>
+<script src="discover.js?v=110"></script>
+<script type="module" src="social.js?v=110"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;

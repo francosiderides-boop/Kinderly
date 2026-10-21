@@ -131,6 +131,23 @@ const btn=(txt,fn,label,cls)=>{const b=el('button',cls||'',txt);b.type='button';
 const fmtDate=t=>{try{return new Date(t).toLocaleDateString('es-AR')}catch(e){return ''}};
 
 let cur=null;
+// ---- racha y tiempo de lectura (solo en este dispositivo) ----
+const ST_K='kr_st',dk=d=>d.toLocaleDateString('sv');
+const stGet=()=>{try{return JSON.parse(localStorage.getItem(ST_K)||'{}')}catch(e){return {}}};
+function addSec(s){try{const st=stGet(),k=dk(new Date());st[k]=(st[k]||0)+s;const ks=Object.keys(st).sort();while(ks.length>120)delete st[ks.shift()];localStorage.setItem(ST_K,JSON.stringify(st))}catch(e){}}
+function stats(){const st=stGet(),now=new Date(),d=new Date(now);let streak=0;
+  if((st[dk(d)]||0)<60)d.setDate(d.getDate()-1);
+  while((st[dk(d)]||0)>=60){streak++;d.setDate(d.getDate()-1)}
+  let week=0;for(let i=0;i<7;i++){const x=new Date(now);x.setDate(x.getDate()-i);week+=st[dk(x)]||0}
+  return {streak,today:st[dk(now)]||0,week}}
+const fmtMin=s=>{const m=Math.floor(s/60);return m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0')}
+function streakPill(){
+  const host=document.querySelector('.view[data-view="buscar"]');if(!host)return;
+  let p=$('kr-st');const s=stats();
+  if(!s.streak){if(p)p.remove();return}
+  if(!p){p=el('div','kr-st');p.id='kr-st';const lead=host.querySelector('.lead');lead?lead.after(p):host.prepend(p)}
+  p.textContent=s.streak===1?'1 día leyendo seguido':s.streak+' días leyendo seguido';
+}
 async function open(o){
   if(cur)return;
   const id=o.id||idOf(o.url||'');let title=o.title||'Libro';
@@ -149,9 +166,10 @@ async function open(o){
   const panel=(name,build)=>{pnl.textContent='';const h=el('div','kr-ph');h.append(el('h4','',name),btn('✕',closePanel,'Cerrar panel'));const b=el('div','kr-pb');pnl.append(h,b);build(b);pnl.classList.add('on');selbar.classList.remove('on')};
   const hideSel=()=>{selbar.classList.remove('on');curSel=null};
 
+  const tick=setInterval(()=>{if(document.visibilityState==='visible')addSec(15)},15000);
   const save=()=>{if(!ready||!lastCfi)return;const l=lib().filter(x=>x.id!==id);l.unshift({id,url:o.url||'',title,author:o.author||entry().author||'',cfi:lastCfi,pct,t:Date.now(),local:!!o.local||!!entry().local});saveLib(l)};
   const close=(fromPop)=>{
-    if(closed)return;closed=true;
+    if(closed)return;closed=true;clearInterval(tick);
     try{stopAudio()}catch(e){}save();try{rend&&rend.destroy()}catch(e){}try{book&&book.destroy()}catch(e){}
     document.removeEventListener('keydown',key);window.removeEventListener('popstate',pop);
     root.remove();document.body.style.overflow='';cur=null;
@@ -465,6 +483,10 @@ function renderLib(){
   const host=document.querySelector('.view[data-view="biblioteca"]');if(!host)return;
   host.textContent='';
   host.append(el('h2','vt','Mi biblioteca'),el('p','vs','Tus libros, incluso sin conexión.'));
+  const S0=stats(),sc=el('div','card kr-stats');
+  [[String(S0.streak),S0.streak===1?'día seguido':'días seguidos'],[fmtMin(S0.today),'hoy'],[fmtMin(S0.week),'esta semana']].forEach(([v,k])=>{const c=el('div','kr-sc');c.append(el('b','',v),el('small','',k));sc.append(c)});
+  host.append(sc);
+  if(!S0.week)host.append(el('p','hint2 kr-sn','Leé un minuto hoy en la app y empieza tu racha.'));
   const top=el('div','card');
   top.append(el('b','','Abrir un libro de tu celular'),el('p','hint2','Elegí un archivo .epub que ya tengas guardado (descargas, Drive, mail…). Queda en esta biblioteca y no sale de tu dispositivo.'));
   const b=btn('Elegir archivo EPUB',pickFile);b.style.marginTop='10px';top.append(b);host.append(top);
@@ -484,10 +506,11 @@ function renderLib(){
 
 // ---- tarjeta “Seguí leyendo” (inicio) ----
 function cont(){
+  streakPill();
   const host=document.querySelector('.view[data-view="buscar"]');if(!host)return;
   let box=$('kr-cont');const l=lib()[0];
   if(!l){if(box)box.remove();return}
-  if(!box){box=el('div','card');box.id='kr-cont';const lead=host.querySelector('.lead');lead?lead.after(box):host.prepend(box)}
+  if(!box){box=el('div','card');box.id='kr-cont';const lead=host.querySelector('.lead');const an=$('kr-st')||lead;an?an.after(box):host.prepend(box)}
   box.textContent='';
   const d=el('div');d.append(el('small','','Seguí leyendo'),el('b','',l.title),el('small','',Math.round((l.pct||0)*100)+'% leído'));
   const b=btn('Continuar',()=>open({id:l.id,url:l.url,title:l.title,author:l.author,cached:true,local:l.local}));
