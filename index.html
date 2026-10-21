@@ -72,7 +72,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 #cfg label{display:block;margin:12px 0 6px;font-size:.86rem;color:var(--mute)}
 #cfg input{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);flex:none;padding:11px 12px}
 .hint2{color:var(--mute);font-size:.8rem;margin:10px 0 0}
-#status{display:none;position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:648px;margin:0 auto;padding:13px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--gold);box-shadow:var(--sh);z-index:5;font-size:.92rem}
+#status{display:none;position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:648px;margin:0 auto;padding:13px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--gold);box-shadow:var(--sh);z-index:5;font-size:.92rem;overflow-wrap:anywhere}
 #status.ok{border-left-color:var(--ok)}#status.err{border-left-color:var(--err);color:var(--err)}
 #file{display:none}
 #cam{position:fixed;inset:0;background:#000;display:none;flex-direction:column;z-index:9}
@@ -376,7 +376,8 @@ $('mail').value=store.get('mail');
 $('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
 if(!store.get('mail'))$('cfg').open=true;
 
-function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
+let sayTimer;
+function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block';clearTimeout(sayTimer);sayTimer=setTimeout(()=>{s.style.display='none'},c==='err'?6000:3500)}
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
 window.kTitle=function(s){return String(s||'').replace(/\s*:?\s*\$[a-z]\s+/gi,': ').replace(/\s*\$[a-z]\s*$/i,'').replace(/\s{2,}/g,' ').trim()};
 const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
