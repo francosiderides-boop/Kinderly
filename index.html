@@ -259,8 +259,8 @@ body,.card,.kf-c,nav.tabs,input,textarea{transition:background-color .25s,border
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v108'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.10.8 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v109'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.10.9 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 const VIEWS=['buscar','descubrir','biblioteca','amigos','ajustes','sugerencias'];
 window.showView=(v,keep)=>{if(!VIEWS.includes(v))v='buscar';document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.dataset.view===v));document.querySelectorAll('nav.tabs button').forEach(b=>{b.classList.toggle('on',b.dataset.go===v);b.setAttribute('aria-current',b.dataset.go===v?'page':'false')});if(!keep){try{history.replaceState(null,'','#'+v)}catch(e){}window.scrollTo({top:0})}};
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>window.showView(b.dataset.go));
@@ -346,15 +346,15 @@ async function iaInfo(id){const m=(await j('https://archive.org/metadata/'+encod
 async function olDesc(key){if(!key)return '';const w=await j('https://openlibrary.org'+key+'.json');return txt(w.description&&typeof w.description==='object'?w.description.value:w.description)}
 async function olLookup(title,author){const p=new URLSearchParams({title:title.split(/[:;(]/)[0],limit:1,fields:'key,first_publish_year,number_of_pages_median,publisher'});if(author)p.set('author',author.split(',')[0]);
   const d=(await j('https://openlibrary.org/search.json?'+p)).docs[0];return d?{year:d.first_publish_year,desc:await olDesc(d.key),pages:d.number_of_pages_median,edition:(d.publisher||[])[0]}:{}}
-async function loadInfo(b){
-  if(b.info)return b.info;
+async function loadMeta(b){
+  if(b.meta)return b.meta;
   const K=['author','year','desc','pages','edition'],r={author:'',year:'',desc:'',pages:'',edition:''};
-  const fill=i=>K.forEach(k=>{if(!r[k]&&i[k])r[k]=String(i[k])});
-  for(const o of [...b.opts].sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src))){try{fill(await o.inf())}catch(e){}}
-  if(!r.year||!r.desc||!r.pages){try{fill(await olLookup(b.title,b.author))}catch(e){}}
-  const sy=await resumir(b,r);r.syn=sy.text;r.synErr=sy.err;
-  b.info=r;
-  return r;
+  const fill=i=>K.forEach(k=>{if(!r[k]&&i&&i[k])r[k]=String(i[k])});
+  const opts=[...b.opts].sort((x,y)=>ORDER.indexOf(x.src)-ORDER.indexOf(y.src));
+  // todo en paralelo: las fuentes del libro y Open Library
+  const [infos,ol]=await Promise.all([Promise.allSettled(opts.map(o=>Promise.resolve().then(()=>o.inf()))),olLookup(b.title,b.author).catch(()=>({}))]);
+  infos.forEach(x=>{if(x.status==='fulfilled')fill(x.value)});fill(ol);
+  b.meta=r;return r;
 }
 async function resumir(b,r){
   const ck='syn:'+norm(b.title);let c='';try{c=localStorage.getItem(ck)||''}catch(e){}
@@ -409,12 +409,22 @@ function card(b,target="res"){
   const dt=document.createElement('details');dt.className='det';
   const su=document.createElement('summary');su.textContent='Ver detalles';
   const body=document.createElement('div');dt.append(su,body);
+  const paint=(i,pending)=>{
+    body.textContent='';
+    const syn=i.syn||cut(i.desc)||(pending?'Redactando la sinopsis…':'Sin sinopsis disponible');
+    [['Autor',i.author||b.author||'Sin datos'],['Año de publicación',i.year||'Sin datos'],['Páginas',i.pages||'Sin datos'],['Edición',i.edition||'Sin datos'],[i.syn?'Sinopsis (buscada y redactada con IA)':'Sinopsis',syn]].forEach(([k,v],ix2)=>{const p=document.createElement('p'),st=document.createElement('strong');st.textContent=k+': ';p.append(st,document.createTextNode(v));if(pending&&ix2===4&&!i.desc)p.style.opacity='.6';body.append(p)});
+    if(!pending&&!i.syn){const n=document.createElement('p');n.className='hint2';n.textContent=i.synErr?'No se pudo generar la sinopsis con IA: '+i.synErr:'';
+      const rb=document.createElement('button');rb.className='ghost';rb.textContent='Reintentar sinopsis';rb.onclick=()=>{b.info=null;show()};body.append(n,rb)}
+  };
   const show=async()=>{
     body.textContent='Cargando…';
-    try{const i=await loadInfo(b);body.textContent='';
-      [['Autor',i.author||b.author||'Sin datos'],['Año de publicación',i.year||'Sin datos'],['Páginas',i.pages||'Sin datos'],['Edición',i.edition||'Sin datos'],[i.syn?'Sinopsis (buscada y redactada con IA)':'Sinopsis',i.syn||cut(i.desc)||'Sin sinopsis disponible']].forEach(([k,v])=>{const p=document.createElement('p'),st=document.createElement('strong');st.textContent=k+': ';p.append(st,document.createTextNode(v));body.append(p)});
-      if(!i.syn){const n=document.createElement('p');n.className='hint2';n.textContent=i.synErr?'No se pudo generar la sinopsis con IA: '+i.synErr:'';
-        const rb=document.createElement('button');rb.className='ghost';rb.textContent='Reintentar sinopsis';rb.onclick=()=>{b.info=null;show()};body.append(n,rb)}
+    try{
+      if(b.info){paint(b.info,false);return}
+      const m=Object.assign({},await loadMeta(b));
+      paint(m,true);                       // muestra los datos ya, sin esperar a la IA
+      const sy=await resumir(b,m);m.syn=sy.text;m.synErr=sy.err;
+      if(m.syn)b.info=m;
+      paint(m,false);
     }catch(e){body.textContent='No se pudieron cargar los detalles'}
   };
   dt.addEventListener('toggle',()=>{if(dt.open&&!dt.dataset.l){dt.dataset.l=1;show()}});
@@ -544,9 +554,9 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=108"></script>
-<script src="discover.js?v=108"></script>
-<script type="module" src="social.js?v=108"></script>
+<script src="reader.js?v=109"></script>
+<script src="discover.js?v=109"></script>
+<script type="module" src="social.js?v=109"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname,d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
