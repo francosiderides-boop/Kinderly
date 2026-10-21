@@ -84,20 +84,20 @@ const eye=(x,y,r)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="1.75" ry="2.65" fill="'+I
 const shut=(x,y,w)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+INK+'" stroke-width="1.9" stroke-linecap="round"/>';
 const nose=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="2.5" ry="1.7" fill="'+INK+'"/>';
 // patita levantada con almohadilla
-const ARM='<g class="arm">'+P('M70 59 C79 58 85 53 85.5 46 C86 39 94.5 39.5 95 46.5 C95.5 54 87 66 77 72 L72 74 Z')+
-  '<ellipse cx="90" cy="47.5" rx="2.9" ry="2.4" fill="'+INK+'"/><circle cx="86.4" cy="43.6" r="1.15" fill="'+INK+'"/><circle cx="90" cy="42" r="1.15" fill="'+INK+'"/><circle cx="93.4" cy="43.8" r="1.15" fill="'+INK+'"/></g>';
-const BODY='M32 48 C21 56 16 70 19 82 C21 93 30 99 42 99.5 C54 100 66 99 71 92 C75 86 74 76 73 66 C72 58 71 52 68 48 Z';
+const ARM='<g class="arm"><g transform="translate(-8 3)">'+P('M70 59 C79 58 85 53 85.5 46 C86 39 94.5 39.5 95 46.5 C95.5 54 87 66 77 72 L72 74 Z')+
+  '<ellipse cx="90" cy="47.5" rx="2.9" ry="2.4" fill="'+INK+'"/><circle cx="86.4" cy="43.6" r="1.15" fill="'+INK+'"/><circle cx="90" cy="42" r="1.15" fill="'+INK+'"/><circle cx="93.4" cy="43.8" r="1.15" fill="'+INK+'"/></g></g>';
+const BODY='M37 47 C33 58 29 72 30 84 C31 94 37 99 44 99.5 C53 100 61 99 64 92 C67 85 66 74 64 64 C63 56 62 51 60 47 Z';
 
 // ---------- perrito despierto ----------
 const DOG_AWAKE=
- '<g class="tail">'+P('M19 82 C10 84 3 80 2 73 C9 70 16 73 19 78 Z')+'</g>'+
- '<g class="body">'+P(BODY)+L('M46 75 C45 84 47 91 51 98')+L('M34 85 C33 91 36 96 40 99')+'</g>'+
+ '<g class="tail">'+P('M30 84 C21 86 13 82 12 75 C19 72 27 75 30 80 Z')+'</g>'+
+ '<g class="body">'+P(BODY)+L('M48 76 C47 84 49 91 52 98')+L('M38 86 C37 91 39 96 42 99')+'</g>'+
  '<g class="head">'+
- '<g class="ear">'+P('M28 12 C22 8 14 10 9 17 C5 24 6 34 10 39 C14 43 20 41 22.5 36 C24 32 24 26 24.5 22 Z')+'</g>'+
- '<g class="ear" style="animation-delay:2.4s">'+P('M64 8 C72 6 80 10 82 18 C84 26 81 33 77 37 C73 40 70 36 70.5 31 C71 26 69 22 67 20 Z')+'</g>'+
- P('M22 34 C21 14 38 5 52 6 C66 7 74 18 73 36 C72 52 62 58 48 58 C32 58 23 50 22 34 Z')+
- L('M42 4 L40.5 -1.5 M48 3.5 L48.5 -2.5 M53.5 4.5 L56 -.5')+
- '<g class="eyes"><g class="gl">'+eye(41.6,38.5,8)+eye(61.4,36.5,8)+'</g></g>'+nose(54.8,45)+
+ '<g class="ear"><g transform="translate(7 0)">'+P('M28 12 C22 8 14 10 9 17 C5 24 6 34 10 39 C14 43 20 41 22.5 36 C24 32 24 26 24.5 22 Z')+'</g></g>'+
+ '<g class="ear" style="animation-delay:2.4s"><g transform="translate(-7 0)">'+P('M64 8 C72 6 80 10 82 18 C84 26 81 33 77 37 C73 40 70 36 70.5 31 C71 26 69 22 67 20 Z')+'</g></g>'+
+ P('M29 33 C28 14 40 6 49 6 C60 6 68 16 67 34 C66 49 59 57 48 57 C37 57 30 48 29 33 Z')+
+ L('M45 4 L43.5 -1.5 M50 3.5 L50.5 -2.5 M55 4.5 L57.5 -.5')+
+ '<g class="eyes"><g class="gl">'+eye(41,37.5,8)+eye(57.5,36,8)+'</g></g>'+nose(50,44)+
  '</g>'+ARM;
 
 // ---------- perrito dormido ----------
@@ -115,16 +115,16 @@ const DOG_SLEEP=
 
 // ---------- gatito despierto ----------
 const CAT_AWAKE=
- '<g class="tail">'+tube('M20 90 C2 96 -3 74 8 66 C13 62 19 66 16 71',6)+'</g>'+
- '<g class="body">'+P(BODY)+L('M46 75 C45 84 47 91 51 98')+L('M34 85 C33 91 36 96 40 99')+'</g>'+
+ '<g class="tail"><g transform="translate(10 -3)">'+tube('M20 90 C2 96 -3 74 8 66 C13 62 19 66 16 71',6)+'</g></g>'+
+ '<g class="body">'+P(BODY)+L('M48 76 C47 84 49 91 52 98')+L('M38 86 C37 91 39 96 42 99')+'</g>'+
  '<g class="head">'+
- '<g class="ear">'+P('M27 20 C25 12 24 6 25 2 C33 4 41 8 46 12 Z')+L('M29 14 C29 10 29 8 30 6',1.5)+'</g>'+
- '<g class="ear" style="animation-delay:4.2s">'+P('M69 20 C71 12 72 6 71 2 C63 4 55 8 50 12 Z')+L('M67 14 C67 10 67 8 66 6',1.5)+'</g>'+
- P('M22 34 C21 14 38 7 50 7 C66 7 74 18 73 36 C72 52 62 58 48 58 C32 58 23 50 22 34 Z')+
- L('M44 9 L44.5 15 M50 8 L50 14.5 M56 9 L55.5 15')+
- '<g class="eyes"><g class="gl">'+eye(40.5,38.5,6)+eye(61.5,37,6)+'</g></g>'+
- '<path d="M52.6 43.6 L57.6 43.6 L55.1 46.6 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
- '<g class="wh">'+L('M36 46 L24 43.5 M36 49 L25 52',1.4)+'</g><g class="wh" style="animation-delay:.25s">'+L('M72 45 L84 42.5 M72 48 L83 51',1.4)+'</g>'+
+ '<g class="ear"><g transform="translate(5 1)">'+P('M27 20 C25 12 24 6 25 2 C33 4 41 8 46 12 Z')+L('M29 14 C29 10 29 8 30 6',1.5)+'</g></g>'+
+ '<g class="ear" style="animation-delay:4.2s"><g transform="translate(-5 1)">'+P('M69 20 C71 12 72 6 71 2 C63 4 55 8 50 12 Z')+L('M67 14 C67 10 67 8 66 6',1.5)+'</g></g>'+
+ P('M29 33 C28 14 40 8 49 8 C60 8 68 16 67 34 C66 49 59 57 48 57 C37 57 30 48 29 33 Z')+
+ L('M45 10 L45.5 16 M50 9.5 L50 15.5 M55 10 L54.5 16')+
+ '<g class="eyes"><g class="gl">'+eye(41,37.5,6)+eye(57.5,36.5,6)+'</g></g>'+
+ '<path d="M47.5 43 L52.5 43 L50 46 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
+ '<g class="wh">'+L('M38 45 L27 43 M38 48 L28 51',1.4)+'</g><g class="wh" style="animation-delay:.25s">'+L('M60 44 L71 42 M60 47 L70 50',1.4)+'</g>'+
  '</g>'+ARM;
 
 // ---------- gatito dormido ----------
