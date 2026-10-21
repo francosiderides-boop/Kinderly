@@ -14,8 +14,7 @@ css.textContent=`
 .pets.off{display:none}
 .pets .slot{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:opacity .5s ease}
 .pets[data-v="buscar"] .slot.main,.pets[data-v="descubrir"] .slot.rest{opacity:1}
-.pet{position:absolute;bottom:-2px;left:calc(10% - 24px);width:84px;height:84px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
-.slot.rest .pet{left:auto;right:calc(10% - 24px)}
+.pet{position:absolute;bottom:-6px;left:calc(var(--cx,18%) - 32px);width:64px;height:64px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
 .pets.on .pet{opacity:1;transform:none}
 .pets.on .pet.gone{opacity:0;transform:translateY(6px)}
 .pet.dozing{animation:pdoze 1s ease both}.pet.waking{animation:pwake .9s cubic-bezier(.34,1.4,.64,1) both}
@@ -26,7 +25,7 @@ css.textContent=`
 .pet svg{width:100%;height:100%;overflow:visible}
 .pet .tail,.pet .head,.pet .ear,.pet .eyes,.pet .body,.pet .arm,.pet .wh,.pet .gl{will-change:transform}
 .pet .ln{stroke:var(--pk-ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
-.pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pwag 1.1s ease-in-out infinite}
+.pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pwags 3s ease-in-out infinite}
 .pet.cat .tail{animation:psway 4s ease-in-out infinite}
 .pet .eyes{transform-box:fill-box;transform-origin:center;animation:pblink 5.5s infinite}
 .pet.cat .eyes{animation-duration:8s}
@@ -36,7 +35,12 @@ css.textContent=`
 .pet .zz{font:700 11px 'Instrument Sans',system-ui,sans-serif;fill:#6F7BAA;opacity:0;animation:pzz 3.8s ease-in-out infinite}
 .pet .zz:nth-of-type(2){animation-delay:1.25s}.pet .zz:nth-of-type(3){animation-delay:2.5s}
 .pet .glint{animation:ptw 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
-@keyframes phead{0%,100%{transform:rotate(0)}22%{transform:rotate(-5deg)}48%{transform:rotate(0)}70%{transform:rotate(4deg)}}
+@keyframes phead{0%,100%{transform:rotate(0)}22%{transform:rotate(-3deg)}48%{transform:rotate(0)}70%{transform:rotate(2.5deg)}}
+.pet .nz{transform-box:fill-box;transform-origin:center;animation:pnose 6.5s ease-in-out infinite}
+@keyframes pnose{0%,86%,100%{transform:scale(1)}90%{transform:scale(1.3,1.2)}94%{transform:scale(1)}97%{transform:scale(1.2)}}
+.pet.arrive{animation:parrive .9s cubic-bezier(.34,1.5,.64,1)}
+@keyframes parrive{0%{transform:translateY(8px) scale(1.04,.9)}40%{transform:translateY(-8px) scale(.97,1.06)}70%{transform:translateY(0) scale(1.02,.97)}100%{transform:none}}
+.pet .a .nz,.pet .a .eyes{will-change:transform}
 @keyframes pglance{0%,38%,100%{transform:translateX(0)}44%,60%{transform:translateX(-1.8px)}68%,86%{transform:translateX(1.8px)}}
 @keyframes pwhisk{0%,90%,100%{transform:rotate(0)}94%{transform:rotate(3deg)}97%{transform:rotate(-2deg)}}
 @keyframes pswish{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(14deg)}}
@@ -66,6 +70,7 @@ css.textContent=`
 .pet.dog .a .arm{animation:pwave 8s ease-in-out infinite}
 .pet.cat .a .arm{opacity:0}
 .pet.g-wave .arm{opacity:1!important;animation:gwave 2s ease-in-out!important}
+@keyframes pwags{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(9deg)}}
 @keyframes pwag{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(18deg)}}
 @keyframes psway{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(10deg)}}
 @keyframes pblink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
@@ -121,7 +126,7 @@ const DOG_AWAKE=
  '<g class="ear" style="animation-delay:2.4s">'+P('M69 17 C77 13 86 17 88 26 C90 35 87 44 81 45.500 C75 47 72 41 71.500 35 Z')+'</g>'+
  P('M24 36 C23 18 36 10 50 10 C64 10 77 18 76 36 C75 50 64 58 50 58 C36 58 25 50 24 36 Z')+
  L('M44 9 L42 3 M50 8 L50.500 2 M56 9 L58.500 3.500')+
- '<g class="eyes"><g class="gl">'+dot(38,37,1.9,2.8,8)+dot(62,36,1.9,2.8,-8)+'</g></g>'+dot(50,45,2.6,1.8)+
+ '<g class="eyes"><g class="gl">'+dot(38,37,1.9,2.8,8)+dot(62,36,1.9,2.8,-8)+'</g></g>'+'<g class="nz">'+dot(50,45,2.6,1.8)+'</g>'+
  '<g class="tongue"><path class="ln" d="M46.500 48.500 C46 55.500 54 55.500 53.500 48.500 Z" style="fill:'+PK+'"/></g>'+
  '</g></g>'+
  '<g class="arm">'+P('M64 62 C74 61 80 56 82 48 C83 41 91 42 91.500 48 C92 56 85 67 75 74 L69 72 Z')+dot(87,49,2.8,2.3)+dot(83.300,44.200,1.1,1.1)+dot(87,42.600,1.1,1.1)+dot(90.500,44.600,1.1,1.1)+'</g>';
@@ -146,7 +151,7 @@ const CAT_AWAKE=
  '<g class="ear" style="animation-delay:4.2s">'+B('M74 28 C76 18 76 8 72 1 C66 3 58 9 53 15 Z')+'<path d="M70 22 C71 15 71 10 69 6.500 C65 8.500 61 11.500 58.500 15 Z" fill="var(--pk-lav)"/></g>'+
  B('M24 35 C24 21 36 13 50 13 C64 13 76 21 76 35 C76 48 65 56 50 56 C35 56 24 48 24 35 Z')+
  '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,36,1.4)+eyeP(61.5,36,-1.4)+'</g></g>'+
- '<path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/>'+
+ '<g class="nz"><path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/></g>'+
  '<g class="wh">'+WH('M24 43 L9 39.500 M24 47 L8 49 M26 51 L13 57.500')+WH('M76 43 L91 39.500 M76 47 L92 49 M74 51 L87 57.500')+'</g>'+
  '</g></g>'+
  '<g class="arm">'+B('M58 62 C65 58 68 50 66 44 C65 39.500 71.500 38.500 72 43.500 C73 51 71 62 65 71 Z')+'</g>';
@@ -198,7 +203,10 @@ async function swap(n){
   if(night()!==n)swap(night())}
 const sync=()=>{host.classList.toggle('off',off());const n=night();if(shown===null){setPlain(n);return}if(n!==shown)swap(n)};
 // vista activa → qué mascota se ve
-const vw=()=>{const v=document.querySelector('.view.on');host.dataset.v=v?v.dataset.view:''};
+const place=()=>{try{[['buscar',sM],['descubrir',sR]].forEach(([k,sl])=>{const b=document.querySelector('nav.tabs button[data-go="'+k+'"]');if(!b)return;const r=b.getBoundingClientRect();if(r.width)sl.style.setProperty('--cx',(r.left+r.width/2).toFixed(1)+'px')})}catch(e){}};
+let vReady=false;
+const vw=()=>{const v=document.querySelector('.view.on'),k=v?v.dataset.view:'';const ch=host.dataset.v!==k;host.dataset.v=k;place();if(ch&&vReady&&(k==='buscar'||k==='descubrir'))setTimeout(()=>{try{const p=visPet();if(p&&!p.classList.contains('sleep')&&!busy){p.classList.add('arrive');setTimeout(()=>p.classList.remove('arrive'),950)}}catch(e){}},380)};
+window.addEventListener('resize',()=>requestAnimationFrame(place));setTimeout(()=>{place();vReady=true},400);setTimeout(place,1500);
 vw();document.querySelectorAll('.view').forEach(v=>{try{new MutationObserver(vw).observe(v,{attributes:true,attributeFilter:['class']})}catch(e){}});
 // al abrir: si cambió el momento del día desde la última vez, se muestra el cambio
 let prev=null;try{prev=localStorage.getItem('k_pets_ph')}catch(e){}
