@@ -101,7 +101,9 @@ async function show(label,topics,re,btn,sc,id){
   // 1) catálogo ya armado (instantáneo); 2) si no está, consulta en vivo
   const st=await loadStatic(id);
   if(my!==run)return;
-  if(st){cur={st,pos:0,t:[]};res.textContent='';const n=Math.min(12,st.length);st.slice(0,n).forEach(x=>window.card(stBook(x),'dz-res'));cur.pos=n;refreshMore();return}
+  if(st){cur={st,pos:0,t:[]};res.textContent='';const n=Math.min(12,st.length);st.slice(0,n).forEach(x=>window.card(stBook(x),'dz-res'));cur.pos=n;refreshMore();
+    if(st.length<8){try{const extra=await iaFallback('topic='+encodeURIComponent(topics[0]||''));if(my===run&&extra.length){const seen=new Set(st.map(x=>(x.t||'').toLowerCase()));extra.filter(b=>!seen.has((b.title||'').toLowerCase())).forEach(b=>window.card(b,'dz-res'))}}catch(e){}}
+    return}
   cur={t:topics.map(t=>({topic:t,p:1,done:false})),re,seen:new Set()};
   const c=cur;let first=true;
   const emit=l=>{if(my!==run)return;if(first){res.textContent='';first=false}l.forEach(b=>window.card(b,'dz-res'))};
