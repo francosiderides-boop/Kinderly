@@ -79,17 +79,29 @@ const endNote=mk('div','dz-n','');endNote.style.display='none';
 res.after(endNote,moreBtn);
 const skel=()=>{const w=mk('div','');w.id='dz-sk';for(let i=0;i<3;i++)w.append(mk('div','dz-sk',''));return w};
 function refreshMore(){
-  const left=cur&&cur.t.some(x=>!x.done);
+  const left=cur&&(cur.st?cur.pos<cur.st.length:cur.t.some(x=>!x.done));
   moreBtn.style.display=left?'block':'none';
   endNote.style.display=left||!cur||!res.children.length?'none':'block';
   endNote.textContent='Eso es todo por ahora en esta categoría. Probá otra o buscá por título.';
 }
-async function show(label,topics,re,btn,sc){
+const STAT={};
+async function loadStatic(id){
+  if(!id)return null;
+  if(STAT[id]!==undefined)return STAT[id];
+  try{const r=await fetch('catalog/'+id+'.json',{signal:AbortSignal.timeout(6000)});if(!r.ok)throw 0;const l=await r.json();STAT[id]=Array.isArray(l)&&l.length?l:null}catch(e){STAT[id]=null}
+  return STAT[id];
+}
+const stBook=x=>{const nf2=nf.format(x.d||0);return {title:x.t,author:x.a,language:'es',img:x.c||'',opts:[{src:'Project Gutenberg',label:'Project Gutenberg · '+nf2+' descargas',sendable:true,url:async()=>x.e,inf:async()=>({author:x.a,desc:x.s||'',edition:'Project Gutenberg, dominio público'})}]}};
+async function show(label,topics,re,btn,sc,id){
   const my=++run;                       // un toque nuevo cancela el anterior (no hay que esperar)
   mg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===btn));
   title.style.display='block';title.textContent=label;res.textContent='';moreBtn.style.display='none';endNote.style.display='none';
   res.append(skel());
   if(sc)title.scrollIntoView({behavior:'smooth',block:'start'});
+  // 1) catálogo ya armado (instantáneo); 2) si no está, consulta en vivo
+  const st=await loadStatic(id);
+  if(my!==run)return;
+  if(st){cur={st,pos:0,t:[]};res.textContent='';const n=Math.min(12,st.length);st.slice(0,n).forEach(x=>window.card(stBook(x),'dz-res'));cur.pos=n;refreshMore();return}
   cur={t:topics.map(t=>({topic:t,p:1,done:false})),re,seen:new Set()};
   const c=cur;let first=true;
   const emit=l=>{if(my!==run)return;if(first){res.textContent='';first=false}l.forEach(b=>window.card(b,'dz-res'))};
@@ -102,17 +114,19 @@ async function show(label,topics,re,btn,sc){
   refreshMore();
 }
 moreBtn.onclick=async()=>{
+  if(cur&&cur.st){const n=Math.min(12,cur.st.length-cur.pos);cur.st.slice(cur.pos,cur.pos+n).forEach(x=>window.card(stBook(x),'dz-res'));cur.pos+=n;refreshMore();return}
   if(loadingMore||!cur)return;loadingMore=true;moreBtn.disabled=true;moreBtn.textContent='Buscando…';const my=run;
   try{const g=await more(cur,12,l=>{if(my===run)l.forEach(b=>window.card(b,'dz-res'))},my);if(!g&&my===run)say('No encontramos más libros por ahora','ok')}
   catch(e){say('No se pudo cargar más. Probá de nuevo en un momento.','err')}
   finally{loadingMore=false;moreBtn.disabled=false;moreBtn.textContent='Ver más libros';if(my===run)refreshMore()}
 };
-MOODS.forEach(([t,tp,re])=>{const b=mk('button','');b.type='button';b.append(mk('span','',t));b.onclick=()=>show(t,tp,re,b,true);mg.append(b)});
-const pb=mk('button','');pb.type='button';pb.append(mk('span','','Los más leídos'));pb.onclick=()=>show('Los más leídos en español',[''],null,pb,true);mg.prepend(pb);
+const IDS=['reir', 'emocion', 'aventura', 'intriga', 'pensar', 'sonar', 'susto', 'breve', 'historia', 'teatro', 'poesia', 'chicos'];
+MOODS.forEach(([t,tp,re],k)=>{const b=mk('button','');b.type='button';b.append(mk('span','',t));b.onclick=()=>show(t,tp,re,b,true,IDS[k]);mg.append(b)});
+const pb=mk('button','');pb.type='button';pb.append(mk('span','','Los más leídos'));pb.onclick=()=>show('Los más leídos en español',[''],null,pb,true,'top');mg.prepend(pb);
 AUTHORS.forEach(a=>{const b=mk('button','',a);b.type='button';b.onclick=()=>{window.showView('buscar');$('q').value=a;$('go').click()};ag.append(b)});
 // primera vez: mostramos los más leídos
 let first=false;const tab=document.querySelector('nav.tabs button[data-go="descubrir"]');
-const init=()=>{if(first)return;first=true;show('Los más leídos en español',[''],null,pb)};
+const init=()=>{if(first)return;first=true;show('Los más leídos en español',[''],null,pb,false,'top')};
 if(tab)tab.addEventListener('click',init);
 if((location.hash||'')==='#descubrir')init();
 })();
