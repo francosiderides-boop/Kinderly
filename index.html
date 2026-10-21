@@ -215,6 +215,8 @@ body,.card,.kf-c,nav.tabs,input,textarea{transition:background-color .25s,border
 .kr-gbar{height:8px;border-radius:4px;background:var(--soft);overflow:hidden;margin-top:6px}.kr-gbar i{display:block;height:100%;background:var(--green);border-radius:4px;transition:width .5s ease}.kr-gbar i.done,.kr-wb i.done{background:var(--ok)}
 .kr-wk{grid-column:1/-1;display:flex;gap:8px;align-items:flex-end;height:74px;margin:14px 8px 0}.kr-wc{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%}.kr-wb{flex:1;width:100%;max-width:26px;display:flex;align-items:flex-end;background:var(--soft);border-radius:6px;overflow:hidden}.kr-wb i{display:block;width:100%;background:var(--green);opacity:.75;border-radius:6px;transition:height .5s ease}.kr-wc small{font-size:.68rem;color:var(--mute)}.kr-wc small.on{color:var(--ink);font-weight:700}
 button.saved{color:var(--green);border-color:var(--green)}
+
+.inst{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;margin-bottom:12px}.inst-t{flex:1;min-width:0}.inst-t b{display:block;font:600 1rem var(--serif)}.inst-t small{display:block;color:var(--mute);font-size:.82rem;margin-top:1px}.inst>button:not(.inst-x){flex:none;padding:10px 16px}.inst-x{flex:none;width:32px;height:32px;padding:0!important;border-radius:50%;background:transparent!important;color:var(--mute)!important;font-size:1.3rem;line-height:1}
 </style>
 </head>
 <body>
@@ -255,7 +257,7 @@ button.saved{color:var(--green);border-color:var(--green)}
   <div style="margin-top:12px"><button id="save">Guardar</button></div>
   <p class="hint2">Si usás Kindle, aprobá el mail remitente en Amazon (Contenido y dispositivos → Preferencias → Documentos personales).</p>
 </details>
-<details id="shr" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary style="font-weight:600;cursor:pointer">Compartir Kinderly</summary><p class="hint2">Mandale el link a quien quieras. Al abrirlo, la instala con un toque.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="share-app" type="button">Compartir link</button><button id="install-app" type="button" class="ghost">Instalar en este dispositivo</button></div></details>
+<details id="shr" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:14px 0 0;box-shadow:var(--sh)"><summary style="font-weight:600;cursor:pointer">Compartir Kinderly</summary><p class="hint2">Mandale el link a quien quieras. Al abrirlo, la instala con un toque, sin pasar por el navegador.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button id="share-app" type="button">Compartir link</button><button id="copy-link" type="button" class="ghost">Copiar link</button><button id="install-app" type="button" class="ghost">Instalar en este dispositivo</button></div></details>
 </section>
 <section class="view" data-view="biblioteca"></section>
 <section class="view" data-view="sugerencias"><h2 class="vt">Sugerencias</h2><p class="vs">Contanos qué mejorarías o qué te gustaría que Kinderly tenga. Las más votadas son las primeras que hacemos.</p><div id="sug-body"></div></section>
@@ -272,8 +274,8 @@ button.saved{color:var(--green);border-color:var(--green)}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v113'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.3 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v115'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.5 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // saludo, frase del día y vibración suave (personalidad)
 (function(){try{
@@ -441,6 +443,8 @@ function card(b,target="res"){
     [['Autor',i.author||b.author||'Sin datos'],['Año de publicación',i.year||'Sin datos'],['Páginas',i.pages||'Sin datos'],['Edición',i.edition||'Sin datos'],[i.syn?'Sinopsis (buscada y redactada con IA)':'Sinopsis',syn]].forEach(([k,v],ix2)=>{const p=document.createElement('p'),st=document.createElement('strong');st.textContent=k+': ';p.append(st,document.createTextNode(v));if(pending&&ix2===4&&!i.desc)p.style.opacity='.6';body.append(p)});
     if(!pending&&!i.syn){const n=document.createElement('p');n.className='hint2';n.textContent=i.synErr?'No se pudo generar la sinopsis con IA: '+i.synErr:'';
       const rb=document.createElement('button');rb.className='ghost';rb.textContent='Reintentar sinopsis';rb.onclick=()=>{b.info=null;show()};body.append(n,rb)}
+    const au=i.author||b.author;
+    if(au&&window.KEx){const ab=document.createElement('button');ab.className='ghost';ab.type='button';ab.textContent='Mini bio del autor';ab.style.marginTop='8px';const box=document.createElement('div');box.style.marginTop='8px';ab.onclick=()=>{ab.remove();window.KEx.bioView(box,au)};body.append(ab,box)}
   };
   const show=async()=>{
     body.textContent='Cargando…';
@@ -580,14 +584,33 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=113"></script>
-<script src="discover.js?v=113"></script>
-<script src="extras.js?v=113"></script>
-<script type="module" src="social.js?v=113"></script>
+<script src="reader.js?v=115"></script>
+<script src="discover.js?v=115"></script>
+<script src="extras.js?v=115"></script>
+<script type="module" src="social.js?v=115"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
-</script>
+
+(function(){try{
+  const LINK=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html';
+  const cp=document.getElementById('copy-link');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(LINK);say('Link de instalación copiado','ok')}catch(_){say('Copiá este link: '+LINK)}};
+  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  if(standalone||localStorage.getItem('k_inst_x'))return;
+  const ua=navigator.userAgent||'',android=/Android/.test(ua),samsung=/SamsungBrowser/.test(ua);
+  const host=document.querySelector('.view[data-view="buscar"]'),anchor=host&&host.querySelector('.search');if(!anchor)return;
+  const b=document.createElement('div');b.className='card inst';b.id='inst-banner';
+  const t=document.createElement('div');t.className='inst-t';const h=document.createElement('b');h.textContent='Instalá Kinderly';const s=document.createElement('small');s.textContent='Se abre como una app, sin el navegador.';t.append(h,s);
+  const go=document.createElement('button');go.type='button';go.textContent=(android&&samsung)?'Abrir en Chrome':'Instalar';
+  go.onclick=async()=>{
+    if(installPrompt){installPrompt.prompt();try{await installPrompt.userChoice}catch(e){}installPrompt=null;return}
+    if(android&&samsung){location.href='intent://'+location.host+location.pathname.replace(/[^/]*$/,'')+'instalar.html#Intent;scheme=https;package=com.android.chrome;end';return}
+    location.href=LINK;
+  };
+  const x=document.createElement('button');x.type='button';x.className='inst-x';x.textContent='×';x.setAttribute('aria-label','Cerrar');x.onclick=()=>{b.remove();try{localStorage.setItem('k_inst_x','1')}catch(e){}};
+  b.append(t,go,x);anchor.before(b);
+  window.addEventListener('appinstalled',()=>b.remove());
+}catch(e){}})();</script>
 </body>
 </html>
 

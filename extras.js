@@ -103,7 +103,43 @@ function render(host){
   host.append(c);
 }
 
-window.KEx={intro,pickGoal,goal,decorate,render};
+// ---------- mini biografía del autor (Wikipedia en español) ----------
+function cleanName(a){
+  let s=String(a||'').split(/[;&]|\sy\s/)[0].replace(/\(.*?\)/g,'').replace(/\b\d{3,4}\s*[-–]\s*\d{0,4}\b/g,'').trim();
+  if(s.includes(',')){const p=s.split(',').map(x=>x.trim()).filter(Boolean);if(p.length>=2)s=p[1]+' '+p[0]}
+  return s.replace(/\s+/g,' ').trim();
+}
+async function bio(author){
+  const name=cleanName(author);
+  if(!name||/^an[oó]nimo|^desconocid|^various|^varios/i.test(name))return {none:true,name:name||'Autor'};
+  const ck='kr_bio_'+norm(name),c=get(ck,null);if(c)return c;
+  const J=async u=>{const r=await fetch(u,{signal:AbortSignal.timeout(9000)});if(!r.ok)throw new Error('HTTP '+r.status);return r.json()};
+  const s=await J('https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch='+encodeURIComponent(name)+'&srlimit=4&format=json&origin=*');
+  const toks=norm(name).split(' ').filter(w=>w.length>2&&!['del','los','las','von','van'].includes(w)),hits=(s.query&&s.query.search)||[];
+  const score=h=>{const t=norm(h.title).split(' ');return toks.filter(w=>t.includes(w)).length};
+  const best=hits.map(h=>[score(h),h]).sort((a,b)=>b[0]-a[0])[0];
+  const pick=best&&best[0]>=Math.max(1,Math.ceil(toks.length/2))?best[1]:null;
+  if(!pick)return {none:true,name};
+  const d=await J('https://es.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(pick.title.replace(/ /g,'_')));
+  let ex=String(d.extract||'').trim();if(!ex||d.type==='disambiguation')return {none:true,name};
+  if(ex.length>700){const cut=ex.slice(0,700),i=Math.max(cut.lastIndexOf('. '),0);ex=i>200?cut.slice(0,i+1):cut.replace(/\s\S*$/,'')+'…'}
+  const out={name:d.title||pick.title,desc:d.description||'',extract:ex,url:(d.content_urls&&d.content_urls.desktop&&d.content_urls.desktop.page)||'',thumb:(d.thumbnail&&d.thumbnail.source)||''};
+  set(ck,out);return out;
+}
+function bioView(host,author){
+  host.textContent='Buscando información del autor…';
+  bio(author).then(b=>{
+    host.textContent='';
+    if(b.none){host.append(el('p','',b.name==='Autor'||!b.name?'No hay información disponible del autor.':'No encontramos una biografía de “'+b.name+'”.'));return}
+    const top=el('div','ex-bio');
+    if(b.thumb){const im=new Image();im.alt='';im.referrerPolicy='no-referrer';im.src=b.thumb;im.className='ex-bio-img';top.append(im)}
+    const t=el('div');t.append(el('b','',b.name));if(b.desc)t.append(el('small','',b.desc));top.append(t);host.append(top,el('p','ex-bio-t',b.extract));
+    if(b.url){const a=el('a','','Leer más en Wikipedia');a.href=b.url;a.target='_blank';a.rel='noopener noreferrer';a.className='ex-bio-a';host.append(a)}
+  }).catch(()=>{host.textContent='No se pudo cargar la biografía. Revisá tu conexión y probá de nuevo.'});
+}
+st.textContent+=`.ex-bio{display:flex;gap:12px;align-items:center;margin-bottom:8px}.ex-bio-img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}.ex-bio b{display:block}.ex-bio small{display:block;opacity:.7;font-size:.84rem}.ex-bio-t{margin:6px 0;line-height:1.55}.ex-bio-a{font-size:.88rem;color:inherit;text-decoration:underline}`;
+
+window.KEx={intro,pickGoal,goal,decorate,render,bioView};
 
 // introducción la primera vez; en Ajustes se puede volver a ver
 try{if(!localStorage.getItem('k_welcome'))intro()}catch(e){}
