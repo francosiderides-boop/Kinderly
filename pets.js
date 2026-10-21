@@ -14,7 +14,7 @@ css.textContent=`
 .pets.off{display:none}
 .pets .slot{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:opacity .5s ease}
 .pets[data-v="buscar"] .slot.main,.pets[data-v="descubrir"] .slot.rest{opacity:1}
-.pet{position:absolute;bottom:-4px;left:calc(10% - 24px);width:84px;height:94px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
+.pet{position:absolute;bottom:-2px;left:calc(10% - 24px);width:84px;height:84px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
 .slot.rest .pet{left:auto;right:calc(10% - 24px)}
 .pets.on .pet{opacity:1;transform:none}
 .pets.on .pet.gone{opacity:0;transform:translateY(6px)}
@@ -101,8 +101,7 @@ css.textContent=`
 `;
 document.head.append(css);
 
-const BOOK='<ellipse cx="50" cy="102.6" rx="46" ry="2.6" style="fill:var(--pk-sh)"/><g><path d="M8 93.500 H92 a3.200 3.200 0 0 1 3.200 3.200 v1.600 a3.200 3.200 0 0 1 -3.200 3.200 H8 a3.200 3.200 0 0 1 -3.200 -3.200 v-1.600 a3.200 3.200 0 0 1 3.200 -3.200 Z" style="fill:var(--pk-bk);stroke:var(--pk-ink);stroke-width:1.7;stroke-linejoin:round"/><path d="M10 95.200 H90" style="stroke:var(--pk-bk2);stroke-width:1.2;stroke-linecap:round;fill:none"/><path d="M17 94 V101.800 M83 94 V101.800" style="stroke:var(--pk-gold);stroke-width:1.5;fill:none"/><rect x="39" y="95.600" width="22" height="3.600" rx="1.200" style="fill:var(--pk-gold);stroke:none"/></g>';
-const sv=h=>{const d=document.createElement('div');d.innerHTML='<svg xmlns="'+NS+'" viewBox="0 -8 100 112" stroke-width="2.1">'+BOOK+'<g transform="translate(0 -6)">'+h+'</g></svg>';return d.firstChild};
+const sv=h=>{const d=document.createElement('div');d.innerHTML='<svg xmlns="'+NS+'" viewBox="0 -5 100 105" stroke-width="2.1">'+h+'</svg>';return d.firstChild};
 const F='var(--pk-fill)',PK='var(--pk-pink)',INK='var(--pk-ink)';
 const P=(d,c)=>'<path class="ln" d="'+d+'" style="fill:'+(c||F)+'"/>';
 const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/>';

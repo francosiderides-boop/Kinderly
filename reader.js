@@ -157,7 +157,7 @@ const css=document.createElement('style');
 css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;background:var(--krbg,#fbf7ef);color:var(--krfg,#2b2523);font-family:var(--sans)}'+
 '#kr .kr-bar{display:flex;align-items:center;gap:6px;padding:8px 10px;padding-top:calc(8px + env(safe-area-inset-top,0px));background:color-mix(in srgb,var(--krbg) 78%,transparent);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);border-bottom:1px solid rgba(128,128,128,.2);transition:transform .35s cubic-bezier(.22,1,.36,1);z-index:3}'+
 '#kr .kr-bot{border-top:1px solid rgba(128,128,128,.25);border-bottom:0;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}'+
-'#kr .kr-foot{position:absolute;left:0;right:0;bottom:calc(6px + env(safe-area-inset-bottom,0px));text-align:center;font-size:.7rem;opacity:0;pointer-events:none;transition:opacity .2s;color:var(--krfg,#222)}#kr.hide .kr-foot{opacity:.6}#kr .kr-prog span{line-height:1.25}'+
+'#kr .kr-foot{position:absolute;left:50%;transform:translateX(-50%);max-width:94%;width:max-content;bottom:calc(6px + env(safe-area-inset-bottom,0px));text-align:center;font-size:.72rem;line-height:1.3;padding:3px 10px;border-radius:999px;background:color-mix(in srgb,var(--krbg,#fff) 82%,transparent);opacity:0;pointer-events:none;transition:opacity .2s;color:var(--krfg,#222)}#kr.hide .kr-foot{opacity:.85}#kr .kr-prog span{line-height:1.25}'+
 '#kr.hide .kr-top{transform:translateY(-100%)}#kr.hide .kr-bot{transform:translateY(100%)}'+
 '#kr button{background:transparent;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:10px;min-width:40px;height:40px;padding:0 10px;font:600 .9rem var(--sans);white-space:nowrap}'+
 '#kr button.sel{background:rgba(31,140,110,.25);border-color:rgba(31,140,110,.8)}'+
@@ -284,7 +284,7 @@ async function open(o){
         return;
       }
     }catch(e){}
-    pt.textContent=P;foot.textContent='';
+    pt.textContent=P;foot.textContent=P+' leído';
   };
   const tick=setInterval(()=>{if(document.visibilityState==='visible')addSec(15)},15000);
   const save=()=>{if(!ready||!lastCfi)return;const l=lib().filter(x=>x.id!==id);l.unshift({id,url:o.url||'',title,author:o.author||entry().author||'',cfi:lastCfi,pct,t:Date.now(),local:!!o.local||!!entry().local});saveLib(l)};
