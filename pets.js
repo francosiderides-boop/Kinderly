@@ -166,7 +166,7 @@ const B=d=>'<path d="'+d+'" style="fill:var(--pk-cat);stroke:var(--pk-rim);strok
 const dot=(x,y,rx,ry,r)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" fill="'+INK+'" transform="rotate('+(r||0)+' '+x+' '+y+')"/>';
 const shut=(x,y,w,c)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+(c||INK)+'" stroke-width="1.9" stroke-linecap="round"/>';
 const WH=(d)=>'<path d="'+d+'" fill="none" stroke="var(--pk-wh)" stroke-width="1.2" stroke-linecap="round"/>';
-const lid=(x,y,r,c)=>'<path class="lid '+c+'" d="M'+(x-7.5)+' '+(y-10)+' H'+(x+7.5)+' V'+(y-.9)+' H'+(x-7.5)+' Z" style="fill:var(--pk-cat)" transform="rotate('+r+' '+x+' '+y+')"/>';
+const lid=(x,y,r,c)=>'<path class="lid '+c+'" d="M'+(x-7.5)+' '+(y-10)+' H'+(x+7.5)+' V'+(y+1.4)+' H'+(x-7.5)+' Z" style="fill:var(--pk-cat)" transform="rotate('+r+' '+x+' '+y+')"/>';
 const eyeW=(x,y)=>'<circle cx="'+x+'" cy="'+y+'" r="6.3" fill="#fff"/>';
 const eyeP=(x,y,px)=>'<circle class="pp" cx="'+(x+px)+'" cy="'+(y+.6)+'" r="3.3" fill="#1A1820"/><circle cx="'+(x+px+1.1)+'" cy="'+(y-.6)+'" r="1" fill="#fff"/>';
 
@@ -206,8 +206,8 @@ const CAT_AWAKE=
  '<g class="ear">'+B('M26 28 C24 18 24 8 28 1 C34 3 42 9 47 15 Z')+'<path d="M30 22 C29 15 29 10 31 6.500 C35 8.500 39 11.500 41.500 15 Z" fill="var(--pk-lav)"/></g>'+
  '<g class="ear" style="animation-delay:4.2s">'+B('M74 28 C76 18 76 8 72 1 C66 3 58 9 53 15 Z')+'<path d="M70 22 C71 15 71 10 69 6.500 C65 8.500 61 11.500 58.500 15 Z" fill="var(--pk-lav)"/></g>'+
  B('M24 35 C24 21 36 13 50 13 C64 13 76 21 76 35 C76 48 65 56 50 56 C35 56 24 48 24 35 Z')+
- '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,36.6,1.9)+eyeP(61.5,36.6,1.9)+'</g>'+lid(38.5,36,-2,'l')+lid(61.5,36,2,'r')+'</g>'+
- '<g class="nz"><path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/></g>'+'<path d="M45.500 50 Q47.800 51.600 50 49.800 Q52.300 51.200 54.800 49.400" fill="none" stroke="var(--pk-lav)" stroke-width="1" stroke-linecap="round" opacity=".85"/>'+
+ '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,37.6,.2)+eyeP(61.5,37.6,-.2)+'</g>'+lid(38.5,36,-2,'l')+lid(61.5,36,2,'r')+'</g>'+
+ '<g class="nz"><path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/></g>'+'<path d="M45 51.800 Q50 48.200 55 51.800" fill="none" stroke="var(--pk-lav)" stroke-width="1" stroke-linecap="round" opacity=".85"/>'+
  '<g class="wh">'+WH('M24 43 L9 39.500 M24 47 L8 49 M26 51 L13 57.500')+WH('M76 43 L91 39.500 M76 47 L92 49 M74 51 L87 57.500')+'</g>'+
  '</g></g>'+
  '<g class="arm">'+B('M58 62 C65 58 68 50 66 44 C65 39.500 71.500 38.500 72 43.500 C73 51 71 62 65 71 Z')+'</g>';
