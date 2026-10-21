@@ -255,7 +255,7 @@ details[open]>:not(summary){animation:in .3s var(--ease) both}
 :root{--glass:color-mix(in srgb,var(--card) 50%,transparent);--glass-b:rgba(255,255,255,.55);--glass-sh:0 8px 28px rgba(30,40,80,.15),inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.95),inset -1px -1px 1px -.5px rgba(255,255,255,.65),inset 0 0 14px rgba(255,255,255,.25)}
 :root[data-theme="dark"]{--glass:color-mix(in srgb,var(--card) 46%,transparent);--glass-b:rgba(255,255,255,.12);--glass-sh:0 10px 30px rgba(0,0,0,.4),inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.35),inset -1px -1px 1px -.5px rgba(255,255,255,.18),inset 0 0 14px rgba(255,255,255,.05)}
 nav.tabs,#status,.ex-sh,.ks-box,.theme-toggle{-webkit-backdrop-filter:blur(10px) saturate(1.9) brightness(1.04);backdrop-filter:blur(10px) saturate(1.9) brightness(1.04)}
-html.rfx nav.tabs,html.rfx #status,html.rfx .theme-toggle{-webkit-backdrop-filter:none;backdrop-filter:url(#lg) blur(2.5px) saturate(1.9) brightness(1.05)}
+html.rfx nav.tabs,html.rfx #status,html.rfx .theme-toggle{-webkit-backdrop-filter:none;backdrop-filter:url(#kglass) blur(2.5px) saturate(1.9) brightness(1.05)}
 .theme-toggle{background:var(--glass)!important;border:1px solid var(--glass-b)!important;box-shadow:var(--glass-sh)!important}
 nav.tabs{border-radius:999px;padding:5px}
 nav.tabs::before{background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 40%)}
@@ -263,6 +263,7 @@ nav.tabs .in{position:relative}
 nav.tabs button{position:relative;z-index:1;border-radius:999px}
 nav.tabs button.on{background:transparent!important;box-shadow:none!important}
 nav.tabs button:active{transform:none}
+nav.tabs button{box-shadow:none!important;gap:1px;font-size:.66rem;padding:7px 0}nav.tabs .in{gap:0}
 .lens{position:absolute;z-index:0;left:0;top:0;height:100%;border-radius:999px;pointer-events:none;background:rgba(255,255,255,.34);-webkit-backdrop-filter:blur(1px) saturate(2) brightness(1.12);backdrop-filter:blur(1px) saturate(2) brightness(1.12);box-shadow:inset 1.5px 1.5px 1px -.5px rgba(255,255,255,1),inset -1.5px -1.5px 1px -.5px rgba(255,255,255,.8),inset 0 0 12px rgba(255,255,255,.4),0 3px 12px rgba(30,40,80,.14);transform:translateX(var(--lx,0px)) scale(var(--ls,1));transition:transform .6s var(--spring),width .6s var(--spring),opacity .2s;opacity:0}
 .lens.on{opacity:1}
 :root[data-theme="dark"] .lens{background:rgba(255,255,255,.13);box-shadow:inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.55),inset -1.5px -1.5px 1px -.5px rgba(255,255,255,.3),inset 0 0 12px rgba(255,255,255,.1),0 3px 12px rgba(0,0,0,.3)}
@@ -278,7 +279,7 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-<filter id="lg" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+<filter id="kglass" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
 <feImage href="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='a'%3E%3Cstop offset='0' stop-color='rgb(255,128,128)'/%3E%3Cstop offset='1' stop-color='rgb(128,128,128)'/%3E%3C/linearGradient%3E%3ClinearGradient id='b'%3E%3Cstop offset='0' stop-color='rgb(128,128,128)'/%3E%3Cstop offset='1' stop-color='rgb(0,128,128)'/%3E%3C/linearGradient%3E%3ClinearGradient id='c' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='rgb(128,255,128)'/%3E%3Cstop offset='1' stop-color='rgb(128,128,128)'/%3E%3C/linearGradient%3E%3ClinearGradient id='d' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='rgb(128,128,128)'/%3E%3Cstop offset='1' stop-color='rgb(128,0,128)'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' fill='rgb(128,128,128)'/%3E%3Crect width='14' height='100' fill='url(%23a)'/%3E%3Crect x='86' width='14' height='100' fill='url(%23b)'/%3E%3Crect x='14' width='72' height='34' fill='url(%23c)'/%3E%3Crect x='14' y='66' width='72' height='34' fill='url(%23d)'/%3E%3C/svg%3E" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map"/>
 <feDisplacementMap in="SourceGraphic" in2="map" scale="22" xChannelSelector="R" yChannelSelector="G"/>
 </filter></defs></svg>
@@ -337,8 +338,8 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v119'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.9 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v120'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.10 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra
 (function(){try{
@@ -657,10 +658,10 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=119"></script>
-<script src="discover.js?v=119"></script>
-<script src="extras.js?v=119"></script>
-<script type="module" src="social.js?v=119"></script>
+<script src="reader.js?v=120"></script>
+<script src="discover.js?v=120"></script>
+<script src="extras.js?v=120"></script>
+<script type="module" src="social.js?v=120"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;
