@@ -27,7 +27,7 @@ css.textContent=`
 .pet .ln.sk{stroke-width:.9;opacity:.55}
 .pet .z svg{transform:translateY(-9%)}
 .pet .ln{stroke:var(--pk-ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
-.pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pwag 1.7s ease-in-out infinite}
+.pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pwag 1.1s ease-in-out infinite}
 .pet.cat .tail{animation:psway 4s ease-in-out infinite}
 .pet .eyes{transform-box:fill-box;transform-origin:center;animation:pblink 5.5s infinite}
 .pet.cat .eyes{animation-duration:8s}
@@ -44,7 +44,7 @@ css.textContent=`
 .pet .head{transform-box:view-box;transform-origin:48px 56px;animation:phead 9s ease-in-out infinite}
 .pet.cat .head{animation-duration:11s}
 .pet .gl{animation:pglance 7s ease-in-out infinite}
-.pet.cat .tail{animation:pswish 2.8s ease-in-out infinite}
+.pet.cat .tail{animation:pswish 5s ease-in-out infinite}
 .pet .wh{transform-box:fill-box;transform-origin:0% 50%;animation:pwhisk 6s ease-in-out infinite}
 /* gestos ocasionales */
 .pet .bub{position:absolute;left:50%;bottom:calc(100% - 2px);transform:translate(-50%,6px) scale(.6);opacity:0;background:#FFFDF8;color:#5A4636;border:1.6px solid #5A4636;border-radius:11px;padding:1px 7px;font:700 10.5px 'Instrument Sans',system-ui,sans-serif;white-space:nowrap;transition:opacity .25s,transform .45s cubic-bezier(.34,1.5,.64,1)}
@@ -71,6 +71,30 @@ css.textContent=`
 @keyframes pzz{0%{opacity:0;transform:translate(0,4px)}25%{opacity:.9}100%{opacity:0;transform:translate(7px,-12px)}}
 @keyframes pear{0%,88%,100%{transform:rotate(0)}92%{transform:rotate(-8deg)}96%{transform:rotate(3deg)}}
 @keyframes ptw{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.1)}}
+
+.pet .tongue{opacity:0;transition:opacity .2s}.pet.g-pant .tongue{opacity:1}
+.pet.g-pant .a .body{animation:ppant .3s ease-in-out infinite}
+@keyframes ppant{0%,100%{transform:scale(1,1)}50%{transform:scale(1.02,1.05)}}
+.pet.g-wag .a .tail{animation:pwagf .2s ease-in-out infinite!important}
+@keyframes pwagf{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(26deg)}}
+.pet.g-wag .a .body{animation:gbounce .4s ease-in-out infinite}
+@keyframes gbounce{0%,100%{transform:none}50%{transform:scale(1.01,.985)}}
+.pet.g-tilt .a .head{animation:gtilt 2.6s ease-in-out!important}
+@keyframes gtilt{0%,100%{transform:rotate(0)}20%,78%{transform:rotate(-15deg) translateY(1px)}}
+.pet.g-sniff .a .head{animation:gsniff 2.6s ease-in-out!important}
+@keyframes gsniff{0%,100%{transform:none}14%{transform:translate(2px,7px) rotate(6deg)}28%{transform:translate(0,4px)}42%{transform:translate(2px,8px) rotate(6deg)}56%{transform:translate(0,4px)}72%{transform:translate(2px,7px) rotate(5deg)}88%{transform:none}}
+.pet.g-eflick .a .ear{animation:geflick 1s ease-in-out 2!important}
+@keyframes geflick{0%,100%{transform:rotate(0)}30%{transform:rotate(-16deg)}60%{transform:rotate(6deg)}}
+.pet.g-blink .a .eyes{animation:gblink 2.6s ease-in-out!important}
+@keyframes gblink{0%,100%{transform:scaleY(1)}28%,72%{transform:scaleY(.12)}}
+.pet.g-flick .a .tail{animation:gflick .5s ease-in-out 3!important}
+@keyframes gflick{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(26deg)}}
+.pet.g-wash .a .arm{opacity:1!important;animation:gwash .6s ease-in-out infinite!important}
+@keyframes gwash{0%,100%{transform:rotate(-36deg)}50%{transform:rotate(-50deg)}}
+.pet.g-wash .a .head{animation:gwashh 3.4s ease-in-out!important}
+@keyframes gwashh{0%,100%{transform:rotate(0)}15%,85%{transform:rotate(-7deg) translateY(1px)}}
+.pet.g-purr .a .body{animation:gpurr .09s linear infinite}
+@keyframes gpurr{0%,100%{transform:translateX(-.5px)}50%{transform:translateX(.5px)}}
 @media (prefers-reduced-motion:reduce){.pet *{animation:none!important}}
 `;
 document.head.append(css);
@@ -100,7 +124,7 @@ const DOG_AWAKE=
  '<g class="ear" style="animation-delay:2.4s"><g transform="translate(-7 0)">'+P('M64 8 C72 6 80 10 82 18 C84 26 81 33 77 37 C73 40 70 36 70.5 31 C71 26 69 22 67 20 Z')+'</g></g>'+
  P('M29 33 C28 14 40 6 49 6 C60 6 68 16 67 34 C66 49 59 57 48 57 C37 57 30 48 29 33 Z')+
  L('M45 4 L43.5 -1.5 M50 3.5 L50.5 -2.5 M55 4.5 L57.5 -.5')+
- '<g class="eyes"><g class="gl">'+eye(41,37.5,8)+eye(57.5,36,8)+'</g></g>'+nose(50,44)+
+ '<g class="eyes"><g class="gl">'+eye(41,37.5,8)+eye(57.5,36,8)+'</g></g>'+nose(50,44)+'<g class="tongue">'+P('M46.5 48.5 C46 55 54 55 53.5 48.5 Z')+'</g>'+
  '</g>'+ARM;
 
 // ---------- perrito dormido ----------
@@ -117,17 +141,18 @@ const DOG_SLEEP=
  '<text class="zz" x="58" y="46">z</text><text class="zz" x="65" y="37">z</text><text class="zz" x="72" y="28">Z</text>';
 
 // ---------- gatito despierto ----------
+const CAT_BODY='M39 47 C34 58 25 72 26 85 C27 95 35 100 46 100 C58 100 68 98 70 90 C72 80 66 66 61 47 Z';
 const CAT_AWAKE=
- '<g class="tail"><g transform="translate(10 -3)">'+tube('M20 90 C2 96 -3 74 8 66 C13 62 19 66 16 71',6)+'</g></g>'+
- '<g class="body">'+P(BODY)+L('M48 76 C47 84 49 91 52 98')+L('M38 86 C37 91 39 96 42 99')+'</g>'+
+ '<g class="tail"><g transform="translate(14 -2)">'+tube('M20 92 C4 96 -2 80 4 66 C8 57 15 56 16 62',5)+'</g></g>'+
+ '<g class="body">'+P(CAT_BODY)+L('M47 74 C46 84 48 92 51 99')+L('M37 88 C36 93 38 97 41 100')+L('M62 78 C66 84 66 92 63 97',1.5)+'</g>'+
  '<g class="head">'+
- '<g class="ear"><g transform="translate(5 1)">'+P('M27 20 C25 12 24 6 25 2 C33 4 41 8 46 12 Z')+L('M29 14 C29 10 29 8 30 6',1.5)+'</g></g>'+
- '<g class="ear" style="animation-delay:4.2s"><g transform="translate(-5 1)">'+P('M69 20 C71 12 72 6 71 2 C63 4 55 8 50 12 Z')+L('M67 14 C67 10 67 8 66 6',1.5)+'</g></g>'+
- P('M29 33 C28 14 40 8 49 8 C60 8 68 16 67 34 C66 49 59 57 48 57 C37 57 30 48 29 33 Z')+
- L('M45 10 L45.5 16 M50 9.5 L50 15.5 M55 10 L54.5 16')+
- '<g class="eyes"><g class="gl">'+eye(41,37.5,6)+eye(57.5,36.5,6)+'</g></g>'+
- '<path d="M47.5 43 L52.5 43 L50 46 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
- '<g class="wh">'+L('M38 45 L27 43 M38 48 L28 51',1.4)+'</g><g class="wh" style="animation-delay:.25s">'+L('M60 44 L71 42 M60 47 L70 50',1.4)+'</g>'+
+ '<g class="ear"><g transform="translate(3 2)">'+P('M25 22 C22 13 22 6 24 0 C32 2 41 7 46 12 Z')+P('M28 17 C27 12 27 8 28 5 C32 7 36 9 38 11 Z','style="fill:'+PK+'"')+'</g></g>'+
+ '<g class="ear" style="animation-delay:4.2s"><g transform="translate(-3 2)">'+P('M72 22 C75 13 75 6 73 0 C65 2 56 7 51 12 Z')+P('M69 17 C70 12 70 8 69 5 C65 7 61 9 59 11 Z','style="fill:'+PK+'"')+'</g></g>'+
+ P('M24 34 C23 16 36 9 49 9 C62 9 74 16 73 34 C72 49 62 57 48.5 57 C35 57 25 49 24 34 Z')+
+ L('M45 11 L45.5 17 M50 10.5 L50 16.5 M55 11 L54.5 17')+
+ '<g class="eyes"><g class="gl">'+eye(39.5,37,6)+eye(58.5,36.5,6)+'</g></g>'+
+ '<path d="M46.5 43 L51.5 43 L49 46 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+L('M49 46 C49 49 46 50 44.5 49 M49 46 C49 49 52 50 53.5 49',1.3)+
+ '<g class="wh">'+L('M35 45 L22 42.5 M35 48.5 L23 51.5',1.4)+'</g><g class="wh" style="animation-delay:.25s">'+L('M63 45 L76 42.5 M63 48.5 L75 51.5',1.4)+'</g>'+
  '</g>'+ARM;
 
 // ---------- gatito dormido ----------
@@ -197,13 +222,15 @@ function gesture(){
   const v=host.dataset.v,slot=v==='buscar'?sM:v==='descubrir'?sR:null;if(!slot)return;
   const pet=[...slot.children].find(p=>!p.classList.contains('gone'));if(!pet)return;
   const dog=pet.classList.contains('dog'),sl=pet.classList.contains('sleep'),bub=pet.querySelector('.bub');
-  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','wave']):pick(['stretch','miau','heart','wave']);
+  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','wave','wag','tilt','pant','sniff','eflick']):pick(['stretch','miau','heart','wash','blink','flick','purr','eflick']);
   let cls='',txt='',ms=2300;
   if(g==='hop'){cls='g-hop';ms=1300}else if(g==='stretch'){cls='g-stretch';ms=2300}else if(g==='sigh'){cls='g-sigh';ms=2500}else if(g==='heart'){cls='g-heart';ms=2000}
-  else if(g==='wave'){cls='g-wave';ms=2100}else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau~';ms=2200}else if(g==='dream'){cls='say';txt=dog?'🦴':'🐟';ms=2800}
+  else if(g==='wave'){cls='g-wave';ms=2100}else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau~';ms=2200}else if(g==='wag'){cls='g-wag';ms=2400}else if(g==='tilt'){cls='g-tilt';ms=2700}else if(g==='pant'){cls='g-pant';ms=3200}else if(g==='sniff'){cls='g-sniff';ms=2700}else if(g==='eflick'){cls='g-eflick';ms=2100}
+  else if(g==='wash'){cls='g-wash';ms=3400}else if(g==='blink'){cls='g-blink';ms=2700}else if(g==='flick'){cls='g-flick';ms=1700}else if(g==='purr'){cls='say g-purr';txt='mrrr…';ms=3000}
+  else if(g==='dream'){cls='say';txt=dog?'🦴':'🐟';ms=2800}
   if(txt)bub.textContent=txt;cls.split(' ').forEach(c=>pet.classList.add(c));
   setTimeout(()=>cls.split(' ').forEach(c=>pet.classList.remove(c)),ms)}
-(function loop(){setTimeout(()=>{try{gesture()}catch(e){}loop()},14000+Math.random()*26000)})();
+(function loop(){setTimeout(()=>{try{gesture()}catch(e){}loop()},10000+Math.random()*20000)})();
 // primer gesto temprano para que se note
 setTimeout(()=>{try{gesture()}catch(e){}},7000);
 try{new MutationObserver(sync).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']})}catch(e){}
