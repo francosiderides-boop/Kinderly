@@ -114,6 +114,15 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr .kr-panel.on{transform:none}#kr .kr-ph{display:flex;align-items:center;gap:8px;padding:12px 16px 4px}#kr .kr-ph h4{flex:1;margin:0;font:600 1rem var(--serif)}'+
 '#kr .kr-pb{overflow:auto;padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px))}'+
 '#kr .kr-tabs{display:flex;gap:6px;margin:4px 0 10px}#kr .kr-tabs button{flex:1}'+
+'#kr .kr-panel{border-radius:22px 22px 0 0;max-height:68%}#kr .kr-panel::before{content:"";display:block;width:38px;height:4px;border-radius:2px;background:rgba(128,128,128,.4);margin:8px auto 0;flex:none}'+
+'#kr .ap-s{margin:0 0 16px}#kr .ap-l{font:600 .68rem var(--sans);letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:0 2px 8px}'+
+'#kr .ap-size{display:flex;align-items:center;gap:10px;background:rgba(128,128,128,.12);border-radius:14px;padding:4px}#kr .ap-size .ap-st{flex:1;height:44px;border:0;border-radius:11px;background:rgba(128,128,128,.14);font-size:1.05rem}#kr .ap-pct{min-width:56px;text-align:center;font:600 .95rem var(--sans);font-variant-numeric:tabular-nums}'+
+'#kr .ap-fonts,#kr .ap-themes{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px;scroll-snap-type:x proximity}#kr .ap-fonts::-webkit-scrollbar,#kr .ap-themes::-webkit-scrollbar{display:none}'+
+'#kr .ap-f{flex:none;width:84px;height:auto;padding:10px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:14px;scroll-snap-align:start}#kr .ap-fa{font-size:1.6rem;line-height:1.1}#kr .ap-fn{font:500 .68rem var(--sans);opacity:.75;max-width:100%;overflow:hidden;text-overflow:ellipsis}'+
+'#kr .ap-t{flex:none;min-width:64px;height:auto;padding:6px 4px;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px}#kr .ap-tc{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font:600 1rem Georgia,serif;border:2px solid rgba(128,128,128,.3);box-sizing:border-box}#kr .ap-tn{font:500 .68rem var(--sans);opacity:.75}#kr .ap-t.sel{background:transparent;border:0}#kr .ap-t.sel .ap-tc{border-color:#5468A3;box-shadow:0 0 0 3px rgba(84,104,163,.28)}#kr .ap-t.sel .ap-tn{opacity:1;font-weight:700}'+
+'#kr .ap-seg{display:flex;gap:2px;background:rgba(128,128,128,.14);border-radius:12px;padding:3px}#kr .ap-seg button{flex:1;border:0;height:38px;border-radius:9px;background:transparent;font-weight:500;padding:0 6px}#kr .ap-seg button.sel{background:var(--krbg);box-shadow:0 1px 4px rgba(0,0,0,.18),0 0 0 .5px rgba(128,128,128,.25);font-weight:700}'+
+'#kr .kr-panel button{box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}#kr .ap-seg button.sel{box-shadow:0 1px 3px rgba(0,0,0,.18)}#kr .ap-fonts,#kr .ap-themes{scroll-padding-left:16px;scroll-snap-type:none}#kr .ap-t{border-radius:14px}'+
+'#kr .ap-f.sel{background:rgba(84,104,163,.16);border-color:#5468A3}#kr .ap-f.sel .ap-fn{opacity:1;font-weight:700}'+
 '#kr .li{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid rgba(128,128,128,.2);border-radius:0;height:auto;min-height:44px;padding:10px 4px;font-weight:500;white-space:normal}'+
 '#kr .li small{display:block;opacity:.65;font-weight:400;margin-top:2px}'+
 '#kr .row{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}#kr .row>b{min-width:78px;font-weight:600;font-size:.85rem}'+
@@ -291,14 +300,26 @@ async function open(o){
 
   // ----- apariencia -----
   const looks=()=>panel('Apariencia',b=>{
-    const group=(label,opts,get,set)=>{const r=el('div','row');r.append(el('b','',label));const bs=[];opts.forEach(([txt,val])=>{const x=btn(txt,()=>{set(val);bs.forEach(y=>y[1].classList.toggle('sel',y[0]===val))});bs.push([val,x]);x.classList.toggle('sel',get()===val);r.append(x)});b.append(r)};
-    const sz=el('div','row');sz.append(el('b','','Tamaño'),btn('A−',()=>{setPref('size',Math.max(80,prefs().size-10));style()},'Texto más chico'),btn('A+',()=>{setPref('size',Math.min(220,prefs().size+10));style()},'Texto más grande'));b.append(sz);
-    group('Fuente',Object.keys(FONTS).map(k=>[FONTS[k].name,k]),()=>prefs().font,v=>{setPref('font',v);style()});
-    group('Tema',Object.keys(THEMES).map(k=>[THEMES[k].name,k]),()=>prefs().theme,v=>{setPref('theme',v);restyle()});
-    group('Modo de lectura',[['Páginas','paginated'],['Scroll','scrolled']],()=>prefs().mode||'paginated',v=>{setPref('mode',v);if(remount)remount()});
-    group('Interlineado',[['Compacto',1.35],['Normal',1.6],['Amplio',1.9]],()=>prefs().lh,v=>{setPref('lh',v);style()});
-    group('Alineación',[['Izquierda',false],['Justificado',true]],()=>!!prefs().just,v=>{setPref('just',v);style()});
-    group('Márgenes',[['Chicos',6],['Medios',18],['Grandes',34]],()=>prefs().margin,v=>{setPref('margin',v);style()});
+    const sec=(label,node)=>{const w=el('section','ap-s');w.append(el('div','ap-l',label),node);b.append(w);return w};
+    // tamaño: stepper
+    const pct=el('span','ap-pct',prefs().size+'%');
+    const stp=(t,d,lab)=>btn(t,()=>{const v=Math.max(80,Math.min(220,prefs().size+d));setPref('size',v);pct.textContent=v+'%';style()},lab,'ap-st');
+    const sz=el('div','ap-size');sz.append(stp('A−',-10,'Texto más chico'),pct,stp('A+',10,'Texto más grande'));
+    sec('Tamaño del texto',sz);
+    // fuentes: carrusel con vista previa
+    const fr=el('div','ap-fonts');const fb={};
+    Object.keys(FONTS).forEach(k=>{const x=btn('',()=>{setPref('font',k);style();Object.keys(fb).forEach(j=>fb[j].classList.toggle('sel',j===k))},FONTS[k].name,'ap-f');const g=el('span','ap-fa','Aa');g.style.fontFamily=FONTS[k].css;x.append(g,el('span','ap-fn',FONTS[k].name));x.classList.toggle('sel',prefs().font===k);fb[k]=x;fr.append(x)});
+    sec('Fuente',fr);
+    // tema: círculos de color
+    const tr=el('div','ap-themes');const tb={};
+    Object.keys(THEMES).forEach(k=>{const T=THEMES[k];const x=btn('',()=>{setPref('theme',k);restyle();Object.keys(tb).forEach(j=>tb[j].classList.toggle('sel',j===k))},T.name,'ap-t');const c=el('span','ap-tc','Aa');if(k==='auto'){c.style.background='linear-gradient(135deg,#F7F6F1 50%,#12151C 50%)';c.style.color='#7d8590'}else{c.style.background=T.bg;c.style.color=T.fg}x.append(c,el('span','ap-tn',T.name));x.classList.toggle('sel',prefs().theme===k);tb[k]=x;tr.append(x)});
+    sec('Tema',tr);
+    // segmentados
+    const seg=(label,opts,get,set)=>{const r=el('div','ap-seg');const bs=[];opts.forEach(([txt,val])=>{const x=btn(txt,()=>{set(val);bs.forEach(y=>y[1].classList.toggle('sel',y[0]===val))});bs.push([val,x]);x.classList.toggle('sel',get()===val);r.append(x)});sec(label,r)};
+    seg('Modo de lectura',[['Páginas','paginated'],['Scroll','scrolled']],()=>prefs().mode||'paginated',v=>{setPref('mode',v);if(remount)remount()});
+    seg('Interlineado',[['Compacto',1.35],['Normal',1.6],['Amplio',1.9]],()=>prefs().lh,v=>{setPref('lh',v);style()});
+    seg('Alineación',[['Izquierda',false],['Justificado',true]],()=>!!prefs().just,v=>{setPref('just',v);style()});
+    seg('Márgenes',[['Chicos',6],['Medios',18],['Grandes',34]],()=>prefs().margin,v=>{setPref('margin',v);style()});
     b.append(el('p','note','“Automático” sigue el modo claro u oscuro de tu celular. Tocá el centro de la página para ocultar o mostrar los controles; los bordes pasan de página.'));
   });
 
