@@ -17,12 +17,13 @@ const MOODS=[ // mismo criterio que discover.js
 ['chicos',['children','juvenile','fairy tales'],/child|juvenile|fairy|young/i],
 ['top',[''],null]
 ];
-const PAGES=4,MAX=72;
+const PAGES=3,MAX=72,BUDGET=12*60*1000,T0=Date.now();
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 async function get(url){
-  for(let i=0;i<4;i++){
-    try{const r=await fetch(url,{signal:AbortSignal.timeout(60000),headers:{'user-agent':'kinderly-catalog/1'}});if(r.ok)return await r.json();console.warn('HTTP',r.status,url)}catch(e){console.warn('err',e.message,url)}
-    await sleep(2000*(i+1));
+  for(let i=0;i<3;i++){
+    if(Date.now()-T0>BUDGET)return null;
+    try{const r=await fetch(url,{signal:AbortSignal.timeout(30000),headers:{'user-agent':'kinderly-catalog/1'}});if(r.ok)return await r.json();console.warn('HTTP',r.status,url)}catch(e){console.warn('err',e.message,url)}
+    await sleep(1500*(i+1));
   }
   return null;
 }
@@ -33,18 +34,14 @@ const ok=(b,re)=>{
 };
 await mkdir('catalog',{recursive:true});
 let total=0;
-for(const [id,topics,re] of MOODS){
+// todas las categorías a la vez (Gutendex es lento, pero tolera pedidos en paralelo)
+await Promise.all(MOODS.map(async ([id,topics,re])=>{
   const seen=new Map();
-  for(const t of topics){
-    for(let p=1;p<=PAGES;p++){
-      const d=await get('https://gutendex.com/books/?languages=es&sort=popular&page='+p+(t?'&topic='+encodeURIComponent(t):''));
-      if(!d)break;
-      (d.results||[]).forEach(b=>{if(!seen.has(b.id)&&ok(b,re))seen.set(b.id,{i:b.id,t:b.title,a:(b.authors||[]).map(x=>x.name).join('; '),c:b.formats['image/jpeg']||'',e:b.formats['application/epub+zip'],d:b.download_count||0,s:((b.summaries||[])[0]||'').slice(0,600)})});
-      if(!d.next)break;
-    }
-  }
+  const urls=[];topics.forEach(t=>{for(let p=1;p<=PAGES;p++)urls.push('https://gutendex.com/books/?languages=es&sort=popular&page='+p+(t?'&topic='+encodeURIComponent(t):''))});
+  const res=await Promise.all(urls.map(get));
+  res.forEach(d=>{if(!d)return;(d.results||[]).forEach(b=>{if(!seen.has(b.id)&&ok(b,re))seen.set(b.id,{i:b.id,t:b.title,a:(b.authors||[]).map(x=>x.name).join('; '),c:b.formats['image/jpeg']||'',e:b.formats['application/epub+zip'],d:b.download_count||0,s:((b.summaries||[])[0]||'').slice(0,600)})})});
   const list=[...seen.values()].sort((x,y)=>y.d-x.d).slice(0,MAX);
   if(list.length){await writeFile('catalog/'+id+'.json',JSON.stringify(list));total+=list.length}
   console.log(id,list.length);
-}
+}));
 await writeFile('catalog/index.json',JSON.stringify({updated:new Date().toISOString(),total}));

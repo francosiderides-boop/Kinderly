@@ -9,9 +9,13 @@ on:
       - '.github/workflows/catalog.yml'
 permissions:
   contents: write
+concurrency:
+  group: catalogo
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
