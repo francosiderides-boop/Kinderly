@@ -8,8 +8,8 @@ const NS='http://www.w3.org/2000/svg';
 
 const css=document.createElement('style');
 css.textContent=`
-:root{--pk-ink:#1E1E24;--pk-fill:#FFFFFF;--pk-pink:#F6B9B9}
-:root[data-theme="dark"]{--pk-ink:#14131A;--pk-fill:#F1E9DB;--pk-pink:#E8A9A9}
+:root{--pk-ink:#2B2723;--pk-fill:#FFFFFF;--pk-pink:#F6B9B9}
+:root[data-theme="dark"]{--pk-ink:#1A1714;--pk-fill:#F1E9DB;--pk-pink:#E8A9A9}
 .pets{position:fixed;left:0;right:0;bottom:calc(73px + env(safe-area-inset-bottom,0px));height:0;z-index:7;pointer-events:none}
 .pets.off{display:none}
 .pets .slot{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:opacity .5s ease}
@@ -24,7 +24,7 @@ css.textContent=`
 .pet .a,.pet .z{position:absolute;inset:0;transition:opacity .6s}
 .pet .z{opacity:0}.pet.sleep .a{opacity:0}.pet.sleep .z{opacity:1}
 .pet svg{width:100%;height:100%;overflow:visible;filter:url(#kpwob)}
-.pet .ln.sk{stroke-width:.9;opacity:.55}
+.pet .ln.sk{stroke-width:.9;opacity:.5}.pet .ln.sk2{stroke-width:.6;opacity:.35}
 .pet .z svg{transform:translateY(-9%)}
 .pet .ln{stroke:var(--pk-ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
 .pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pwag 1.1s ease-in-out infinite}
@@ -99,15 +99,17 @@ css.textContent=`
 `;
 document.head.append(css);
 
-if(!document.getElementById('kpwob')){const f=document.createElement('div');f.style.cssText='position:absolute;width:0;height:0;overflow:hidden';f.innerHTML='<svg xmlns="'+NS+'" width="0" height="0"><filter id="kpwob" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".035 .05" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.4" xChannelSelector="R" yChannelSelector="G"/></filter></svg>';document.body.appendChild(f)}
+if(!document.getElementById('kpwob')){const f=document.createElement('div');f.style.cssText='position:absolute;width:0;height:0;overflow:hidden';f.innerHTML='<svg xmlns="'+NS+'" width="0" height="0"><filter id="kpwob" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".03 .045" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" result="d1"/><feTurbulence type="fractalNoise" baseFrequency=".22" numOctaves="1" seed="3" result="n2"/><feDisplacementMap in="d1" in2="n2" scale="1.3" xChannelSelector="G" yChannelSelector="R"/></filter></svg>';document.body.appendChild(f)}
 const sv=h=>{const d=document.createElement('div');d.innerHTML='<svg xmlns="'+NS+'" viewBox="0 -5 100 105" stroke-width="2.1">'+h+'</svg>';return d.firstChild};
 const F='var(--pk-fill)',PK='var(--pk-pink)',INK='var(--pk-ink)';
 // línea limpia con relleno blanco, estilo dibujo simple
 // trazo "a mano": relleno corrido (mal registrado), línea doble levemente desfasada
-const P=(d,x)=>'<path d="'+d+'" style="fill:'+F+';stroke:none" transform="translate(1.3 1.5)"/><path class="ln" d="'+d+'" '+(x||'')+'/><path class="ln sk" d="'+d+'" transform="translate(.7 -.6) rotate(.6 50 50)"/>';
-const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/><path class="ln sk" d="'+d+'" transform="translate(.5 .6)"/>';
+let _n=0;
+const gap=()=>{_n++;const g=2.2+((_n*7)%5)*.7,o=(_n*37)%100;return 'pathLength="100" stroke-dasharray="'+(100-g)+' '+g+'" stroke-dashoffset="-'+o+'"'};
+const P=(d,x)=>'<path d="'+d+'" style="fill:'+F+';stroke:none" transform="translate(1.4 1.6)"/><path class="ln" d="'+d+'" '+gap()+' '+(x||'')+'/><path class="ln sk" d="'+d+'" transform="translate(.8 -.7) rotate(.7 50 50)"/><path class="ln sk2" d="'+d+'" transform="translate(-.5 .5) rotate(-.5 50 50)"/>';
+const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/><path class="ln sk" d="'+d+'" transform="translate(.5 .7)"/>';
 const tube=(d,w)=>'<path class="ln" d="'+d+'" stroke-width="'+(w+3.6)+'"/><path d="'+d+'" fill="none" stroke="'+F+'" stroke-width="'+w+'" stroke-linecap="round"/>';
-const eye=(x,y,r)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="1.75" ry="2.65" fill="'+INK+'" transform="rotate('+r+' '+x+' '+y+')"/>';
+const eye=(x,y,r,k)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+(1.75*(k||1))+'" ry="'+(2.65*(k||1))+'" fill="'+INK+'" transform="rotate('+r+' '+x+' '+y+')"/>';
 const shut=(x,y,w)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+INK+'" stroke-width="1.9" stroke-linecap="round"/>';
 const nose=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="2.5" ry="1.7" fill="'+INK+'"/>';
 // patita levantada con almohadilla
@@ -118,14 +120,14 @@ const BODY='M37 47 C33 58 29 72 30 84 C31 94 37 99 44 99.5 C53 100 61 99 64 92 C
 // ---------- perrito despierto ----------
 const DOG_AWAKE=
  '<g class="tail">'+P('M30 84 C21 86 13 82 12 75 C19 72 27 75 30 80 Z')+'</g>'+
- '<g class="body">'+P(BODY)+L('M48 76 C47 84 49 91 52 98')+L('M38 86 C37 91 39 96 42 99')+'</g>'+
- '<g class="head">'+
+ '<g class="body">'+P(BODY)+L('M48 76 C47 84 49 91 52 98')+L('M38 86 C37 91 39 96 42 99')+L('M57 86 l4 -3 M55 91 l5 -3',1.2)+'</g>'+
+ '<g class="head"><g transform="rotate(-3 48 42)">'+
  '<g class="ear"><g transform="translate(7 0)">'+P('M28 12 C22 8 14 10 9 17 C5 24 6 34 10 39 C14 43 20 41 22.5 36 C24 32 24 26 24.5 22 Z')+'</g></g>'+
- '<g class="ear" style="animation-delay:2.4s"><g transform="translate(-7 0)">'+P('M64 8 C72 6 80 10 82 18 C84 26 81 33 77 37 C73 40 70 36 70.5 31 C71 26 69 22 67 20 Z')+'</g></g>'+
+ '<g class="ear" style="animation-delay:2.4s"><g transform="translate(-7 3) rotate(5 70 20)">'+P('M64 8 C72 6 80 10 82 18 C84 26 81 33 77 37 C73 40 70 36 70.5 31 C71 26 69 22 67 20 Z')+'</g></g>'+
  P('M29 33 C28 14 40 6 49 6 C60 6 68 16 67 34 C66 49 59 57 48 57 C37 57 30 48 29 33 Z')+
- L('M45 4 L43.5 -1.5 M50 3.5 L50.5 -2.5 M55 4.5 L57.5 -.5')+
- '<g class="eyes"><g class="gl">'+eye(41,37.5,8)+eye(57.5,36,8)+'</g></g>'+nose(50,44)+'<g class="tongue">'+P('M46.5 48.5 C46 55 54 55 53.5 48.5 Z')+'</g>'+
- '</g>'+ARM;
+ L('M45 4 L43 -1.5 M50 3.5 L51 -2.5 M55 4.5 L58.5 .5')+L('M23 16 C21 21 21 26 23 30 M26 36 l-3 2 M27 40 l-3 1.5',1.2)+L('M54 59 l-1.5 3.5 M58 58.5 l-.5 3.5',1.2)+
+ '<g class="eyes"><g class="gl">'+eye(41,38,10,.92)+eye(57.5,35.5,3,1.12)+'</g></g>'+nose(50,44)+'<g class="tongue">'+P('M46.5 48.5 C46 55 54 55 53.5 48.5 Z')+'</g>'+
+ '</g></g>'+ARM;
 
 // ---------- perrito dormido ----------
 const DOG_SLEEP=
@@ -144,16 +146,16 @@ const DOG_SLEEP=
 const CAT_BODY='M39 47 C34 58 25 72 26 85 C27 95 35 100 46 100 C58 100 68 98 70 90 C72 80 66 66 61 47 Z';
 const CAT_AWAKE=
  '<g class="tail"><g transform="translate(14 -2)">'+tube('M20 92 C4 96 -2 80 4 66 C8 57 15 56 16 62',5)+'</g></g>'+
- '<g class="body">'+P(CAT_BODY)+L('M47 74 C46 84 48 92 51 99')+L('M37 88 C36 93 38 97 41 100')+L('M62 78 C66 84 66 92 63 97',1.5)+'</g>'+
- '<g class="head">'+
+ '<g class="body">'+P(CAT_BODY)+L('M47 74 C46 84 48 92 51 99')+L('M37 88 C36 93 38 97 41 100')+L('M62 78 C66 84 66 92 63 97',1.5)+L('M32 80 l-3 3 M33 86 l-3 3 M56 92 l4 -3',1.2)+'</g>'+
+ '<g class="head"><g transform="rotate(-3 48 42)">'+
  '<g class="ear"><g transform="translate(3 2)">'+P('M25 22 C22 13 22 6 24 0 C32 2 41 7 46 12 Z')+P('M28 17 C27 12 27 8 28 5 C32 7 36 9 38 11 Z','style="fill:'+PK+'"')+'</g></g>'+
  '<g class="ear" style="animation-delay:4.2s"><g transform="translate(-3 2)">'+P('M72 22 C75 13 75 6 73 0 C65 2 56 7 51 12 Z')+P('M69 17 C70 12 70 8 69 5 C65 7 61 9 59 11 Z','style="fill:'+PK+'"')+'</g></g>'+
  P('M24 34 C23 16 36 9 49 9 C62 9 74 16 73 34 C72 49 62 57 48.5 57 C35 57 25 49 24 34 Z')+
  L('M45 11 L45.5 17 M50 10.5 L50 16.5 M55 11 L54.5 17')+
- '<g class="eyes"><g class="gl">'+eye(39.5,37,6)+eye(58.5,36.5,6)+'</g></g>'+
+ '<g class="eyes"><g class="gl">'+eye(39.5,37.5,8,1.1)+eye(58.5,36,2,.9)+'</g></g>'+
  '<path d="M46.5 43 L51.5 43 L49 46 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+L('M49 46 C49 49 46 50 44.5 49 M49 46 C49 49 52 50 53.5 49',1.3)+
  '<g class="wh">'+L('M35 45 L22 42.5 M35 48.5 L23 51.5',1.4)+'</g><g class="wh" style="animation-delay:.25s">'+L('M63 45 L76 42.5 M63 48.5 L75 51.5',1.4)+'</g>'+
- '</g>'+ARM;
+ '</g></g>'+ARM;
 
 // ---------- gatito dormido ----------
 const CAT_SLEEP=
