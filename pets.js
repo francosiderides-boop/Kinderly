@@ -112,6 +112,8 @@ const P=(d,x,c)=>'<path d="'+d+'" style="fill:'+(c||F)+';stroke:none" transform=
 const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/><path class="ln sk" d="'+d+'" transform="translate(.5 .7)"/>';
 const tube=(d,w)=>'<path class="ln" d="'+d+'" stroke-width="'+(w+3.6)+'"/><path d="'+d+'" fill="none" stroke="'+F+'" stroke-width="'+w+'" stroke-linecap="round"/>';
 const eye=(x,y,r,k)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+(1.75*(k||1))+'" ry="'+(2.65*(k||1))+'" fill="'+INK+'" transform="rotate('+r+' '+x+' '+y+')"/>';
+const eyeH=(x,y,r,k)=>eye(x,y,r,k)+'<circle cx="'+(x+.9)+'" cy="'+(y-1.2*(k||1))+'" r="'+(.85*(k||1))+'" fill="#fff"/>';
+const bl=(x,y,w)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+(w||4)+'" ry="'+((w||4)*.65)+'" fill="'+PK+'" opacity=".75"/>';
 const shut=(x,y,w)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+INK+'" stroke-width="1.9" stroke-linecap="round"/>';
 const nose=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="2.5" ry="1.7" fill="'+INK+'"/>';
 const TAN='var(--pk-tan)';
@@ -124,14 +126,14 @@ const DOG_AWAKE=
  '<g class="body">'+P(D_TORSO)+L('M20 76 C28 68 41 72 43 84 C44 92 40 97 33 98',1.8)+P('M14 97 C14 92 30 91 37 95 C39 99 31 100 24 100 L16 100 Z')+L('M30 56 l-3 3.5 M24 62 l-3 3.5',1.2)+'</g>'+
  '<g class="arm">'+LIMB('M55 60 C54 74 56 86 56 93 C56 99 68 99 68 93 C68 86 67 74 66.5 60 Z','M55 68 C54 77 56 86 56 93 C56 99 68 99 68 93 C68 86 67 77 66.5 68')+L('M62 94 L62 98',1.3)+'</g>'+
  '<path d="M49 43 C56 49 62 52 68 51" fill="none" stroke="#5468A3" stroke-width="3.6" stroke-linecap="round"/>'+
- '<g class="head">'+
- P('M58 22 C60 14 72 12 80 18 C84 21 90 24 94 28 C96 32 93 36 88 37 C82 38 78 38 74 42 C68 46 58 42 57 34 Z')+
- L('M69 19.5 l5 -1.5',1.3)+
- '<g class="eyes"><g class="gl">'+eye(73,25.5,0,.95)+'</g></g>'+
- '<ellipse cx="93.6" cy="28.6" rx="3.1" ry="2.5" fill="'+INK+'"/>'+L('M91 36 C86 38.5 80 37 76.5 36',1.4)+
- '<g class="tongue"><path class="ln" d="M82 37.5 C81 45 88 45 87 37 Z" style="fill:'+PK+'"/></g>'+
- '<g class="ear">'+P('M60 17 C52 16 46 24 46 34 C46 42 52 46 57 42 C61 38 63 28 63 20 Z','',TAN)+'</g>'+
- '</g>';
+ '<g class="head"><g transform="translate(-4 -4) rotate(-2 62 46)">'+
+ P('M56 24 C56 12 68 8 78 12 C86 15 92 21 93 28 C94 34 90 38 84 39 C79 40 76 43 72 45 C64 49 55 43 55 33 Z')+
+ L('M67 17 l6 -1.8',1.3)+
+ '<g class="eyes"><g class="gl">'+eyeH(72,26,0,1.3)+'</g></g>'+bl(78,34.5,3.8)+
+ '<ellipse cx="92" cy="28.4" rx="3.6" ry="2.9" fill="'+INK+'"/>'+L('M89 36.5 C85 39 80 38 77 37',1.4)+
+ '<g class="tongue"><path class="ln" d="M82 38 C81 46 89 46 88 37.500 Z" style="fill:'+PK+'"/></g>'+
+ '<g class="ear">'+P('M60 15 C50 13 43 22 43 34 C43 44 51 49 57 44 C62 40 64 28 64 19 Z','',TAN)+'</g>'+
+ '</g></g>';
 const DOG_SLEEP=
  '<g class="body">'+
  '<g class="tail">'+P('M12 90 C3 91 -2 83 1 75 C5 79 10 81 14 83 Z')+'</g>'+
@@ -150,15 +152,15 @@ const CAT_AWAKE=
  L('M34 56 C40 62 41 70 38 76 M27 66 C31 70 31 76 29 80',1.4)+'</g>'+
  '<g class="arm">'+LIMB('M52 66 C60 60 69 52 73 45 C76 41 82 43 80 48 C77 55 70 66 62 72 Z','M54 66 C62 60 70 53 73.500 45 C76 41 82 43 80 48 C77 55 70 66 62 72')+'</g>'+
  '<g class="tail">'+tube('M26 94 C42 100 70 100 86 93 C93 89 93 81 89 78',4.6)+'</g>'+
- '<g class="head">'+
- '<g class="ear"><g>'+P('M51 26 L49 6 L63 15 Z')+'</g></g>'+
- '<g class="ear" style="animation-delay:4.2s"><g>'+P('M72 16 L83 4 L85 24 Z')+P('M75 16 L82 8 L83 20 Z','',PK)+'</g></g>'+
- P('M50 30 C50 18 60 14 68 16 C78 18 83 26 83 34 C83 42 75 48 66 48 C56 48 50 40 50 30 Z')+
- L('M62 17 L63 22.5 M67 16 L67.5 21.5 M72 17 L72 22',1.6)+
- '<g class="eyes"><g class="gl">'+eye(64,32,4,1.05)+eye(76.5,31,0,.9)+'</g></g>'+
- '<path d="M79 35.5 L84 35.5 L81.5 38.5 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+L('M81.5 38.5 C81 41.5 78.5 42.5 77 41 M81.5 38.5 C82 41.5 84.5 42 85.5 40.5',1.2)+
- '<g class="wh">'+L('M82 41 L94 39 M82 43.5 L93 46',1.3)+'</g>'+
- '</g>';
+ '<g class="head"><g transform="translate(-3 -3)">'+
+ '<g class="ear"><g>'+P('M50 28 L46 3 L65 14 Z')+P('M50 22 L48 9 L59 15 Z','',PK)+'</g></g>'+
+ '<g class="ear" style="animation-delay:4.2s"><g>'+P('M74 14 L88 2 L90 26 Z')+P('M77 15 L86 8 L87 21 Z','',PK)+'</g></g>'+
+ P('M47 31 C47 16 59 10 70 12 C82 14 90 24 90 34 C90 45 79 52 67 52 C55 52 47 43 47 31 Z')+
+ L('M62 14.500 L63 20 M68 13.500 L68.500 19 M74 14.500 L74 20',1.6)+
+ '<g class="eyes"><g class="gl">'+eyeH(62,33,4,1.35)+eyeH(78.5,32,0,1.25)+'</g></g>'+bl(55,41,3.6)+bl(85,40,3.4)+
+ '<path d="M82 38 L87 38 L84.500 41 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+L('M84.500 41 C84 44 81.500 45 80 43.500 M84.500 41 C85 44 87.500 44.500 88.500 43',1.2)+
+ '<g class="wh">'+L('M87 42 L98 39.500 M87 45 L97 47.500',1.3)+'</g>'+
+ '</g></g>';
 const CAT_SLEEP=
  '<g class="body">'+
  P('M10 82 C8 64 24 52 46 52 C70 52 90 62 90 80 C90 94 74 99 50 99 C26 99 12 94 10 82 Z')+
