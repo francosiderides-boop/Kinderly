@@ -8,13 +8,13 @@ const NS='http://www.w3.org/2000/svg';
 
 const css=document.createElement('style');
 css.textContent=`
-:root{--pk-ink:#2B2723;--pk-fill:#FFFFFF;--pk-pink:#F6B9B9}
-:root[data-theme="dark"]{--pk-ink:#1A1714;--pk-fill:#F1E9DB;--pk-pink:#E8A9A9}
+:root{--pk-ink:#2B2723;--pk-fill:#FFFFFF;--pk-pink:#F6B9B9;--pk-tan:#E6C7A2}
+:root[data-theme="dark"]{--pk-ink:#1A1714;--pk-fill:#F1E9DB;--pk-pink:#E8A9A9;--pk-tan:#CFA77B}
 .pets{position:fixed;left:0;right:0;bottom:calc(73px + env(safe-area-inset-bottom,0px));height:0;z-index:7;pointer-events:none}
 .pets.off{display:none}
 .pets .slot{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:opacity .5s ease}
 .pets[data-v="buscar"] .slot.main,.pets[data-v="descubrir"] .slot.rest{opacity:1}
-.pet{position:absolute;bottom:-2px;left:calc(10% - 24px);width:78px;height:78px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
+.pet{position:absolute;bottom:-2px;left:calc(10% - 24px);width:84px;height:84px;opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .7s cubic-bezier(.34,1.4,.64,1)}
 .slot.rest .pet{left:auto;right:calc(10% - 24px)}
 .pets.on .pet{opacity:1;transform:none}
 .pets.on .pet.gone{opacity:0;transform:translateY(6px)}
@@ -41,10 +41,11 @@ css.textContent=`
 @keyframes pglance{0%,38%,100%{transform:translateX(0)}44%,60%{transform:translateX(-1.8px)}68%,86%{transform:translateX(1.8px)}}
 @keyframes pwhisk{0%,90%,100%{transform:rotate(0)}94%{transform:rotate(3deg)}97%{transform:rotate(-2deg)}}
 @keyframes pswish{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(14deg)}}
-.pet .head{transform-box:view-box;transform-origin:48px 56px;animation:phead 9s ease-in-out infinite}
+.pet .head{transform-box:view-box;transform-origin:60px 46px;animation:phead 9s ease-in-out infinite}
 .pet.cat .head{animation-duration:11s}
 .pet .gl{animation:pglance 7s ease-in-out infinite}
 .pet.cat .tail{animation:pswish 5s ease-in-out infinite}
+@keyframes pswish{0%,100%{transform:rotate(-1.2deg)}50%{transform:rotate(2.4deg)}}
 .pet .wh{transform-box:fill-box;transform-origin:0% 50%;animation:pwhisk 6s ease-in-out infinite}
 /* gestos ocasionales */
 .pet .bub{position:absolute;left:50%;bottom:calc(100% - 2px);transform:translate(-50%,6px) scale(.6);opacity:0;background:#FFFDF8;color:#5A4636;border:1.6px solid #5A4636;border-radius:11px;padding:1px 7px;font:700 10.5px 'Instrument Sans',system-ui,sans-serif;white-space:nowrap;transition:opacity .25s,transform .45s cubic-bezier(.34,1.5,.64,1)}
@@ -60,7 +61,8 @@ css.textContent=`
 @keyframes gheart{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-22px) scale(1)}}
 @keyframes pwave{0%,62%,100%{transform:rotate(0)}68%{transform:rotate(-16deg)}76%{transform:rotate(10deg)}84%{transform:rotate(-14deg)}92%{transform:rotate(6deg)}}
 @keyframes gwave{0%,100%{transform:rotate(0)}12%{transform:rotate(-18deg)}28%{transform:rotate(12deg)}44%{transform:rotate(-18deg)}60%{transform:rotate(12deg)}76%{transform:rotate(-14deg)}90%{transform:rotate(4deg)}}
-.pet .arm{transform-box:view-box;transform-origin:72px 66px}
+.pet .arm{transform-box:view-box}.pet.dog .arm{transform-origin:60px 64px}.pet.cat .arm{transform-origin:58px 66px}
+.pet .tail.r{transform-origin:100% 100%}.pet.dog .a .ear{transform-origin:70% 0%}
 .pet.dog .a .arm{animation:pwave 8s ease-in-out infinite}
 .pet.cat .a .arm{opacity:0}
 .pet.g-wave .arm{opacity:1!important;animation:gwave 2s ease-in-out!important}
@@ -80,19 +82,19 @@ css.textContent=`
 .pet.g-wag .a .body{animation:gbounce .4s ease-in-out infinite}
 @keyframes gbounce{0%,100%{transform:none}50%{transform:scale(1.01,.985)}}
 .pet.g-tilt .a .head{animation:gtilt 2.6s ease-in-out!important}
-@keyframes gtilt{0%,100%{transform:rotate(0)}20%,78%{transform:rotate(-15deg) translateY(1px)}}
+@keyframes gtilt{0%,100%{transform:rotate(0)}20%,78%{transform:rotate(-14deg)}}
 .pet.g-sniff .a .head{animation:gsniff 2.6s ease-in-out!important}
-@keyframes gsniff{0%,100%{transform:none}14%{transform:translate(2px,7px) rotate(6deg)}28%{transform:translate(0,4px)}42%{transform:translate(2px,8px) rotate(6deg)}56%{transform:translate(0,4px)}72%{transform:translate(2px,7px) rotate(5deg)}88%{transform:none}}
+@keyframes gsniff{0%,100%{transform:none}14%{transform:rotate(14deg)}28%{transform:rotate(8deg)}42%{transform:rotate(15deg)}56%{transform:rotate(8deg)}72%{transform:rotate(14deg)}88%{transform:none}}
 .pet.g-eflick .a .ear{animation:geflick 1s ease-in-out 2!important}
 @keyframes geflick{0%,100%{transform:rotate(0)}30%{transform:rotate(-16deg)}60%{transform:rotate(6deg)}}
 .pet.g-blink .a .eyes{animation:gblink 2.6s ease-in-out!important}
 @keyframes gblink{0%,100%{transform:scaleY(1)}28%,72%{transform:scaleY(.12)}}
 .pet.g-flick .a .tail{animation:gflick .5s ease-in-out 3!important}
-@keyframes gflick{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(26deg)}}
+@keyframes gflick{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(7deg)}}
 .pet.g-wash .a .arm{opacity:1!important;animation:gwash .6s ease-in-out infinite!important}
-@keyframes gwash{0%,100%{transform:rotate(-36deg)}50%{transform:rotate(-50deg)}}
+@keyframes gwash{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(7deg)}}
 .pet.g-wash .a .head{animation:gwashh 3.4s ease-in-out!important}
-@keyframes gwashh{0%,100%{transform:rotate(0)}15%,85%{transform:rotate(-7deg) translateY(1px)}}
+@keyframes gwashh{0%,100%{transform:rotate(0)}15%,85%{transform:rotate(5deg) translateY(2px)}}
 .pet.g-purr .a .body{animation:gpurr .09s linear infinite}
 @keyframes gpurr{0%,100%{transform:translateX(-.5px)}50%{transform:translateX(.5px)}}
 @media (prefers-reduced-motion:reduce){.pet *{animation:none!important}}
@@ -106,70 +108,68 @@ const F='var(--pk-fill)',PK='var(--pk-pink)',INK='var(--pk-ink)';
 // trazo "a mano": relleno corrido (mal registrado), línea doble levemente desfasada
 let _n=0;
 const gap=()=>{_n++;const g=2.2+((_n*7)%5)*.7,o=(_n*37)%100;return 'pathLength="100" stroke-dasharray="'+(100-g)+' '+g+'" stroke-dashoffset="-'+o+'"'};
-const P=(d,x)=>'<path d="'+d+'" style="fill:'+F+';stroke:none" transform="translate(1.4 1.6)"/><path class="ln" d="'+d+'" '+gap()+' '+(x||'')+'/><path class="ln sk" d="'+d+'" transform="translate(.8 -.7) rotate(.7 50 50)"/><path class="ln sk2" d="'+d+'" transform="translate(-.5 .5) rotate(-.5 50 50)"/>';
+const P=(d,x,c)=>'<path d="'+d+'" style="fill:'+(c||F)+';stroke:none" transform="translate(1.4 1.6)"/><path class="ln" d="'+d+'" '+gap()+' '+(x||'')+'/><path class="ln sk" d="'+d+'" transform="translate(.8 -.7) rotate(.7 50 50)"/><path class="ln sk2" d="'+d+'" transform="translate(-.5 .5) rotate(-.5 50 50)"/>';
 const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/><path class="ln sk" d="'+d+'" transform="translate(.5 .7)"/>';
 const tube=(d,w)=>'<path class="ln" d="'+d+'" stroke-width="'+(w+3.6)+'"/><path d="'+d+'" fill="none" stroke="'+F+'" stroke-width="'+w+'" stroke-linecap="round"/>';
 const eye=(x,y,r,k)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+(1.75*(k||1))+'" ry="'+(2.65*(k||1))+'" fill="'+INK+'" transform="rotate('+r+' '+x+' '+y+')"/>';
 const shut=(x,y,w)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+INK+'" stroke-width="1.9" stroke-linecap="round"/>';
 const nose=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="2.5" ry="1.7" fill="'+INK+'"/>';
-// patita levantada con almohadilla
-const ARM='<g class="arm"><g transform="translate(-8 3)">'+P('M70 59 C79 58 85 53 85.5 46 C86 39 94.5 39.5 95 46.5 C95.5 54 87 66 77 72 L72 74 Z')+
-  '<ellipse cx="90" cy="47.5" rx="2.9" ry="2.4" fill="'+INK+'"/><circle cx="86.4" cy="43.6" r="1.15" fill="'+INK+'"/><circle cx="90" cy="42" r="1.15" fill="'+INK+'"/><circle cx="93.4" cy="43.8" r="1.15" fill="'+INK+'"/></g></g>';
-const BODY='M37 47 C33 58 29 72 30 84 C31 94 37 99 44 99.5 C53 100 61 99 64 92 C67 85 66 74 64 64 C63 56 62 51 60 47 Z';
-
-// ---------- perrito despierto ----------
+const TAN='var(--pk-tan)';
+// miembro: relleno + dos líneas abiertas (sin borde arriba)
+const LIMB=(fill,line)=>'<path d="'+fill+'" style="fill:'+F+';stroke:none"/>'+L(line);
+// ======== PERRO (de perfil, sentado, mirando a la derecha) ========
+const D_TORSO='M46 40 C34 44 22 54 16 70 C12 82 14 94 18 98 L66 98 C68 92 66 82 64 72 C63 62 66 54 66 46 Z';
 const DOG_AWAKE=
- '<g class="tail">'+P('M30 84 C21 86 13 82 12 75 C19 72 27 75 30 80 Z')+'</g>'+
- '<g class="body">'+P(BODY)+L('M48 76 C47 84 49 91 52 98')+L('M38 86 C37 91 39 96 42 99')+L('M57 86 l4 -3 M55 91 l5 -3',1.2)+'</g>'+
- '<g class="head"><g transform="rotate(-3 48 42)">'+
- '<g class="ear"><g transform="translate(7 0)">'+P('M28 12 C22 8 14 10 9 17 C5 24 6 34 10 39 C14 43 20 41 22.5 36 C24 32 24 26 24.5 22 Z')+'</g></g>'+
- '<g class="ear" style="animation-delay:2.4s"><g transform="translate(-7 3) rotate(5 70 20)">'+P('M64 8 C72 6 80 10 82 18 C84 26 81 33 77 37 C73 40 70 36 70.5 31 C71 26 69 22 67 20 Z')+'</g></g>'+
- P('M29 33 C28 14 40 6 49 6 C60 6 68 16 67 34 C66 49 59 57 48 57 C37 57 30 48 29 33 Z')+
- L('M45 4 L43 -1.5 M50 3.5 L51 -2.5 M55 4.5 L58.5 .5')+L('M23 16 C21 21 21 26 23 30 M26 36 l-3 2 M27 40 l-3 1.5',1.2)+L('M54 59 l-1.5 3.5 M58 58.5 l-.5 3.5',1.2)+
- '<g class="eyes"><g class="gl">'+eye(41,38,10,.92)+eye(57.5,35.5,3,1.12)+'</g></g>'+nose(50,44)+'<g class="tongue">'+P('M46.5 48.5 C46 55 54 55 53.5 48.5 Z')+'</g>'+
- '</g></g>'+ARM;
-
-// ---------- perrito dormido ----------
+ '<g class="tail r">'+P('M18 82 C8 82 1 73 2 61 C2 56 6 55 8 58 C11 66 15 70 22 72 Z')+'</g>'+
+ '<g class="body">'+P(D_TORSO)+L('M20 76 C28 68 41 72 43 84 C44 92 40 97 33 98',1.8)+P('M14 97 C14 92 30 91 37 95 C39 99 31 100 24 100 L16 100 Z')+L('M30 56 l-3 3.5 M24 62 l-3 3.5',1.2)+'</g>'+
+ '<g class="arm">'+LIMB('M55 60 C54 74 56 86 56 93 C56 99 68 99 68 93 C68 86 67 74 66.5 60 Z','M55 68 C54 77 56 86 56 93 C56 99 68 99 68 93 C68 86 67 77 66.5 68')+L('M62 94 L62 98',1.3)+'</g>'+
+ '<path d="M49 43 C56 49 62 52 68 51" fill="none" stroke="#5468A3" stroke-width="3.6" stroke-linecap="round"/>'+
+ '<g class="head">'+
+ P('M58 22 C60 14 72 12 80 18 C84 21 90 24 94 28 C96 32 93 36 88 37 C82 38 78 38 74 42 C68 46 58 42 57 34 Z')+
+ L('M69 19.5 l5 -1.5',1.3)+
+ '<g class="eyes"><g class="gl">'+eye(73,25.5,0,.95)+'</g></g>'+
+ '<ellipse cx="93.6" cy="28.6" rx="3.1" ry="2.5" fill="'+INK+'"/>'+L('M91 36 C86 38.5 80 37 76.5 36',1.4)+
+ '<g class="tongue"><path class="ln" d="M82 37.5 C81 45 88 45 87 37 Z" style="fill:'+PK+'"/></g>'+
+ '<g class="ear">'+P('M60 17 C52 16 46 24 46 34 C46 42 52 46 57 42 C61 38 63 28 63 20 Z','',TAN)+'</g>'+
+ '</g>';
 const DOG_SLEEP=
  '<g class="body">'+
- '<g class="tail">'+P('M83 82 C92 84 99 80 100 73 C93 70 86 73 83 78 Z')+'</g>'+
- P('M12 82 C10 66 26 58 46 58 C68 58 84 66 85 80 C85 92 76 98 56 98 L30 98 C18 98 13 92 12 82 Z')+
- L('M66 98 C68 90 66 84 62 80')+
- P('M8 56 C0 58 -2 72 3 82 C7 88 14 86 17 80 C19 74 18 64 16 58 Z')+
- P('M10 74 C8 58 22 50 38 51 C52 52 58 62 56 76 C54 90 40 94 26 92 C16 90 11 84 10 74 Z')+
- L('M28 49 L27 44 M34 48 L34.5 43 M40 49.5 L42.5 44.5')+
- shut(24,68,4.2)+shut(41,69,4.2)+nose(36,77)+
+ '<g class="tail">'+P('M12 90 C3 91 -2 83 1 75 C5 79 10 81 14 83 Z')+'</g>'+
+ P('M8 96 C4 80 14 66 34 62 C52 58 70 62 76 74 C80 84 76 96 66 98 L20 98 C14 98 10 98 8 96 Z')+L('M26 70 C32 66 40 66 46 69 M22 80 l-3 3',1.2)+
+ P('M52 92 C52 88 66 88 74 92 C74 98 56 99 52 95 Z')+
+ P('M60 66 C60 56 74 52 84 56 C92 59 96 66 94 74 C92 82 84 86 74 86 C66 86 60 78 60 66 Z')+
+ shut(77,66,3.6)+'<ellipse cx="94" cy="68.5" rx="3" ry="2.4" fill="'+INK+'"/>'+
+ P('M63 58 C54 58 52 72 58 80 C62 84 68 78 69 70 Z','',TAN)+
  '</g>'+
- '<text class="zz" x="58" y="46">z</text><text class="zz" x="65" y="37">z</text><text class="zz" x="72" y="28">Z</text>';
+ '<text class="zz" x="62" y="46">z</text><text class="zz" x="69" y="37">z</text><text class="zz" x="76" y="28">Z</text>';
 
-// ---------- gatito despierto ----------
-const CAT_BODY='M39 47 C34 58 25 72 26 85 C27 95 35 100 46 100 C58 100 68 98 70 90 C72 80 66 66 61 47 Z';
+// ======== GATO (de perfil, sentado, mirando a la derecha) ========
 const CAT_AWAKE=
- '<g class="tail"><g transform="translate(14 -2)">'+tube('M20 92 C4 96 -2 80 4 66 C8 57 15 56 16 62',5)+'</g></g>'+
- '<g class="body">'+P(CAT_BODY)+L('M47 74 C46 84 48 92 51 99')+L('M37 88 C36 93 38 97 41 100')+L('M62 78 C66 84 66 92 63 97',1.5)+L('M32 80 l-3 3 M33 86 l-3 3 M56 92 l4 -3',1.2)+'</g>'+
- '<g class="head"><g transform="rotate(-3 48 42)">'+
- '<g class="ear"><g transform="translate(3 2)">'+P('M25 22 C22 13 22 6 24 0 C32 2 41 7 46 12 Z')+P('M28 17 C27 12 27 8 28 5 C32 7 36 9 38 11 Z','style="fill:'+PK+'"')+'</g></g>'+
- '<g class="ear" style="animation-delay:4.2s"><g transform="translate(-3 2)">'+P('M72 22 C75 13 75 6 73 0 C65 2 56 7 51 12 Z')+P('M69 17 C70 12 70 8 69 5 C65 7 61 9 59 11 Z','style="fill:'+PK+'"')+'</g></g>'+
- P('M24 34 C23 16 36 9 49 9 C62 9 74 16 73 34 C72 49 62 57 48.5 57 C35 57 25 49 24 34 Z')+
- L('M45 11 L45.5 17 M50 10.5 L50 16.5 M55 11 L54.5 17')+
- '<g class="eyes"><g class="gl">'+eye(39.5,37.5,8,1.1)+eye(58.5,36,2,.9)+'</g></g>'+
- '<path d="M46.5 43 L51.5 43 L49 46 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+L('M49 46 C49 49 46 50 44.5 49 M49 46 C49 49 52 50 53.5 49',1.3)+
- '<g class="wh">'+L('M35 45 L22 42.5 M35 48.5 L23 51.5',1.4)+'</g><g class="wh" style="animation-delay:.25s">'+L('M63 45 L76 42.5 M63 48.5 L75 51.5',1.4)+'</g>'+
- '</g></g>'+ARM;
-
-// ---------- gatito dormido ----------
+ '<g class="body">'+P('M52 40 C38 46 26 60 24 76 C22 90 26 98 34 98 L62 98 C66 96 66 86 64 76 C63 62 64 52 62 44 Z')+
+ L('M26 78 C34 70 46 74 48 86 C49 93 44 97 38 98',1.8)+L('M58 66 C58 78 58 90 60 97',1.8)+P('M52 98 C52 94 66 94 67 98 C67 100 53 100 52 98 Z')+
+ L('M34 56 C40 62 41 70 38 76 M27 66 C31 70 31 76 29 80',1.4)+'</g>'+
+ '<g class="arm">'+LIMB('M52 66 C60 60 69 52 73 45 C76 41 82 43 80 48 C77 55 70 66 62 72 Z','M54 66 C62 60 70 53 73.500 45 C76 41 82 43 80 48 C77 55 70 66 62 72')+'</g>'+
+ '<g class="tail">'+tube('M26 94 C42 100 70 100 86 93 C93 89 93 81 89 78',4.6)+'</g>'+
+ '<g class="head">'+
+ '<g class="ear"><g>'+P('M51 26 L49 6 L63 15 Z')+'</g></g>'+
+ '<g class="ear" style="animation-delay:4.2s"><g>'+P('M72 16 L83 4 L85 24 Z')+P('M75 16 L82 8 L83 20 Z','',PK)+'</g></g>'+
+ P('M50 30 C50 18 60 14 68 16 C78 18 83 26 83 34 C83 42 75 48 66 48 C56 48 50 40 50 30 Z')+
+ L('M62 17 L63 22.5 M67 16 L67.5 21.5 M72 17 L72 22',1.6)+
+ '<g class="eyes"><g class="gl">'+eye(64,32,4,1.05)+eye(76.5,31,0,.9)+'</g></g>'+
+ '<path d="M79 35.5 L84 35.5 L81.5 38.5 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+L('M81.5 38.5 C81 41.5 78.5 42.5 77 41 M81.5 38.5 C82 41.5 84.5 42 85.5 40.5',1.2)+
+ '<g class="wh">'+L('M82 41 L94 39 M82 43.5 L93 46',1.3)+'</g>'+
+ '</g>';
 const CAT_SLEEP=
  '<g class="body">'+
- P('M8 78 C8 62 26 56 50 56 C76 56 92 64 92 78 C92 92 76 98 50 98 C24 98 8 92 8 78 Z')+
- L('M58 58 C62 66 60 74 56 80 M70 60 C74 68 72 77 68 82 M81 64 C84 71 82 79 78 84')+
- tube('M84 90 C60 102 30 100 16 90',6)+
- P('M14 62 L13 44 C20 45 28 50 32 54 Z')+P('M44 54 C48 49 52 46 55 43 C57 50 57 58 55 64 Z')+
- P('M10 74 C8 58 22 50 36 51 C52 52 58 62 56 76 C54 90 40 94 26 92 C16 90 11 84 10 74 Z')+
- L('M27 50 L27 45 M33 49 L33 44 M39 50 L40.5 45')+
- shut(24,68,4.2)+shut(41,69,4.2)+
- '<path d="M32.5 75 L38 75 L35.2 78.2 Z" fill="'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+
+ P('M10 82 C8 64 24 52 46 52 C70 52 90 62 90 80 C90 94 74 99 50 99 C26 99 12 94 10 82 Z')+
+ L('M54 54 C58 62 57 70 54 76 M66 56 C70 63 69 71 66 77 M78 60 C81 66 80 73 77 78',1.5)+
+ '<g class="tail">'+tube('M88 84 C76 98 40 100 20 94',4.6)+'</g>'+
+ P('M14 68 L12 52 L25 61 Z')+P('M30 62 L39 52 L41 66 Z')+
+ P('M12 78 C10 66 20 60 30 62 C40 64 44 74 40 84 C36 92 22 94 16 88 C13 85 12 82 12 78 Z')+
+ shut(20,76,3.2)+shut(32,77,3.2)+
+ '<path d="M24.5 82 L29.5 82 L27 85 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.3" stroke-linejoin="round"/>'+
  '</g>'+
- '<text class="zz" x="60" y="42">z</text><text class="zz" x="67" y="33">z</text><text class="zz" x="74" y="24">Z</text>';
+ '<text class="zz" x="46" y="46">z</text><text class="zz" x="53" y="37">z</text><text class="zz" x="60" y="28">Z</text>';
 
 const mk=(cls,a,z)=>{
   const w=document.createElement('div');w.className='pet '+cls;w.setAttribute('aria-hidden','true');
