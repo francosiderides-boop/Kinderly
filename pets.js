@@ -79,6 +79,33 @@ css.textContent=`
 @keyframes pear{0%,88%,100%{transform:rotate(0)}92%{transform:rotate(-8deg)}96%{transform:rotate(3deg)}}
 @keyframes ptw{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.1)}}
 
+.pet .spk{opacity:0;transform-box:fill-box;transform-origin:50% 100%;transition:opacity .15s}
+.pet.g-angry .a .spk{opacity:1}
+.pet.g-angry .a .body{animation:gshake .12s linear infinite!important;transform:scale(1.06,1.04)}
+@keyframes gshake{0%,100%{transform:scale(1.06,1.04) translateX(-.5px)}50%{transform:scale(1.06,1.04) translateX(.5px)}}
+.pet.g-angry .a .tail path{stroke-width:12px}
+.pet.g-angry .a .tail{animation:gflick .35s ease-in-out infinite!important}
+.pet.g-angry .a .ear{animation:none!important}
+.pet.g-angry .a .lk>.ear:nth-of-type(1){transform:rotate(-24deg)}.pet.g-angry .a .lk>.ear:nth-of-type(2){transform:rotate(24deg)}
+.pet .lid{transform-box:fill-box;transform-origin:50% 100%;transition:transform .2s}
+.pet.g-angry .a .lid.l{transform:rotate(14deg)}.pet.g-angry .a .lid.r{transform:rotate(-14deg)}
+.pet.g-angry .a .pp{transform-box:fill-box;transform-origin:center;transform:scale(.55,1.25)}
+.pet.g-angry .a .gl{transform:translate(0,.5px)!important}
+.pet.g-play .a .lid{transform:translateY(-9px)}
+.pet.g-play .a .pp{transform-box:fill-box;transform-origin:center;transform:scale(1.3);transition:transform .15s}
+.pet.g-play .a .gl{animation:gchase 1.6s ease-in-out infinite!important}
+@keyframes gchase{0%,100%{transform:translate(-2px,-1px)}50%{transform:translate(2.4px,1px)}}
+.pet.g-play .a .body{animation:gwig .5s ease-in-out infinite!important;transform-origin:50% 100%}
+@keyframes gwig{0%,100%{transform:scale(1.02,.94) translateX(-1.2px)}50%{transform:scale(1.02,.94) translateX(1.2px)}}
+.pet.g-play .a .tail{animation:gflick .4s ease-in-out infinite!important}
+.pet.g-play .a .arm{opacity:1!important;animation:gswat .7s ease-in-out infinite!important}
+@keyframes gswat{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(24deg)}}
+.pet .obj{position:absolute;left:80%;bottom:2px;font-size:15px;line-height:1;opacity:0;pointer-events:none;transform-origin:50% 90%}
+.pet.g-knock .obj{animation:gknock 3.6s ease-in-out forwards}
+@keyframes gknock{0%{opacity:0;transform:translate(0,0)}10%{opacity:1}50%{opacity:1;transform:translate(0,0) rotate(0)}62%{opacity:1;transform:translate(7px,-1px) rotate(14deg)}100%{opacity:0;transform:translate(24px,74px) rotate(170deg)}}
+.pet.g-knock .a .arm{opacity:1!important;animation:gknockarm 3.6s ease-in-out!important}
+@keyframes gknockarm{0%,38%{transform:rotate(-10deg)}50%{transform:rotate(30deg)}58%{transform:rotate(-6deg)}100%{transform:rotate(-10deg)}}
+.pet.g-knock .a .gl{transform:translate(0,.6px)!important}
 .pet.g-ignore .a .head{animation:gignore 3.2s ease-in-out!important}
 @keyframes gignore{0%,100%{transform:rotate(0)}18%,80%{transform:rotate(9deg) translateX(1px)}}
 .pet.g-ignore .a .gl{transform:translate(2.6px,.4px)!important}
@@ -120,9 +147,9 @@ const B=d=>'<path d="'+d+'" style="fill:var(--pk-cat);stroke:var(--pk-rim);strok
 const dot=(x,y,rx,ry,r)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" fill="'+INK+'" transform="rotate('+(r||0)+' '+x+' '+y+')"/>';
 const shut=(x,y,w,c)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+(c||INK)+'" stroke-width="1.9" stroke-linecap="round"/>';
 const WH=(d)=>'<path d="'+d+'" fill="none" stroke="var(--pk-wh)" stroke-width="1.2" stroke-linecap="round"/>';
-const lid=(x,y,r)=>'<path d="M'+(x-7.5)+' '+(y-10)+' H'+(x+7.5)+' V'+(y-.9)+' H'+(x-7.5)+' Z" style="fill:var(--pk-cat)" transform="rotate('+r+' '+x+' '+y+')"/>';
+const lid=(x,y,r,c)=>'<path class="lid '+c+'" d="M'+(x-7.5)+' '+(y-10)+' H'+(x+7.5)+' V'+(y-.9)+' H'+(x-7.5)+' Z" style="fill:var(--pk-cat)" transform="rotate('+r+' '+x+' '+y+')"/>';
 const eyeW=(x,y)=>'<circle cx="'+x+'" cy="'+y+'" r="6.3" fill="#fff"/>';
-const eyeP=(x,y,px)=>'<circle cx="'+(x+px)+'" cy="'+(y+.6)+'" r="3.3" fill="#1A1820"/><circle cx="'+(x+px+1.1)+'" cy="'+(y-.6)+'" r="1" fill="#fff"/>';
+const eyeP=(x,y,px)=>'<circle class="pp" cx="'+(x+px)+'" cy="'+(y+.6)+'" r="3.3" fill="#1A1820"/><circle cx="'+(x+px+1.1)+'" cy="'+(y-.6)+'" r="1" fill="#fff"/>';
 
 // ======== PERRITO (de frente, sentado, saluda con una patita) ========
 const DOG_AWAKE=
@@ -150,6 +177,7 @@ const DOG_SLEEP=
 
 // ======== GATITO (silueta negra, de frente, sentado) ========
 const CAT_AWAKE=
+ '<g class="spk"><path d="M38 50 L31 49 L33 55 L25 56 L28 62 L20 65 L24 71 L17 75 L22 80 L16 85 L23 88 L21 96 L28 94 L30 99 L70 99 L72 94 L79 96 L77 88 L84 85 L78 80 L83 75 L76 71 L80 65 L72 62 L75 56 L67 55 L69 49 L62 50 Z" style="fill:var(--pk-cat)"/><path d="M24 34 L15 31 L20 38 L12 41 L21 45 L14 50 L25 49 Z M76 34 L85 31 L80 38 L88 41 L79 45 L86 50 L75 49 Z M38 14 L35 7 L42 12 L46 5 L50 11 L55 5 L58 12 L65 7 L62 14 Z" style="fill:var(--pk-cat)"/></g>'+
  '<g class="tail r"><path d="M27 93 C10 98 3 82 11 70 C15 64 22 66 20 72" fill="none" stroke="var(--pk-cat)" stroke-width="6" stroke-linecap="round"/></g>'+
  '<g class="body">'+B('M38 52 C32 64 26 78 25 90 C24 98 34 100 50 100 C66 100 76 98 75 90 C74 78 68 64 62 52 Z')+
  '<path d="M50 80 C49 88 50 94 52 99 M40 88 C39 93 41 97 44 99.500" fill="none" stroke="var(--pk-rim)" stroke-width="1.2" stroke-linecap="round" opacity=".75"/></g>'+
@@ -157,7 +185,7 @@ const CAT_AWAKE=
  '<g class="ear">'+B('M26 28 C24 18 24 8 28 1 C34 3 42 9 47 15 Z')+'<path d="M30 22 C29 15 29 10 31 6.500 C35 8.500 39 11.500 41.500 15 Z" fill="var(--pk-lav)"/></g>'+
  '<g class="ear" style="animation-delay:4.2s">'+B('M74 28 C76 18 76 8 72 1 C66 3 58 9 53 15 Z')+'<path d="M70 22 C71 15 71 10 69 6.500 C65 8.500 61 11.500 58.500 15 Z" fill="var(--pk-lav)"/></g>'+
  B('M24 35 C24 21 36 13 50 13 C64 13 76 21 76 35 C76 48 65 56 50 56 C35 56 24 48 24 35 Z')+
- '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,36.6,1.9)+eyeP(61.5,36.6,1.9)+'</g>'+lid(38.5,36,9)+lid(61.5,36,-6)+'</g>'+
+ '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,36.6,1.9)+eyeP(61.5,36.6,1.9)+'</g>'+lid(38.5,36,9,'l')+lid(61.5,36,-6,'r')+'</g>'+
  '<g class="nz"><path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/></g>'+'<path d="M45.500 50 Q47.800 51.600 50 49.800 Q52.300 51.200 54.800 49.400" fill="none" stroke="var(--pk-lav)" stroke-width="1" stroke-linecap="round" opacity=".85"/>'+
  '<g class="wh">'+WH('M24 43 L9 39.500 M24 47 L8 49 M26 51 L13 57.500')+WH('M76 43 L91 39.500 M76 47 L92 49 M74 51 L87 57.500')+'</g>'+
  '</g></g>'+
@@ -177,7 +205,7 @@ const mk=(cls,a,z)=>{
   const A=document.createElement('div');A.className='a';A.append(sv(a));
   const Z=document.createElement('div');Z.className='z';Z.append(sv(z));
   const bb=document.createElement('span');bb.className='bub';const hh=document.createElement('span');hh.className='heart';hh.textContent='♥';
-  w.append(A,Z,bb,hh);return w};
+  const ob=document.createElement('span');ob.className='obj';ob.textContent='☕';w.append(A,Z,bb,hh,ob);return w};
 
 // El que está despierto vive en la pantalla principal (Buscar); el que duerme, en Descubrir.
 // De día está despierto el perro; de noche, el gato. Al amanecer o anochecer se "relevan".
@@ -228,10 +256,10 @@ function gesture(){
   const v=host.dataset.v,slot=v==='buscar'?sM:v==='descubrir'?sR:null;if(!slot)return;
   const pet=[...slot.children].find(p=>!p.classList.contains('gone'));if(!pet)return;
   const dog=pet.classList.contains('dog'),sl=pet.classList.contains('sleep'),bub=pet.querySelector('.bub');
-  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','wave','wag','tilt','pant','sniff','eflick']):pick(['stretch','miau','wash','blink','flick','purr','eflick','ignore','sideeye','ignore','sideeye']);
+  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','wave','wag','tilt','pant','sniff','eflick']):pick(['stretch','miau','wash','blink','flick','purr','eflick','ignore','sideeye','play','angry','knock','ignore','sideeye']);
   let cls='',txt='',ms=2300;
   if(g==='hop'){cls='g-hop';ms=1300}else if(g==='stretch'){cls='g-stretch';ms=2300}else if(g==='sigh'){cls='g-sigh';ms=2500}else if(g==='heart'){cls='g-heart';ms=2000}
-  else if(g==='wave'){cls='g-wave';ms=2100}else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau.';ms=2200}else if(g==='ignore'){cls='g-ignore say';txt='meh';ms=3200}else if(g==='sideeye'){cls='g-side';ms=2600}else if(g==='wag'){cls='g-wag';ms=2400}else if(g==='tilt'){cls='g-tilt';ms=2700}else if(g==='pant'){cls='g-pant';ms=3200}else if(g==='sniff'){cls='g-sniff';ms=2700}else if(g==='eflick'){cls='g-eflick';ms=2100}
+  else if(g==='wave'){cls='g-wave';ms=2100}else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau.';ms=2200}else if(g==='play'){cls='g-play say';txt='🧶';ms=4200}else if(g==='angry'){cls='g-angry say';txt='¡ssss!';ms=3000}else if(g==='knock'){cls='g-knock';ms=4200;setTimeout(()=>{try{if(pet.classList.contains('g-knock')){bub.textContent='¿yo?';pet.classList.add('say');setTimeout(()=>pet.classList.remove('say'),1500)}}catch(e){}},2500)}else if(g==='ignore'){cls='g-ignore say';txt='meh';ms=3200}else if(g==='sideeye'){cls='g-side';ms=2600}else if(g==='wag'){cls='g-wag';ms=2400}else if(g==='tilt'){cls='g-tilt';ms=2700}else if(g==='pant'){cls='g-pant';ms=3200}else if(g==='sniff'){cls='g-sniff';ms=2700}else if(g==='eflick'){cls='g-eflick';ms=2100}
   else if(g==='wash'){cls='g-wash';ms=3400}else if(g==='blink'){cls='g-blink';ms=2700}else if(g==='flick'){cls='g-flick';ms=1700}else if(g==='purr'){cls='say g-purr';txt='mrr…';ms=3000}
   else if(g==='dream'){cls='say';txt=dog?'🦴':'🐟';ms=2800}
   if(txt)bub.textContent=txt;cls.split(' ').forEach(c=>pet.classList.add(c));
@@ -260,7 +288,7 @@ function react(k){const p=visPet();if(!p||p.classList.contains('sleep'))return;c
   if(k==='found')play(dog?'g-hop':'g-blink',dog?'¡mirá!':'mm, bien.',2400);
   else if(k==='sent')play(dog?'g-hop g-heart':'g-flick',dog?'¡a leer!':'obvio.',2200);
   else if(k==='goal')play(dog?'g-hop g-heart':'g-stretch',dog?'¡meta!':'no está mal.',2400);
-  else if(k==='err')play(dog?'g-tilt':'g-flick',dog?'uy…':'tsk.',2400);
+  else if(k==='err')play(dog?'g-tilt':'g-angry',dog?'uy…':'¡ssss!',2600);
   else if(k==='ok'&&dog)play('g-heart','',1800);
   else if(k==='busy')play(dog?'g-tilt':'g-eflick','',1800)}
 const stEl=document.getElementById('status');
