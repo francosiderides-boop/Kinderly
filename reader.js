@@ -702,7 +702,7 @@ function renderLib(){
   const gbar=el('div','kr-gbar'),gi=el('i');gi.style.width=Math.round(pctG*100)+'%';if(pctG>=1)gi.className='done';gbar.append(gi);gw.append(gh,gbar);
   const wk=el('div','kr-wk'),stt=stGet(),maxS=Math.max(gS,...Array.from({length:7},(_,i)=>{const x=new Date();x.setDate(x.getDate()-i);return stt[dk(x)]||0}));
   for(let i=6;i>=0;i--){const x=new Date();x.setDate(x.getDate()-i);const v=stt[dk(x)]||0,col=el('div','kr-wc'),bar=el('div','kr-wb'),f=el('i');f.style.height=Math.max(v?8:3,Math.round(v/maxS*100))+'%';if(v>=gS)f.className='done';bar.append(f);col.append(bar,el('small',i===0?'on':'','DLMMJVS'[x.getDay()]));wk.append(col)}
-  sc.append(gw,wk);{const mb=btn('Ver todas mis estadísticas',()=>{if(window.KEx&&window.KEx.statsPage)window.KEx.statsPage()},'Estadísticas','ghost');mb.style.cssText='width:100%;margin-top:12px';sc.append(mb)}host.append(sc);
+  sc.append(gw,wk);{const mb=btn('Ver todas mis estadísticas',()=>{if(window.KEx&&window.KEx.statsPage)window.KEx.statsPage()},'Estadísticas','ghost');mb.style.cssText='grid-column:1/-1;margin:12px 8px 0;width:calc(100% - 16px)';sc.append(mb)}host.append(sc);
   if(!S0.week)host.append(el('p','hint2 kr-sn','Leé un minuto hoy en la app y empieza tu racha.'));
   const top=el('div','card');
   top.append(el('b','','Abrir un libro de tu celular'),el('p','hint2','Elegí un archivo .epub que ya tengas guardado (descargas, Drive, mail…). Queda en esta biblioteca y no sale de tu dispositivo.'));
