@@ -1,0 +1,26 @@
+name: Catálogo
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * 1'
+  push:
+    paths:
+      - 'scripts/build-catalog.mjs'
+      - '.github/workflows/catalog.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node scripts/build-catalog.mjs
+      - name: Guardar catálogo
+        run: |
+          git config user.name "kinderly-bot"
+          git config user.email "noreply@github.com"
+          git add catalog
+          git diff --cached --quiet || (git commit -m "Actualizar catálogo" && git push)
