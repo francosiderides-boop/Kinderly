@@ -8,8 +8,8 @@ const NS='http://www.w3.org/2000/svg';
 
 const css=document.createElement('style');
 css.textContent=`
-:root{--pk-ink:#2B2723;--pk-fill:#FFFFFF;--pk-pink:#F6B9B9;--pk-tan:#E6C7A2}
-:root[data-theme="dark"]{--pk-ink:#1A1714;--pk-fill:#F1E9DB;--pk-pink:#E8A9A9;--pk-tan:#CFA77B}
+:root{--pk-ink:#2A2A33;--pk-fill:#FFFFFF;--pk-pink:#F6B9B9;--pk-cat:#25222B;--pk-rim:#25222B;--pk-lav:#A99DC6;--pk-wh:#3A3640}
+:root[data-theme="dark"]{--pk-ink:#1A1714;--pk-fill:#F1E9DB;--pk-pink:#E8A9A9;--pk-cat:#17161D;--pk-rim:#8F98C8;--pk-lav:#9C90C2;--pk-wh:#B4BADA}
 .pets{position:fixed;left:0;right:0;bottom:calc(73px + env(safe-area-inset-bottom,0px));height:0;z-index:7;pointer-events:none}
 .pets.off{display:none}
 .pets .slot{position:absolute;left:0;right:0;bottom:0;height:0;opacity:0;transition:opacity .5s ease}
@@ -23,9 +23,8 @@ css.textContent=`
 @keyframes pwake{0%{transform:scale(1.04,.88)}35%{transform:translateY(-9px) scale(.96,1.1)}65%{transform:translateY(0) scale(1.03,.95)}100%{transform:none}}
 .pet .a,.pet .z{position:absolute;inset:0;transition:opacity .6s}
 .pet .z{opacity:0}.pet.sleep .a{opacity:0}.pet.sleep .z{opacity:1}
-.pet svg{width:100%;height:100%;overflow:visible;filter:url(#kpwob)}
-.pet .ln.sk{stroke-width:.9;opacity:.5}.pet .ln.sk2{stroke-width:.6;opacity:.35}
-.pet .z svg{transform:translateY(-9%)}
+.pet svg{width:100%;height:100%;overflow:visible}
+.pet .tail,.pet .head,.pet .ear,.pet .eyes,.pet .body,.pet .arm,.pet .wh,.pet .gl{will-change:transform}
 .pet .ln{stroke:var(--pk-ink);fill:none;stroke-linecap:round;stroke-linejoin:round}
 .pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pwag 1.1s ease-in-out infinite}
 .pet.cat .tail{animation:psway 4s ease-in-out infinite}
@@ -41,7 +40,7 @@ css.textContent=`
 @keyframes pglance{0%,38%,100%{transform:translateX(0)}44%,60%{transform:translateX(-1.8px)}68%,86%{transform:translateX(1.8px)}}
 @keyframes pwhisk{0%,90%,100%{transform:rotate(0)}94%{transform:rotate(3deg)}97%{transform:rotate(-2deg)}}
 @keyframes pswish{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(14deg)}}
-.pet .head{transform-box:view-box;transform-origin:60px 46px;animation:phead 9s ease-in-out infinite}
+.pet .head{transform-box:view-box;transform-origin:50px 56px;animation:phead 9s ease-in-out infinite}
 .pet.cat .head{animation-duration:11s}
 .pet .gl{animation:pglance 7s ease-in-out infinite}
 .pet.cat .tail{animation:pswish 5s ease-in-out infinite}
@@ -61,8 +60,8 @@ css.textContent=`
 @keyframes gheart{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-4px) scale(1.1)}100%{opacity:0;transform:translate(-50%,-22px) scale(1)}}
 @keyframes pwave{0%,62%,100%{transform:rotate(0)}68%{transform:rotate(-16deg)}76%{transform:rotate(10deg)}84%{transform:rotate(-14deg)}92%{transform:rotate(6deg)}}
 @keyframes gwave{0%,100%{transform:rotate(0)}12%{transform:rotate(-18deg)}28%{transform:rotate(12deg)}44%{transform:rotate(-18deg)}60%{transform:rotate(12deg)}76%{transform:rotate(-14deg)}90%{transform:rotate(4deg)}}
-.pet .arm{transform-box:view-box}.pet.dog .arm{transform-origin:60px 64px}.pet.cat .arm{transform-origin:58px 66px}
-.pet .tail.r{transform-origin:100% 100%}.pet.dog .a .ear{transform-origin:70% 0%}
+.pet .arm{transform-box:view-box}.pet.dog .arm{transform-origin:68px 66px}.pet.cat .arm{transform-origin:62px 68px}
+.pet .tail.r{transform-origin:100% 100%}.pet.dog .a .ear{transform-origin:50% 0%}
 .pet.dog .a .arm{animation:pwave 8s ease-in-out infinite}
 .pet.cat .a .arm{opacity:0}
 .pet.g-wave .arm{opacity:1!important;animation:gwave 2s ease-in-out!important}
@@ -101,77 +100,63 @@ css.textContent=`
 `;
 document.head.append(css);
 
-if(!document.getElementById('kpwob')){const f=document.createElement('div');f.style.cssText='position:absolute;width:0;height:0;overflow:hidden';f.innerHTML='<svg xmlns="'+NS+'" width="0" height="0"><filter id="kpwob" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".03 .045" numOctaves="2" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" result="d1"/><feTurbulence type="fractalNoise" baseFrequency=".22" numOctaves="1" seed="3" result="n2"/><feDisplacementMap in="d1" in2="n2" scale="1.3" xChannelSelector="G" yChannelSelector="R"/></filter></svg>';document.body.appendChild(f)}
 const sv=h=>{const d=document.createElement('div');d.innerHTML='<svg xmlns="'+NS+'" viewBox="0 -5 100 105" stroke-width="2.1">'+h+'</svg>';return d.firstChild};
 const F='var(--pk-fill)',PK='var(--pk-pink)',INK='var(--pk-ink)';
-// línea limpia con relleno blanco, estilo dibujo simple
-// trazo "a mano": relleno corrido (mal registrado), línea doble levemente desfasada
-let _n=0;
-const gap=()=>{_n++;const g=2.2+((_n*7)%5)*.7,o=(_n*37)%100;return 'pathLength="100" stroke-dasharray="'+(100-g)+' '+g+'" stroke-dashoffset="-'+o+'"'};
-const P=(d,x,c)=>'<path d="'+d+'" style="fill:'+(c||F)+';stroke:none" transform="translate(1.4 1.6)"/><path class="ln" d="'+d+'" '+gap()+' '+(x||'')+'/><path class="ln sk" d="'+d+'" transform="translate(.8 -.7) rotate(.7 50 50)"/><path class="ln sk2" d="'+d+'" transform="translate(-.5 .5) rotate(-.5 50 50)"/>';
-const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/><path class="ln sk" d="'+d+'" transform="translate(.5 .7)"/>';
-const tube=(d,w)=>'<path class="ln" d="'+d+'" stroke-width="'+(w+3.6)+'"/><path d="'+d+'" fill="none" stroke="'+F+'" stroke-width="'+w+'" stroke-linecap="round"/>';
-const eye=(x,y,r,k)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+(1.75*(k||1))+'" ry="'+(2.65*(k||1))+'" fill="'+INK+'" transform="rotate('+r+' '+x+' '+y+')"/>';
-const eyeH=(x,y,r,k)=>eye(x,y,r,k)+'<circle cx="'+(x+.9)+'" cy="'+(y-1.2*(k||1))+'" r="'+(.85*(k||1))+'" fill="#fff"/>';
-const bl=(x,y,w)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+(w||4)+'" ry="'+((w||4)*.65)+'" fill="'+PK+'" opacity=".75"/>';
-const shut=(x,y,w)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+INK+'" stroke-width="1.9" stroke-linecap="round"/>';
-const nose=(x,y)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="2.5" ry="1.7" fill="'+INK+'"/>';
-const TAN='var(--pk-tan)';
-// miembro: relleno + dos líneas abiertas (sin borde arriba)
-const LIMB=(fill,line)=>'<path d="'+fill+'" style="fill:'+F+';stroke:none"/>'+L(line);
-// ======== PERRO (de perfil, sentado, mirando a la derecha) ========
-const D_TORSO='M46 40 C34 44 22 54 16 70 C12 82 14 94 18 98 L66 98 C68 92 66 82 64 72 C63 62 66 54 66 46 Z';
+const P=(d,c)=>'<path class="ln" d="'+d+'" style="fill:'+(c||F)+'"/>';
+const L=(d,w)=>'<path class="ln" d="'+d+'"'+(w?' stroke-width="'+w+'"':'')+'/>';
+const B=d=>'<path d="'+d+'" style="fill:var(--pk-cat);stroke:var(--pk-rim);stroke-width:1.3;stroke-linejoin:round"/>';
+const dot=(x,y,rx,ry,r)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" fill="'+INK+'" transform="rotate('+(r||0)+' '+x+' '+y+')"/>';
+const shut=(x,y,w,c)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+(c||INK)+'" stroke-width="1.9" stroke-linecap="round"/>';
+const WH=(d)=>'<path d="'+d+'" fill="none" stroke="var(--pk-wh)" stroke-width="1.2" stroke-linecap="round"/>';
+const bigEye=(x,y,px)=>'<circle cx="'+x+'" cy="'+y+'" r="6.3" fill="#fff"/><circle cx="'+(x+px)+'" cy="'+(y+.6)+'" r="3.3" fill="#1A1820"/><circle cx="'+(x+px+1.1)+'" cy="'+(y-.6)+'" r="1" fill="#fff"/>';
+
+// ======== PERRITO (de frente, sentado, saluda con una patita) ========
 const DOG_AWAKE=
- '<g class="tail r">'+P('M18 82 C8 82 1 73 2 61 C2 56 6 55 8 58 C11 66 15 70 22 72 Z')+'</g>'+
- '<g class="body">'+P(D_TORSO)+L('M20 76 C28 68 41 72 43 84 C44 92 40 97 33 98',1.8)+P('M14 97 C14 92 30 91 37 95 C39 99 31 100 24 100 L16 100 Z')+L('M30 56 l-3 3.5 M24 62 l-3 3.5',1.2)+'</g>'+
- '<g class="arm">'+LIMB('M55 60 C54 74 56 86 56 93 C56 99 68 99 68 93 C68 86 67 74 66.5 60 Z','M55 68 C54 77 56 86 56 93 C56 99 68 99 68 93 C68 86 67 77 66.5 68')+L('M62 94 L62 98',1.3)+'</g>'+
- '<path d="M49 43 C56 49 62 52 68 51" fill="none" stroke="#5468A3" stroke-width="3.6" stroke-linecap="round"/>'+
- '<g class="head"><g transform="translate(-4 -4) rotate(-2 62 46)">'+
- P('M56 24 C56 12 68 8 78 12 C86 15 92 21 93 28 C94 34 90 38 84 39 C79 40 76 43 72 45 C64 49 55 43 55 33 Z')+
- L('M67 17 l6 -1.8',1.3)+
- '<g class="eyes"><g class="gl">'+eyeH(72,26,0,1.3)+'</g></g>'+bl(78,34.5,3.8)+
- '<ellipse cx="92" cy="28.4" rx="3.6" ry="2.9" fill="'+INK+'"/>'+L('M89 36.5 C85 39 80 38 77 37',1.4)+
- '<g class="tongue"><path class="ln" d="M82 38 C81 46 89 46 88 37.500 Z" style="fill:'+PK+'"/></g>'+
- '<g class="ear">'+P('M60 15 C50 13 43 22 43 34 C43 44 51 49 57 44 C62 40 64 28 64 19 Z','',TAN)+'</g>'+
- '</g></g>';
+ '<g class="tail r">'+P('M28 88 C20 90 12 86 11 78 C18 75 25 78 28 84 Z')+'</g>'+
+ '<g class="body">'+P('M35 52 C28 62 24 76 26 88 C28 97 38 99.5 50 99.5 C62 99.5 72 97 74 88 C75 76 71 62 65 52 Z')+L('M50 78 C49 87 50 94 54 98.500')+L('M42 85 C41 91 43 96 47 99')+'</g>'+
+ '<g class="head">'+
+ '<g class="ear">'+P('M31 17 C23 13 14 17 12 26 C10 35 13 44 19 45.500 C25 47 28 41 28.500 35 Z')+'</g>'+
+ '<g class="ear" style="animation-delay:2.4s">'+P('M69 17 C77 13 86 17 88 26 C90 35 87 44 81 45.500 C75 47 72 41 71.500 35 Z')+'</g>'+
+ P('M24 36 C23 18 36 10 50 10 C64 10 77 18 76 36 C75 50 64 58 50 58 C36 58 25 50 24 36 Z')+
+ L('M44 9 L42 3 M50 8 L50.500 2 M56 9 L58.500 3.500')+
+ '<g class="eyes"><g class="gl">'+dot(38,37,1.9,2.8,8)+dot(62,36,1.9,2.8,-8)+'</g></g>'+dot(50,45,2.6,1.8)+
+ '<g class="tongue"><path class="ln" d="M46.500 48.500 C46 55.500 54 55.500 53.500 48.500 Z" style="fill:'+PK+'"/></g>'+
+ '</g>'+
+ '<g class="arm">'+P('M64 62 C74 61 80 56 82 48 C83 41 91 42 91.500 48 C92 56 85 67 75 74 L69 72 Z')+dot(87,49,2.8,2.3)+dot(83.300,44.200,1.1,1.1)+dot(87,42.600,1.1,1.1)+dot(90.500,44.600,1.1,1.1)+'</g>';
 const DOG_SLEEP=
  '<g class="body">'+
- '<g class="tail">'+P('M12 90 C3 91 -2 83 1 75 C5 79 10 81 14 83 Z')+'</g>'+
- P('M8 96 C4 80 14 66 34 62 C52 58 70 62 76 74 C80 84 76 96 66 98 L20 98 C14 98 10 98 8 96 Z')+L('M26 70 C32 66 40 66 46 69 M22 80 l-3 3',1.2)+
- P('M52 92 C52 88 66 88 74 92 C74 98 56 99 52 95 Z')+
- P('M60 66 C60 56 74 52 84 56 C92 59 96 66 94 74 C92 82 84 86 74 86 C66 86 60 78 60 66 Z')+
- shut(77,66,3.6)+'<ellipse cx="94" cy="68.5" rx="3" ry="2.4" fill="'+INK+'"/>'+
- P('M63 58 C54 58 52 72 58 80 C62 84 68 78 69 70 Z','',TAN)+
+ '<g class="tail">'+P('M88 92 C96 92 100 86 98 79 C92 81 89 85 87 88 Z')+'</g>'+
+ P('M10 88 C10 76 28 71 50 71 C72 71 90 76 90 88 C90 97 74 100 50 100 C26 100 10 97 10 88 Z')+
+ P('M28 98 C28 91 40 90 44 94 C45 98 36 100 28 98 Z')+P('M72 98 C72 91 60 90 56 94 C55 98 64 100 72 98 Z')+
+ P('M30 55 C22 52 14 58 13 68 C12 76 17 82 23 80 C28 78 29 70 30 62 Z')+P('M70 55 C78 52 86 58 87 68 C88 76 83 82 77 80 C72 78 71 70 70 62 Z')+
+ P('M24 68 C23 52 36 46 50 46 C64 46 77 52 76 68 C75 82 64 88 50 88 C36 88 25 82 24 68 Z')+
+ shut(39,68,4.4)+shut(61,68,4.4)+dot(50,75,2.6,1.8)+
  '</g>'+
- '<text class="zz" x="62" y="46">z</text><text class="zz" x="69" y="37">z</text><text class="zz" x="76" y="28">Z</text>';
+ '<text class="zz" x="62" y="40">z</text><text class="zz" x="69" y="31">z</text><text class="zz" x="76" y="22">Z</text>';
 
-// ======== GATO (de perfil, sentado, mirando a la derecha) ========
+// ======== GATITO (silueta negra, de frente, sentado) ========
 const CAT_AWAKE=
- '<g class="body">'+P('M52 40 C38 46 26 60 24 76 C22 90 26 98 34 98 L62 98 C66 96 66 86 64 76 C63 62 64 52 62 44 Z')+
- L('M26 78 C34 70 46 74 48 86 C49 93 44 97 38 98',1.8)+L('M58 66 C58 78 58 90 60 97',1.8)+P('M52 98 C52 94 66 94 67 98 C67 100 53 100 52 98 Z')+
- L('M34 56 C40 62 41 70 38 76 M27 66 C31 70 31 76 29 80',1.4)+'</g>'+
- '<g class="arm">'+LIMB('M52 66 C60 60 69 52 73 45 C76 41 82 43 80 48 C77 55 70 66 62 72 Z','M54 66 C62 60 70 53 73.500 45 C76 41 82 43 80 48 C77 55 70 66 62 72')+'</g>'+
- '<g class="tail">'+tube('M26 94 C42 100 70 100 86 93 C93 89 93 81 89 78',4.6)+'</g>'+
- '<g class="head"><g transform="translate(-3 -3)">'+
- '<g class="ear"><g>'+P('M50 28 L46 3 L65 14 Z')+P('M50 22 L48 9 L59 15 Z','',PK)+'</g></g>'+
- '<g class="ear" style="animation-delay:4.2s"><g>'+P('M74 14 L88 2 L90 26 Z')+P('M77 15 L86 8 L87 21 Z','',PK)+'</g></g>'+
- P('M47 31 C47 16 59 10 70 12 C82 14 90 24 90 34 C90 45 79 52 67 52 C55 52 47 43 47 31 Z')+
- L('M62 14.500 L63 20 M68 13.500 L68.500 19 M74 14.500 L74 20',1.6)+
- '<g class="eyes"><g class="gl">'+eyeH(62,33,4,1.35)+eyeH(78.5,32,0,1.25)+'</g></g>'+bl(55,41,3.6)+bl(85,40,3.4)+
- '<path d="M82 38 L87 38 L84.500 41 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.4" stroke-linejoin="round"/>'+L('M84.500 41 C84 44 81.500 45 80 43.500 M84.500 41 C85 44 87.500 44.500 88.500 43',1.2)+
- '<g class="wh">'+L('M87 42 L98 39.500 M87 45 L97 47.500',1.3)+'</g>'+
- '</g></g>';
+ '<g class="tail r"><path d="M27 93 C10 98 3 82 11 70 C15 64 22 66 20 72" fill="none" stroke="var(--pk-cat)" stroke-width="6" stroke-linecap="round"/></g>'+
+ '<g class="body">'+B('M38 52 C32 64 26 78 25 90 C24 98 34 100 50 100 C66 100 76 98 75 90 C74 78 68 64 62 52 Z')+
+ '<path d="M50 80 C49 88 50 94 52 99 M40 88 C39 93 41 97 44 99.500" fill="none" stroke="var(--pk-rim)" stroke-width="1.2" stroke-linecap="round" opacity=".75"/></g>'+
+ '<g class="head">'+
+ '<g class="ear">'+B('M26 28 C24 18 24 8 28 1 C34 3 42 9 47 15 Z')+'<path d="M30 22 C29 15 29 10 31 6.500 C35 8.500 39 11.500 41.500 15 Z" fill="var(--pk-lav)"/></g>'+
+ '<g class="ear" style="animation-delay:4.2s">'+B('M74 28 C76 18 76 8 72 1 C66 3 58 9 53 15 Z')+'<path d="M70 22 C71 15 71 10 69 6.500 C65 8.500 61 11.500 58.500 15 Z" fill="var(--pk-lav)"/></g>'+
+ B('M24 35 C24 21 36 13 50 13 C64 13 76 21 76 35 C76 48 65 56 50 56 C35 56 24 48 24 35 Z')+
+ '<g class="eyes"><g class="gl">'+bigEye(38.500,36,1.4)+bigEye(61.500,36,-1.4)+'</g></g>'+
+ '<path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/>'+
+ '<g class="wh">'+WH('M24 43 L9 39.500 M24 47 L8 49 M26 51 L13 57.500')+WH('M76 43 L91 39.500 M76 47 L92 49 M74 51 L87 57.500')+'</g>'+
+ '</g>'+
+ '<g class="arm">'+B('M58 62 C65 58 68 50 66 44 C65 39.500 71.500 38.500 72 43.500 C73 51 71 62 65 71 Z')+'</g>';
 const CAT_SLEEP=
  '<g class="body">'+
- P('M10 82 C8 64 24 52 46 52 C70 52 90 62 90 80 C90 94 74 99 50 99 C26 99 12 94 10 82 Z')+
- L('M54 54 C58 62 57 70 54 76 M66 56 C70 63 69 71 66 77 M78 60 C81 66 80 73 77 78',1.5)+
- '<g class="tail">'+tube('M88 84 C76 98 40 100 20 94',4.6)+'</g>'+
- P('M14 68 L12 52 L25 61 Z')+P('M30 62 L39 52 L41 66 Z')+
- P('M12 78 C10 66 20 60 30 62 C40 64 44 74 40 84 C36 92 22 94 16 88 C13 85 12 82 12 78 Z')+
- shut(20,76,3.2)+shut(32,77,3.2)+
- '<path d="M24.5 82 L29.5 82 L27 85 Z" style="fill:'+PK+'" stroke="'+INK+'" stroke-width="1.3" stroke-linejoin="round"/>'+
+ '<g class="tail"><path d="M88 90 C76 100 40 102 14 96" fill="none" stroke="var(--pk-cat)" stroke-width="6" stroke-linecap="round"/></g>'+
+ B('M10 88 C10 74 28 68 50 68 C72 68 90 74 90 88 C90 97 74 100 50 100 C26 100 10 97 10 88 Z')+
+ B('M27 58 C25 50 25 42 28 35 C34 38 39 42 42 47 Z')+B('M73 58 C75 50 75 42 72 35 C66 38 61 42 58 47 Z')+
+ B('M24 68 C23 52 36 46 50 46 C64 46 77 52 76 68 C75 82 64 88 50 88 C36 88 25 82 24 68 Z')+
+ shut(39,67,4.4,'#E9E4F2')+shut(61,67,4.4,'#E9E4F2')+'<path d="M47.500 73 L52.500 73 L50 76 Z" fill="#C99AA6"/>'+
  '</g>'+
- '<text class="zz" x="46" y="46">z</text><text class="zz" x="53" y="37">z</text><text class="zz" x="60" y="28">Z</text>';
+ '<text class="zz" x="62" y="40">z</text><text class="zz" x="69" y="31">z</text><text class="zz" x="76" y="22">Z</text>';
 
 const mk=(cls,a,z)=>{
   const w=document.createElement('div');w.className='pet '+cls;w.setAttribute('aria-hidden','true');
