@@ -79,6 +79,12 @@ css.textContent=`
 @keyframes pear{0%,88%,100%{transform:rotate(0)}92%{transform:rotate(-8deg)}96%{transform:rotate(3deg)}}
 @keyframes ptw{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.1)}}
 
+.pet.g-ignore .a .head{animation:gignore 3.2s ease-in-out!important}
+@keyframes gignore{0%,100%{transform:rotate(0)}18%,80%{transform:rotate(9deg) translateX(1px)}}
+.pet.g-ignore .a .gl{transform:translate(2.6px,.4px)!important}
+.pet.g-side .a .gl{transform:translate(-2.4px,.3px)!important}
+.pet.g-side .a .head{animation:gside 2.6s ease-in-out!important}
+@keyframes gside{0%,100%{transform:rotate(0)}20%,75%{transform:rotate(-4deg)}}
 .pet .tongue{opacity:0;transition:opacity .2s}.pet.g-pant .tongue{opacity:1}
 .pet.g-pant .a .body{animation:ppant .3s ease-in-out infinite}
 @keyframes ppant{0%,100%{transform:scale(1,1)}50%{transform:scale(1.02,1.05)}}
@@ -114,6 +120,7 @@ const B=d=>'<path d="'+d+'" style="fill:var(--pk-cat);stroke:var(--pk-rim);strok
 const dot=(x,y,rx,ry,r)=>'<ellipse cx="'+x+'" cy="'+y+'" rx="'+rx+'" ry="'+ry+'" fill="'+INK+'" transform="rotate('+(r||0)+' '+x+' '+y+')"/>';
 const shut=(x,y,w,c)=>'<path d="M'+(x-w)+' '+y+' Q'+x+' '+(y+w*.8)+' '+(x+w)+' '+y+'" fill="none" stroke="'+(c||INK)+'" stroke-width="1.9" stroke-linecap="round"/>';
 const WH=(d)=>'<path d="'+d+'" fill="none" stroke="var(--pk-wh)" stroke-width="1.2" stroke-linecap="round"/>';
+const lid=(x,y,r)=>'<path d="M'+(x-7.5)+' '+(y-10)+' H'+(x+7.5)+' V'+(y-.9)+' H'+(x-7.5)+' Z" style="fill:var(--pk-cat)" transform="rotate('+r+' '+x+' '+y+')"/>';
 const eyeW=(x,y)=>'<circle cx="'+x+'" cy="'+y+'" r="6.3" fill="#fff"/>';
 const eyeP=(x,y,px)=>'<circle cx="'+(x+px)+'" cy="'+(y+.6)+'" r="3.3" fill="#1A1820"/><circle cx="'+(x+px+1.1)+'" cy="'+(y-.6)+'" r="1" fill="#fff"/>';
 
@@ -150,8 +157,8 @@ const CAT_AWAKE=
  '<g class="ear">'+B('M26 28 C24 18 24 8 28 1 C34 3 42 9 47 15 Z')+'<path d="M30 22 C29 15 29 10 31 6.500 C35 8.500 39 11.500 41.500 15 Z" fill="var(--pk-lav)"/></g>'+
  '<g class="ear" style="animation-delay:4.2s">'+B('M74 28 C76 18 76 8 72 1 C66 3 58 9 53 15 Z')+'<path d="M70 22 C71 15 71 10 69 6.500 C65 8.500 61 11.500 58.500 15 Z" fill="var(--pk-lav)"/></g>'+
  B('M24 35 C24 21 36 13 50 13 C64 13 76 21 76 35 C76 48 65 56 50 56 C35 56 24 48 24 35 Z')+
- '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,36,1.4)+eyeP(61.5,36,-1.4)+'</g></g>'+
- '<g class="nz"><path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/></g>'+
+ '<g class="eyes">'+eyeW(38.5,36)+eyeW(61.5,36)+'<g class="gl">'+eyeP(38.5,36.6,1.9)+eyeP(61.5,36.6,1.9)+'</g>'+lid(38.5,36,9)+lid(61.5,36,-6)+'</g>'+
+ '<g class="nz"><path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/></g>'+'<path d="M45.500 50 Q47.800 51.600 50 49.800 Q52.300 51.200 54.800 49.400" fill="none" stroke="var(--pk-lav)" stroke-width="1" stroke-linecap="round" opacity=".85"/>'+
  '<g class="wh">'+WH('M24 43 L9 39.500 M24 47 L8 49 M26 51 L13 57.500')+WH('M76 43 L91 39.500 M76 47 L92 49 M74 51 L87 57.500')+'</g>'+
  '</g></g>'+
  '<g class="arm">'+B('M58 62 C65 58 68 50 66 44 C65 39.500 71.500 38.500 72 43.500 C73 51 71 62 65 71 Z')+'</g>';
@@ -221,11 +228,11 @@ function gesture(){
   const v=host.dataset.v,slot=v==='buscar'?sM:v==='descubrir'?sR:null;if(!slot)return;
   const pet=[...slot.children].find(p=>!p.classList.contains('gone'));if(!pet)return;
   const dog=pet.classList.contains('dog'),sl=pet.classList.contains('sleep'),bub=pet.querySelector('.bub');
-  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','wave','wag','tilt','pant','sniff','eflick']):pick(['stretch','miau','heart','wash','blink','flick','purr','eflick']);
+  const g=sl?pick(['sigh','dream','dream']):dog?pick(['hop','woof','heart','wave','wag','tilt','pant','sniff','eflick']):pick(['stretch','miau','wash','blink','flick','purr','eflick','ignore','sideeye','ignore','sideeye']);
   let cls='',txt='',ms=2300;
   if(g==='hop'){cls='g-hop';ms=1300}else if(g==='stretch'){cls='g-stretch';ms=2300}else if(g==='sigh'){cls='g-sigh';ms=2500}else if(g==='heart'){cls='g-heart';ms=2000}
-  else if(g==='wave'){cls='g-wave';ms=2100}else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau~';ms=2200}else if(g==='wag'){cls='g-wag';ms=2400}else if(g==='tilt'){cls='g-tilt';ms=2700}else if(g==='pant'){cls='g-pant';ms=3200}else if(g==='sniff'){cls='g-sniff';ms=2700}else if(g==='eflick'){cls='g-eflick';ms=2100}
-  else if(g==='wash'){cls='g-wash';ms=3400}else if(g==='blink'){cls='g-blink';ms=2700}else if(g==='flick'){cls='g-flick';ms=1700}else if(g==='purr'){cls='say g-purr';txt='mrrr…';ms=3000}
+  else if(g==='wave'){cls='g-wave';ms=2100}else if(g==='woof'){cls='say g-hop';txt='¡guau!';ms=2000}else if(g==='miau'){cls='say';txt='miau.';ms=2200}else if(g==='ignore'){cls='g-ignore say';txt='meh';ms=3200}else if(g==='sideeye'){cls='g-side';ms=2600}else if(g==='wag'){cls='g-wag';ms=2400}else if(g==='tilt'){cls='g-tilt';ms=2700}else if(g==='pant'){cls='g-pant';ms=3200}else if(g==='sniff'){cls='g-sniff';ms=2700}else if(g==='eflick'){cls='g-eflick';ms=2100}
+  else if(g==='wash'){cls='g-wash';ms=3400}else if(g==='blink'){cls='g-blink';ms=2700}else if(g==='flick'){cls='g-flick';ms=1700}else if(g==='purr'){cls='say g-purr';txt='mrr…';ms=3000}
   else if(g==='dream'){cls='say';txt=dog?'🦴':'🐟';ms=2800}
   if(txt)bub.textContent=txt;cls.split(' ').forEach(c=>pet.classList.add(c));
   setTimeout(()=>cls.split(' ').forEach(c=>pet.classList.remove(c)),ms)}
@@ -238,7 +245,7 @@ const visPet=()=>{const v=host.dataset.v,slot=v==='buscar'?sM:v==='descubrir'?sR
 let lastPtr=0,raf=0,px=0,py=0,sc=0;
 const setLook=(lx,ly,hr)=>{host.style.setProperty('--lx',lx.toFixed(2));host.style.setProperty('--ly',ly.toFixed(2));host.style.setProperty('--hr',hr.toFixed(2))};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-function lookAt(x,y){const p=visPet();if(!p||p.classList.contains('sleep'))return;const r=p.getBoundingClientRect(),cx=r.left+r.width*.5,cy=r.top+r.height*.3,nx=clamp((x-cx)/170,-1,1),ny=clamp((y-cy)/230,-1,1);setLook(nx*2.2,ny*1.8,nx*5)}
+function lookAt(x,y){const p=visPet();if(!p||p.classList.contains('sleep'))return;const r=p.getBoundingClientRect(),cx=r.left+r.width*.5,cy=r.top+r.height*.3,nx=clamp((x-cx)/170,-1,1),ny=clamp((y-cy)/230,-1,1);const k=p.classList.contains('cat')?.45:1;setLook(nx*2.2*k,ny*1.8*k,nx*5*k)}
 function onPtr(e){const t=e.touches?e.touches[0]:e;if(!t)return;px=t.clientX;py=t.clientY;lastPtr=Date.now();if(!raf)raf=requestAnimationFrame(()=>{raf=0;lookAt(px,py)})}
 ['pointerdown','pointermove'].forEach(ev=>document.addEventListener(ev,onPtr,{passive:true,capture:true}));
 document.addEventListener('touchstart',onPtr,{passive:true,capture:true});
@@ -250,11 +257,11 @@ const qEl=document.getElementById('q');
 if(qEl){qEl.addEventListener('focus',()=>{const r=qEl.getBoundingClientRect();lastPtr=Date.now()+4000;lookAt(r.left+r.width*.5,r.top+r.height*.5);play('g-eflick')});qEl.addEventListener('input',()=>{lastPtr=Date.now()+2000;const r=qEl.getBoundingClientRect();lookAt(r.left+Math.min(r.width,qEl.value.length*9+20),r.top+r.height*.5)});qEl.addEventListener('blur',()=>setLook(0,0,0))}
 function play(cls,txt,ms){const p=visPet();if(!p||p.classList.contains('sleep')||busy)return;const bub=p.querySelector('.bub');if(txt&&bub)bub.textContent=txt;const cs=(cls+(txt?' say':'')).split(' ').filter(Boolean);if(cs.some(c=>p.classList.contains(c)))return;cs.forEach(c=>p.classList.add(c));setTimeout(()=>cs.forEach(c=>p.classList.remove(c)),ms||2200)}
 function react(k){const p=visPet();if(!p||p.classList.contains('sleep'))return;const dog=p.classList.contains('dog');
-  if(k==='found')play(dog?'g-hop':'g-flick',dog?'¡mirá!':'¡mirá!',2000);
-  else if(k==='sent')play(dog?'g-hop g-heart':'g-heart','¡a leer!',2200);
-  else if(k==='goal')play(dog?'g-hop g-heart':'g-stretch g-heart','¡meta!',2400);
-  else if(k==='err')play(dog?'g-tilt':'g-blink','uy…',2400);
-  else if(k==='ok')play('g-heart','',1800);
+  if(k==='found')play(dog?'g-hop':'g-blink',dog?'¡mirá!':'mm, bien.',2400);
+  else if(k==='sent')play(dog?'g-hop g-heart':'g-flick',dog?'¡a leer!':'obvio.',2200);
+  else if(k==='goal')play(dog?'g-hop g-heart':'g-stretch',dog?'¡meta!':'no está mal.',2400);
+  else if(k==='err')play(dog?'g-tilt':'g-flick',dog?'uy…':'tsk.',2400);
+  else if(k==='ok'&&dog)play('g-heart','',1800);
   else if(k==='busy')play(dog?'g-tilt':'g-eflick','',1800)}
 const stEl=document.getElementById('status');
 if(stEl){let lastT='',foundFor='';new MutationObserver(()=>{const t=stEl.textContent||'',c=stEl.className||'';if(t===lastT)return;lastT=t;
