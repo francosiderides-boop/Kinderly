@@ -178,6 +178,8 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '.kr-qt{display:flex;justify-content:center;gap:12px;margin:4px 0 12px}.kr-qd{width:40px!important;min-width:40px!important;height:40px!important;padding:0!important;border-radius:50%!important;border:2px solid rgba(128,128,128,.35)!important}.kr-qd.sel{border-color:#5468A3!important;box-shadow:0 0 0 3px rgba(84,104,163,.3)}'+
 '.kr-qs .ap-seg{display:flex;gap:2px;background:rgba(128,128,128,.14);border-radius:12px;padding:3px;margin-bottom:12px}.kr-qs .ap-seg button{flex:1;border:0;height:38px;border-radius:9px;background:transparent;color:inherit}.kr-qs .ap-seg button.sel{background:var(--card,#fff);box-shadow:0 1px 3px rgba(0,0,0,.18);font-weight:700}'+
 '.kr-qs .kr-qm{width:100%;height:50px;border-radius:999px;border:0;background:var(--btn,#5468A3);color:#fff;margin-bottom:8px}.kr-qs .ghost{width:100%;height:44px;border-radius:999px}.kr-qs .kr-qh .ghost{width:40px}.kr-qs .note{text-align:center;font-size:.75rem;opacity:.65;margin:8px 0 0}'+
+'#kr .kr-br{position:absolute;right:12px;left:12px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:6;padding:10px 16px;border-radius:18px;background:color-mix(in srgb,var(--krbg) 88%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid rgba(128,128,128,.3);box-shadow:0 8px 28px rgba(0,0,0,.25);opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .2s,transform .3s cubic-bezier(.34,1.4,.64,1)}#kr .kr-br.on{opacity:1;pointer-events:auto;transform:none}#kr.hide .kr-br{opacity:0;pointer-events:none}'+
+'#kr .kr-mus{position:absolute;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));height:80px;z-index:4;display:none}#kr .kr-mus.on{display:block}#kr .kr-mus.off,#kr.hide .kr-mus{opacity:0;pointer-events:none}#kr .kr-mh{margin:16px 0 4px;font-weight:600}'+
 '#kr .ap-s{margin:0 0 16px}#kr .ap-l{font:600 .68rem var(--sans);letter-spacing:.08em;text-transform:uppercase;opacity:.6;margin:0 2px 8px}'+
 '#kr .ap-size{display:flex;align-items:center;gap:10px;background:rgba(128,128,128,.12);border-radius:14px;padding:4px}#kr .ap-size .ap-st{flex:1;height:44px;border:0;border-radius:11px;background:rgba(128,128,128,.14);font-size:1.05rem}#kr .ap-pct{min-width:56px;text-align:center;font:600 .95rem var(--sans);font-variant-numeric:tabular-nums}'+
 '#kr .ap-fonts,#kr .ap-themes{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px;scroll-snap-type:x proximity}#kr .ap-fonts::-webkit-scrollbar,#kr .ap-themes::-webkit-scrollbar{display:none}'+
@@ -236,7 +238,7 @@ async function open(o){
   let remount=null,book=null,rend=null,ready=false,closed=false,pct=0,lastCfi='',marks=[],curSel=null;
   const entry=()=>lib().find(x=>x.id===id)||{};
   const closePanel=()=>pnl.classList.remove('on');
-  const panel=(name,build)=>{pnl.textContent='';const h=el('div','kr-ph');h.append(el('h4','',name),btn('✕',closePanel,'Cerrar panel'));const b=el('div','kr-pb');pnl.append(h,b);build(b);pnl.classList.add('on');selbar.classList.remove('on')};
+  const panel=(name,build)=>{pnl.textContent='';const h=el('div','kr-ph');h.append(el('h4','',name),btn('✕',closePanel,'Cerrar panel'));const b=el('div','kr-pb');pnl.append(h,b);build(b);pnl.classList.add('on');selbar.classList.remove('on');const bp=root.querySelector('.kr-br');if(bp)bp.classList.remove('on')};
   const hideSel=()=>{selbar.classList.remove('on');curSel=null};
 
   // ----- progreso: porcentaje, páginas y tiempo restante -----
@@ -415,7 +417,7 @@ async function open(o){
     Object.keys(THEMES).forEach(k=>{const T=THEMES[k];const x=btn('',()=>{setPref('theme',k);restyle();Object.keys(tb).forEach(j=>tb[j].classList.toggle('sel',j===k))},T.name,'ap-t');const c=el('span','ap-tc','Aa');if(k==='auto'){c.style.background='linear-gradient(135deg,#F7F6F1 50%,#12151C 50%)';c.style.color='#7d8590'}else{c.style.background=T.bg;c.style.color=T.fg}x.append(c,el('span','ap-tn',T.name));x.classList.toggle('sel',prefs().theme===k);tb[k]=x;tr.append(x)});
     sec('Tema',tr);
     const sl=(label,key,max)=>{const w=el('div','ap-sl');const i=el('input');i.type='range';i.min=0;i.max=max;i.value=prefs()[key]||0;i.setAttribute('aria-label',label);i.oninput=()=>{setPref(key,+i.value);comfort()};w.append(el('span','',key==='dim'?'☀':'🔥'),i,el('span','',key==='dim'?'☾':'🌙'));return w};
-    const cf=el('div');cf.append(sl('Atenuar pantalla','dim',55),sl('Luz cálida','warm',100));sec('Brillo y luz cálida',cf);
+    const cf=el('div');cf.append(sl('Atenuar pantalla','dim',70),sl('Luz cálida','warm',100));sec('Brillo y luz cálida',cf);
     // segmentados
     const seg=(label,opts,get,set)=>{const r=el('div','ap-seg');const bs=[];opts.forEach(([txt,val])=>{const x=btn(txt,()=>{set(val);bs.forEach(y=>y[1].classList.toggle('sel',y[0]===val))});bs.push([val,x]);x.classList.toggle('sel',get()===val);r.append(x)});sec(label,r)};
     seg('Modo de lectura',[['Páginas','paginated'],['Scroll','scrolled']],()=>prefs().mode||'paginated',v=>{setPref('mode',v);if(remount)remount()});
@@ -456,6 +458,7 @@ async function open(o){
   });
 
   // ----- audiolectura -----
+  const MUS=[['Piano suave','🎹','37i9dQZF1DX4sWSpwq3LiO'],['Concentración','🎯','37i9dQZF1DWZeKCadgRdKQ'],['Lo-fi','☕','37i9dQZF1DWWQRwui0ExPn'],['Clásica','🎻','37i9dQZF1DWWEJlAGA9gs0'],['Ambiente','🌫️','37i9dQZF1DX3Ogo9pFvBkY'],['Jazz','🎷','37i9dQZF1DX0SM0LYsmbMT']];
   const AV=[['Kore','Kore · firme'],['Puck','Puck · animada'],['Charon','Charon · grave'],['Aoede','Aoede · suave'],['Fenrir','Fenrir · intensa'],['Zephyr','Zephyr · clara']];
   const aCfg=()=>Object.assign({eng:'device',voice:'Kore',dev:'',rate:1},store.get('kr_au',{}));
   const setA=(k,v)=>{const q=aCfg();q[k]=v;store.set('kr_au',q)};
@@ -530,7 +533,10 @@ async function open(o){
   }
   const pauseAudio=()=>{if(!AU.on)return;AU.paused=true;if(aCfg().eng==='ai'&&AU.audio){AU.audio.pause()}else{const rest=AU.list.slice(AU.pos).join(' ');AU.gen++;try{speechSynthesis.cancel()}catch(e){}AU.rest={href:AU.href,text:rest};AU.on=false}if(AU.onState)AU.onState()};
   const resumeAudio=()=>{if(!AU.paused)return;if(AU.on&&AU.audio){AU.paused=false;AU.audio.play().catch(()=>{});if(AU.onState)AU.onState()}else if(AU.rest){const r=AU.rest;AU.rest=null;runAudio(r)}};
-  const audioPanel=()=>panel('🎧 Audiolectura',b=>{
+  const musHost=el('div','kr-mus');root.append(musHost);
+  const musOn=()=>!!musHost.firstChild&&!musHost.classList.contains('off');
+  const setMus=(kind,id,name)=>{musHost.textContent='';const f=document.createElement('iframe');f.src='https://open.spotify.com/embed/'+kind+'/'+id+'?utm_source=generator&theme=0';f.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';f.loading='lazy';f.title='Spotify: '+name;f.style.cssText='width:100%;height:100%;border:0;border-radius:14px';musHost.append(f);musHost.classList.add('on');musHost.classList.remove('off');store.set('kr_mus',{k:kind,i:id,n:name});audioPanel()};
+  const audioPanel=()=>panel('🎧 Audio y música',b=>{
     const c=aCfg(),gem=!!(ai()&&ai().key&&ai().p!=='claude');
     const chips=(label,opts,get,set)=>{const r=el('div','row');r.append(el('b','',label));const bs=[];opts.forEach(([t,v])=>{const x=btn(t,()=>{set(v);bs.forEach(y=>y[1].classList.toggle('sel',y[0]===v))},t);bs.push([v,x]);x.classList.toggle('sel',get()===v);r.append(x)});b.append(r)};
     const st=el('p','hint2','');
@@ -554,11 +560,22 @@ async function open(o){
     }
     chips('Velocidad',[['Lenta',0.85],['Normal',1],['Rápida',1.25],['Muy rápida',1.5]],()=>aCfg().rate,v=>{setA('rate',v);if(AU.audio)AU.audio.playbackRate=v});
     b.append(el('p','note','Lee desde la página en la que estás y sigue con los capítulos siguientes. Al cerrar el libro se detiene.'));
+    // música de Spotify mientras leés
+    const mh=el('div','kr-mh');mh.append(el('b','','Música para leer · Spotify'));b.append(mh);
+    const mrow=el('div','ap-fonts');MUS.forEach(([n,e,id])=>{const x=btn('',()=>{setMus('playlist',id,n)},n,'ap-f');x.append(el('span','ap-fa',e),el('span','ap-fn',n));mrow.append(x)});b.append(mrow);
+    const lk=el('input');lk.type='text';lk.placeholder='…o pegá un enlace de Spotify (playlist, álbum, canción)';lk.style.cssText='margin:8px 0';lk.onchange=()=>{const m=/open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album|track|episode|show|artist)\/([A-Za-z0-9]+)/.exec(lk.value);if(!m){say('Ese no parece un enlace de Spotify','err');return}setMus(m[1],m[2],'Spotify');lk.value=''};b.append(lk);
+    const mc=el('div','row');mc.append(btn(musOn()?'Ocultar reproductor':'Mostrar reproductor',()=>{musHost.classList.toggle('off');audioPanel()},'Mostrar u ocultar'),btn('Quitar música',()=>{musHost.textContent='';musHost.classList.remove('on');store.del('kr_mus');say('Música quitada','ok');audioPanel()},'Quitar música','ghost'));if(musHost.firstChild)b.append(mc);
+    b.append(el('p','note','Spotify se reproduce dentro de la app. Si tenés sesión iniciada de Spotify en este navegador suena completo; si no, son fragmentos de 30 segundos. Kinderly no accede a tu cuenta.'));
   });
 
   // ----- armado de la interfaz -----
   top.append(btn('✕',()=>close(),'Cerrar'),ttl,btn('🎧',audioPanel,'Audiolectura'),btn('✨',aiPanel,'Resumen con IA'),btn('ⓘ',()=>panel('Sobre el autor',b=>{const w=el('div');b.append(w);if(window.KEx)window.KEx.bioView(w,o.author||entry().author||'');else w.textContent='No disponible'}),'Sobre el autor'),btn('☰',()=>contents('toc'),'Contenido'),btn('Aa',looks,'Apariencia'));
-  bot.append(btn('‹',()=>rend&&rend.prev(),'Página anterior'),prog,btn('›',()=>rend&&rend.next(),'Página siguiente'));
+  const brPop=el('div','kr-br');
+  const brRow=(ic,key,max,lab)=>{const r=el('div','ap-sl');const i=el('input');i.type='range';i.min=0;i.max=max;i.value=prefs()[key]||0;i.setAttribute('aria-label',lab);i.oninput=()=>{setPref(key,+i.value);comfort()};r.append(el('span','',ic),i);return r};
+  brPop.append(brRow('🌙','dim',70,'Atenuar pantalla'),brRow('🔥','warm',100,'Luz cálida'));
+  const brBtn=btn('☀',()=>{brPop.classList.toggle('on');brBtn.classList.toggle('sel',brPop.classList.contains('on'))},'Brillo');
+  root.addEventListener('pointerdown',e=>{if(brPop.classList.contains('on')&&!brPop.contains(e.target)&&e.target!==brBtn){brPop.classList.remove('on');brBtn.classList.remove('sel')}},true);
+  bot.append(btn('‹',()=>rend&&rend.prev(),'Página anterior'),prog,btn('›',()=>rend&&rend.next(),'Página siguiente'),brBtn);root.append(brPop);
   // barra de selección
   const selBtns=()=>{selbar.textContent='';
     Object.keys(HL).forEach(c=>{const x=btn('',()=>{if(!curSel)return;const q0=curSel.text;addMark(curSel.cfi,curSel.text,c);try{curSel.contents.window.getSelection().removeAllRanges()}catch(e){}hideSel();if(q0.trim().length>=20&&store.get('kr_qs_off',false)!==true)setTimeout(()=>quoteCard(q0,title,o.author||entry().author||''),250)},'Subrayar '+c,'dot');x.style.background=HL[c];selbar.append(x)});
