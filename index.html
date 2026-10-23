@@ -278,6 +278,7 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 .actions>button.ghost{border:1px solid var(--line)}
 /* v160 · el aviso quedaba debajo del lector (z 30) y de las mascotas: ahora va arriba de los dos */
 #status{z-index:35;cursor:pointer}
+.tag.warn{background:color-mix(in srgb,var(--gold) 28%,var(--card));color:var(--ink)}
 /* v161 · las ventanitas de Amigos eran casi transparentes y se leía lo de atrás */
 .ks-ov .ks-box,.ex-ov .ex-sh{background:color-mix(in srgb,var(--card) 96%,transparent)!important}
 /* v162 · en modo claro el borde de vidrio de los botones secundarios no se veía en ningún lado */
@@ -345,8 +346,8 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v163'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.53 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v164'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.54 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra
 (function(){try{
@@ -384,7 +385,7 @@ if(!store.get('mail'))$('cfg').open=true;
 
 // el aviso se va solo (los de "en curso…" quedan hasta que llegue el siguiente); tocarlo lo cierra
 let sayT=0;
-function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block';clearTimeout(sayT);if(/…$/.test(t)||/^Buscando/.test(t))return;sayT=setTimeout(()=>{s.style.display='none'},Math.min(9000,3200+t.length*45)+(c==='err'?2500:0))}
+function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block';clearTimeout(sayT);if(/…$/.test(t)||/^Buscando/.test(t)){sayT=setTimeout(()=>{s.style.display='none'},30000);return}sayT=setTimeout(()=>{s.style.display='none'},Math.min(9000,3200+t.length*45)+(c==='err'?2500:0))}
 $('status').addEventListener('click',()=>{clearTimeout(sayT);$('status').style.display='none'});
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
 window.kTitle=function(s){return String(s||'').replace(/\s*:?\s*\$[a-z]\s+/gi,': ').replace(/\s*\$[a-z]\s*$/i,'').replace(/\s{2,}/g,' ').trim()};
@@ -405,11 +406,14 @@ async function iaEpub(id){
   const md=m.metadata||{},restricted=String(md['access-restricted-item']||'').toLowerCase()==='true';
   if(restricted)throw new Error('Internet Archive marca este libro como restringido');
   if(!hasOpenLicense(md.licenseurl||md.rights)&&!isPD(md))throw new Error('No hay una licencia abierta verificable para enviar este archivo');
-  const f=(m.files||[]).find(f=>/\.epub$/i.test(f.name)&&String(f.private||'').toLowerCase()!=='true');
+  const fs=(m.files||[]).filter(f=>/\.epub$/i.test(f.name)&&String(f.private||'').toLowerCase()!=='true'),f=fs.find(f=>f.source==='original')||fs[0];
   if(!f)throw new Error('Este título no tiene epub');
   return 'https://archive.org/download/'+encodeURIComponent(id)+'/'+f.name.split('/').map(encodeURIComponent).join('/');
 }
-const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books'];
+// de mejor a peor EPUB: Gutenberg y Wikisource son ediciones revisadas; los de Internet Archive los sube cualquiera y muchas veces son conversiones rotas
+const ORDER=['Project Gutenberg','Wikisource','Google Books','Internet Archive','Open Library'];
+const QUAL={'Project Gutenberg':4,'Wikisource':3,'Google Books':2,'Internet Archive':1,'Open Library':0};
+const bestOpt=b=>b.opts.find(o=>o.sendable&&typeof o.url==='function');
 const SOURCES=[
  {name:'Project Gutenberg',async run(q){
    // gutendex a veces tarda o se cae: se le da más tiempo y, si falla, se busca en el catálogo propio (catalog/*.json)
@@ -434,7 +438,7 @@ const SOURCES=[
      return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',language:i.language,img:((i.imageLinks||{}).thumbnail||'').replace('http:','https:'),page:i.infoLink||'',sendable:legal,buyUrl,url:async()=>{if(!legal)throw new Error('Esta edición no tiene un EPUB gratuito y autorizado.');return ep.downloadLink.replace(/^http:\/\//,'https://')},inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description),pages:i.pageCount,edition:[i.publisher,(i.publishedDate||'').slice(0,4)].filter(Boolean).join(', ')})}}).filter(Boolean);}},
    {name:'Wikisource',async run(q){
    const d=await j('https://es.wikisource.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=15&srnamespace=0&srsearch='+encodeURIComponent(q));
-   return d.query.search.map(b=>({title:b.title,author:'',language:'es',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||'',edition:'Wikisource'}}}));}}
+   return d.query.search.filter(b=>!b.title.includes('/')).map(b=>({title:b.title,author:'',language:'es',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||'',edition:'Wikisource'}}}));}}
 ];
 
 const CATALOG_FILES=['top','reir','emocion','aventura','intriga','pensar','sonar','susto','breve','historia','teatro','poesia','chicos'];
@@ -480,15 +484,19 @@ function score(b){
   const authorOnlyQuery=queryTokens.length>=2&&authorHits>=Math.ceil(queryTokens.length*.8);
   const relevant=fullTitle||titlePrefix||authorPhrase||authorOnlyQuery||(titleHits===queryTokens.length&&t.length-query.length<=36)||(authorHits>=Math.ceil(queryTokens.length*.8)&&titleHits>0);
   if(!relevant)return -100;
-  // el título exacto gana; después el autor. Los que se pueden leer gratis suben un poco sobre los que solo se compran
-  const free=b.opts.some(o=>o.sendable&&typeof o.url==='function')?15:0;
+  // el título exacto gana; después el autor. Los que se pueden leer gratis suben, más cuanto mejor es la fuente
+  const bo=bestOpt(b),free=bo?8+(QUAL[bo.src]||0)*3:0; // entre ediciones parecidas gana la de mejor fuente
   return (fullTitle?130:authorPhrase?120:titlePrefix?80:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+free+coverage*10-Math.max(0,t.length-query.length)*.12;
 }
 function isSpanish(value){const codes=(Array.isArray(value)?value:[value]).flatMap(v=>String(v||'').toLowerCase().split(/[;,\s]+/)).map(v=>v.trim().replace(/^.*\//,'')).filter(Boolean);return codes.some(v=>v==='es'||v==='spa'||v==='spanish'||v==='espanol'||v==='español'||v==='castellano'||v==='castilian'||v.startsWith('es-'))}
+// mismo libro = mismo título (sin artículo inicial ni " - Autor" pegado) y autores compatibles
+const workKey=t=>norm(String(t).split(/\s[-–—]\s|[:;(\[]/)[0]).replace(/^(el|la|los|las|lo|un|una|unos|unas)\s+/,'');
+const auToks=a=>new Set(norm(a).split(' ').filter(w=>w.length>3));
+const sameAuthor=(a,b)=>{const A=auToks(a),B=auToks(b);if(!A.size||!B.size)return true;for(const w of A)if(B.has(w))return true;return false};
 function add(src,list){list.forEach(b=>{if(b.title)b.title=window.kTitle(b.title);if(!b.title||!isSpanish(b.language))return;
   const directBuy=!!b.buyUrl,query=[b.title,b.author||''].filter(Boolean).join(' '),buyUrl=b.buyUrl||('https://books.google.com/books?hl=es&q='+encodeURIComponent(query));
-  const k=norm(b.title.split(/[:;(]/)[0]),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false,buyUrl,buyLabel:directBuy?'Comprar en Google Books':'Buscar opciones de compra'},e=all.find(x=>x.k===k);
-  if(e){if(!e.opts.some(p=>p.src===src))e.opts.push(o);else{const old=e.opts.find(p=>p.src===src);if(directBuy&&!old.buyUrl){old.buyUrl=buyUrl;old.buyLabel='Comprar en Google Books'}}if(!e.author&&b.author)e.author=b.author;if(!e.img&&b.img)e.img=b.img}
+  const k=workKey(b.title),o={src,url:b.url,inf:b.inf,page:b.page||'',sendable:b.sendable!==false,buyUrl,buyLabel:directBuy?'Comprar en Google Books':'Buscar opciones de compra'},e=all.find(x=>x.k===k&&sameAuthor(x.author,b.author));
+  if(e){if(!e.opts.some(p=>p.src===src)){const prev=bestOpt(e);e.opts.push(o);e.opts.sort((x,y)=>(QUAL[y.src]||0)-(QUAL[x.src]||0));if(o.sendable&&typeof o.url==='function'&&(!prev||(QUAL[src]||0)>(QUAL[prev.src]||0))){e.title=b.title;if(b.author)e.author=b.author}}else{const old=e.opts.find(p=>p.src===src);if(directBuy&&!old.buyUrl){old.buyUrl=buyUrl;old.buyLabel='Comprar en Google Books'}}if(!e.author&&b.author)e.author=b.author;if(!e.img&&b.img)e.img=b.img}
   else all.push({k,title:b.title,author:b.author||'',img:b.img||'',opts:[o]})})}
 function card(b,target="res"){
   const el=document.createElement('div');el.className='item';
@@ -498,6 +506,7 @@ function card(b,target="res"){
   const sm=document.createElement('small');sm.textContent=b.author;
   t.append(h,sm,document.createElement('br'));
   b.opts.forEach(o=>{const g=document.createElement('span');g.className='tag';g.textContent=o.label||o.src;t.append(g)});
+  {const bo=bestOpt(b);if(bo&&bo.src==='Internet Archive'){const w=document.createElement('span');w.className='tag warn';w.textContent='Puede tener fallas de formato';w.title='La única versión gratis es una subida por usuarios a Internet Archive: a veces no trae índice o tiene párrafos cortados.';t.append(w)}}
   const record=b.opts.find(o=>o.page);if(record){const a=document.createElement('a');a.href=record.page;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Abrir ficha';a.className='tag';t.append(a)}
   const actions=document.createElement('div');actions.className='actions';
   const hasAuthorizedSource=b.opts.some(o=>o.sendable&&typeof o.url==='function');
@@ -664,11 +673,11 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=163"></script>
-<script src="discover.js?v=163"></script>
-<script src="extras.js?v=163"></script>
-<script src="pets.js?v=163"></script>
-<script type="module" src="social.js?v=163"></script>
+<script src="reader.js?v=164"></script>
+<script src="discover.js?v=164"></script>
+<script src="extras.js?v=164"></script>
+<script src="pets.js?v=164"></script>
+<script type="module" src="social.js?v=164"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;

@@ -85,6 +85,13 @@ function fixText(d){try{
     if(u!==t){nd.textContent=u;n++}}
   return n}catch(e){return 0}}
 window.__krFixText=fixText;
+// títulos sueltos de capítulo ("1", "IV", "Capítulo III") o encabezados h1–h3: les pone una marca (id) que depende solo del texto,
+// así el índice armado por la app apunta al mismo lugar aunque el lector haya unido párrafos
+const HEAD_RX=/^(cap[ií]tulo\s+[\wáéíóúñ]+|[IVXLC]{1,7}|\d{1,3})\.?$/i;
+function markHeads(d){const out=[],seen={};try{const body=d.body||(d.querySelector&&d.querySelector('body'));if(!body)return out;
+  body.querySelectorAll('h1,h2,h3,p,div').forEach(e=>{if(e.querySelector('p,div,h1,h2,h3'))return;const t=e.textContent.replace(/\s+/g,' ').trim();if(!t||t.length>70)return;
+    const num=HEAD_RX.test(t);if(!num&&!/^H[1-3]$/i.test(e.tagName))return;
+    const base='krh-'+t.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'-').slice(0,40),k=(seen[base]=(seen[base]||0)+1),id=e.id||base+'-'+k;if(!e.id)e.id=id;if(num&&/^(P|DIV)$/i.test(e.tagName)&&e.classList)e.classList.add('kr-head');out.push({t,id,num})})}catch(e){}return out}
 window.__krFix=fixOrphans;window.__krQuote=(t,a,b)=>quoteCard(t,a,b);
 const idOf=u=>String(u).replace(/[?#].*$/,'');
 const hlKey=id=>'kr_hl_'+id;const bmKey=id=>'kr_bm_'+id;
@@ -391,26 +398,36 @@ async function open(o){
     });
   }
 
+  // ir a la n-ésima vez que aparece q en un capítulo, buscándola en la página ya arreglada (las posiciones del texto original no sirven
+  // cuando el lector unió párrafos)
+  // saltar a un capítulo: si el capítulo recién se carga, la página todavía se está acomodando (tipografía, saltos), así que se vuelve a ubicar
+  const settle=()=>new Promise(r=>setTimeout(r,450));
+  const goTo=async h=>{try{await rend.display(h);if(/#/.test(String(h))){await settle();if(!closed)await rend.display(h)}}catch(e){}};
+  const goToMatch=async x=>{try{await rend.display(x.href);const cs=rend.getContents()||[],c=cs.find(c=>c.sectionIndex===x.sec)||cs[0];if(!c)throw 0;
+    const d=c.document,ql=x.q.toLowerCase(),w=d.createTreeWalker(d.body,4);let n,k=0;
+    while((n=w.nextNode())){const t=n.textContent.toLowerCase();let i=t.indexOf(ql);while(i>=0){if(k===x.occ){const r=d.createRange();r.setStart(n,i);r.setEnd(n,i+ql.length);const cf=c.cfiFromRange(r);await rend.display(cf);await settle();if(!closed)await rend.display(cf);return}k++;i=t.indexOf(ql,i+1)}}
+  }catch(e){try{await rend.display(x.cfi)}catch(_){}}};
+
   // ----- búsqueda en el libro -----
   async function searchBook(q,list){
     list.textContent='Buscando…';const res=[];
     try{
       for(const it of book.spine.spineItems){
         await it.load(book.load.bind(book));
-        const f=it.find(q)||[];f.forEach(x=>res.push(x));it.unload();
+        const f=it.find(q)||[];f.forEach((x,i)=>res.push(Object.assign(x,{href:it.href,sec:it.index,occ:i,q})));it.unload();
         if(res.length>=40)break;
       }
     }catch(e){}
     list.textContent='';
     if(!res.length){list.append(el('p','','Sin resultados.'));return}
-    res.forEach(x=>{const b=btn('',()=>{rend.display(x.cfi);closePanel()},'Ir al resultado','li');b.append(document.createTextNode('…'+x.excerpt.trim()+'…'));list.append(b)});
+    res.forEach(x=>{const b=btn('',()=>{goToMatch(x);closePanel()},'Ir al resultado','li');b.append(document.createTextNode('…'+x.excerpt.trim()+'…'));list.append(b)});
   }
 
   // ----- panel de contenido (índice, marcas, búsqueda) -----
   const contents=(tab)=>panel('Contenido',b=>{
     const tabs=el('div','kr-tabs'),body=el('div');const bms=()=>store.get(bmKey(id),[]);const names=[['toc','Índice'],['bm','Marcas'+(bms().length?' ('+bms().length+')':'')],['marks','Notas'+(marks.length?' ('+marks.length+')':'')],['q','Frases'],['find','Buscar']];
     const show=t=>{[...tabs.children].forEach((x,i)=>x.classList.toggle('sel',names[i][0]===t));body.textContent='';
-      if(t==='toc'){if(!tocItems.length)body.append(el('p','','Este libro no tiene índice.'));tocItems.forEach(it=>{const x=btn('',()=>{rend.display(it.href);closePanel()},it.label,'li');x.append(document.createTextNode((it.d?'— ':'')+it.label));body.append(x)})}
+      if(t==='toc'){if(!tocItems.length)body.append(el('p','','Este libro no tiene índice.'));tocItems.forEach(it=>{const x=btn('',()=>{goTo(it.href);closePanel()},it.label,'li');x.append(document.createTextNode((it.d?'— ':'')+it.label));body.append(x)})}
       if(t==='q'){body.append(el('p','hint2','Frases célebres de este libro o de su autor, tomadas de Wikiquote.'));const box=el('div');body.append(box);loadQuotes(box)}
       if(t==='bm'){const add=btn('🔖 Marcar esta página',()=>{const l=bms(),h=Math.round((pct||0)*100);if(l.some(x=>x.cfi===lastCfi)){say('Esta página ya está marcada','ok');return}let lab='';try{const lc=rend.currentLocation();const h0=lc&&lc.start&&lc.start.href;const t0=tocItems.filter(x=>x.href&&String(x.href).split('#')[0]===String(h0).split('#')[0])[0];lab=t0?t0.label:''}catch(e){}l.push({cfi:lastCfi,pct:pct||0,label:lab,t:Date.now()});store.set(bmKey(id),l);say('Marcador guardado','ok');contents('bm')});add.style.cssText='width:100%;margin-bottom:8px';body.append(add);
         const l=bms().slice().sort((a,c)=>a.pct-c.pct);if(!l.length)body.append(el('p','','Todavía no marcaste ninguna página. Tocá el botón para guardar tu lugar y volver cuando quieras.'));
@@ -690,7 +707,7 @@ async function open(o){
       rend=book.renderTo(view,sc?{width:'100%',height:'100%',flow:'scrolled',manager:'continuous',allowScriptedContent:false}:{width:'100%',height:'100%',flow:'paginated',spread:'none',allowScriptedContent:false});
       rend.hooks.content.register(c=>{try{const d=c.document;
         // seleccionar solo manteniendo apretado (un toque suelto ya no marca palabras)
-        fixOrphans(d);fixText(d);const ss=d.createElement('style');ss.textContent='p{margin-top:0!important;margin-bottom:.85em!important;padding-top:0!important;padding-bottom:0!important}p:empty{display:none!important}br+br{display:none!important}body{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}body.kr-sel,body.kr-sel *{-webkit-user-select:text!important;user-select:text!important}';d.head.append(ss);
+        fixOrphans(d);fixText(d);markHeads(d);const ss=d.createElement('style');ss.textContent='p{margin-top:0!important;margin-bottom:.85em!important;padding-top:0!important;padding-bottom:0!important}p:empty{display:none!important}br+br{display:none!important}body{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}body.kr-sel,body.kr-sel *{-webkit-user-select:text!important;user-select:text!important}.kr-head{text-align:center!important;font-weight:600!important;font-size:1.35em!important;margin:2.2em 0 1.1em!important;break-before:column;-webkit-column-break-before:always}';d.head.append(ss);
         let tm=null,sx=0,sy=0,cx0=0,cy0=0,lastT=0;const cancel=()=>{if(tm){clearTimeout(tm);tm=null}};cancelers.add(cancel);
         d.addEventListener('touchstart',e=>{lastT=Date.now();const t=e.touches[0];if(!t||e.touches.length>1){cancel();return}sx=t.screenX;sy=t.screenY;cx0=t.clientX;cy0=t.clientY;cancel();
           tm=setTimeout(()=>{tm=null;if(Date.now()-lastScroll<400)return;try{d.body.classList.add('kr-sel');let rg=null;if(d.caretRangeFromPoint)rg=d.caretRangeFromPoint(cx0,cy0);else if(d.caretPositionFromPoint){const p=d.caretPositionFromPoint(cx0,cy0);if(p){rg=d.createRange();rg.setStart(p.offsetNode,p.offset);rg.collapse(true)}}
@@ -718,7 +735,22 @@ async function open(o){
     await mount(o.cfi||entry().cfi||undefined);
     msg.remove();ready=true;marks.forEach(paint);
     if(o.local){try{const md=await book.loaded.metadata;if(md&&md.title){o.title=md.title.trim();title=o.title}if(md&&md.creator)o.author=md.creator}catch(e){}}
-    book.loaded.navigation.then(nav=>{const add=(items,d)=>items.forEach(it=>{tocItems.push({label:(it.label||'').trim(),href:it.href,d});if(it.subitems&&it.subitems.length)add(it.subitems,1)});add(nav.toc||[],0)}).catch(()=>{});
+    book.loaded.navigation.then(nav=>{const add=(items,d)=>items.forEach(it=>{tocItems.push({label:(it.label||'').trim(),href:it.href,d});if(it.subitems&&it.subitems.length)add(it.subitems,1)});add(nav.toc||[],0)}).catch(()=>{}).then(autoToc);
+    // índice armado por la app cuando el libro no trae uno (pasa con los EPUB convertidos desde un PDF):
+    // busca títulos sueltos como "1", "II", "Capítulo III" o encabezados h1–h3
+    async function autoToc(){try{
+      if(tocItems.filter(x=>x.label&&!/^(iniciar|inicio|portada|cover|start|title ?page|cubierta)$/i.test(x.label)).length>=2)return;
+      const num=[],hd=[];
+      for(const sec of book.spine.spineItems.slice(0,200)){
+        if(closed)return;let doc=null;try{doc=await sec.load(book.load.bind(book))}catch(e){continue}
+        markHeads(doc).forEach(h=>{const it={label:h.num&&/^(\d+|[IVXLC]+)\.?$/i.test(h.t)?'Capítulo '+h.t.replace(/\.$/,''):h.t,href:sec.href+'#'+h.id,d:0};(h.num?num:hd).push(it)});
+        try{sec.unload()}catch(e){}
+      }
+      // muchísimos números sueltos suelen ser números de página del PDF, no capítulos
+      const arab=num.filter(x=>/^Capítulo \d+$/.test(x.label)),nums=arab.length>80?num.filter(x=>!arab.includes(x)):num;
+      const found=nums.length>=2?nums:hd.length>=2?hd:[];
+      if(found.length&&!closed){tocItems.length=0;found.slice(0,300).forEach(x=>tocItems.push(x))}
+    }catch(e){}}
     book.ready.then(()=>book.locations.generate(CPL)).then(()=>{if(closed)return;buildCh();range.disabled=false;if(lastCfi){pct=book.locations.percentageFromCfi(lastCfi)||0;range.value=Math.round(pct*1000);upd();save()}}).catch(()=>{});
     range.onchange=()=>{if(book.locations.length())rend.display(book.locations.cfiFromPercentage(range.value/1000))};
     save();
@@ -737,7 +769,8 @@ async function openFile(file){
     const buf=await file.arrayBuffer();
     const id='local:'+file.name+':'+file.size;
     const title=file.name.replace(/\.epub$/i,'').replace(/[_]+/g,' ');
-    open({id,title,author:'',buf,local:true});
+    await open({id,title,author:'',buf,local:true});
+    const st=document.getElementById('status');if(st&&/^Abriendo/.test(st.textContent))st.style.display='none';
   }catch(e){say('No se pudo leer el archivo','err')}
 }
 function pickFile(){const i=document.createElement('input');i.type='file';i.accept='.epub,application/epub+zip';i.onchange=()=>openFile(i.files&&i.files[0]);i.click()}
