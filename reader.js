@@ -64,12 +64,15 @@ function quoteCard(text,title,author){
   const off=btn(store.get('kr_qs_off',false)===true?'Mostrar esto al subrayar':'No mostrar esto al subrayar',()=>{const v=store.get('kr_qs_off',false)!==true;store.set('kr_qs_off',v);off.textContent=v?'Mostrar esto al subrayar':'No mostrar esto al subrayar'},'Preferencia','ghost');off.style.cssText='border:0;background:transparent;font-weight:500;opacity:.7;height:36px';
   sh.append(hd,pv,tr,sg,main,sv,nt,off);ov.append(sh);host.append(ov);requestAnimationFrame(()=>ov.classList.add('on'));draw();
 }
-function fixOrphans(d){try{const bl=[...d.body.querySelectorAll('p')];let n=0;
+function fixOrphans(d){try{[...d.body.querySelectorAll('p')].forEach(p=>{if(!p.textContent.replace(/[\s\u00a0\u200b]/g,'')&&!p.querySelector('img,svg,hr,image,video,audio'))p.remove()});const bl=[...d.body.querySelectorAll('p')];let n=0;
   for(let i=1;i<bl.length;i++){const p=bl[i],q=bl[i-1];if(p.parentNode!==q.parentNode)continue;const t=p.textContent.trim(),qt=q.textContent.trim();
-    if(!t||!qt||!/^[a-záéíóúñü]/.test(t))continue;
-    if(/[a-záéíóúñü]-$/.test(qt)){const last=[...q.childNodes].reverse().find(x=>x.nodeType===3&&x.textContent.trim());if(last)last.textContent=last.textContent.replace(/-\s*$/,'');while(p.firstChild)q.append(p.firstChild);q.dataset.m='1';p.remove();bl[i]=q;n++;continue}
+    if(!t||!qt)continue;
+    if(/[a-záéíóúñü]-$/.test(qt)&&/^[a-záéíóúñü]/.test(t)){const last=[...q.childNodes].reverse().find(x=>x.nodeType===3&&x.textContent.trim());if(last)last.textContent=last.textContent.replace(/-\s*$/,'');while(p.firstChild)q.append(p.firstChild);q.dataset.m='1';p.remove();bl[i]=q;n++;continue}
+    const open=/^[—–\-«"“¿¡(\[•*]/.test(t);
     if(/[.!?…:»”"')\]]$/.test(qt)||qt.length<30)continue;
-    if(t.length<=60||q.dataset.m||qt.length>=80){q.append(' ');while(p.firstChild)q.append(p.firstChild);q.dataset.m='1';p.remove();bl[i]=q;n++}}
+    if(open&&!/^[a-záéíóúñü]/.test(t))continue;
+    if(!/^[a-záéíóúñü]/.test(t)){if(qt.length<80||!/[a-záéíóúñü,;]$/.test(qt))continue;let hd=false;try{const cs=d.defaultView&&d.defaultView.getComputedStyle(q);hd=!!(cs&&(cs.textAlign==='center'||/^[5-9]\d\d$/.test(cs.fontWeight)&&q.textContent.length<90))}catch(e){}if(hd||/tit|head|cap|chap|sub|epigr|dedic/i.test(q.className||''))continue}
+    if(t.length<=60||q.dataset.m||qt.length>=50){q.append(' ');while(p.firstChild)q.append(p.firstChild);q.dataset.m='1';p.remove();bl[i]=q;n++}}
   return n}catch(e){return 0}}
 function fixText(d){try{
   const body=d.body;if(!body)return 0;const all=body.textContent||'',cnt=Object.create(null);
@@ -670,7 +673,7 @@ async function open(o){
       rend=book.renderTo(view,sc?{width:'100%',height:'100%',flow:'scrolled',manager:'continuous',allowScriptedContent:false}:{width:'100%',height:'100%',flow:'paginated',spread:'none',allowScriptedContent:false});
       rend.hooks.content.register(c=>{try{const d=c.document;
         // seleccionar solo manteniendo apretado (un toque suelto ya no marca palabras)
-        fixOrphans(d);fixText(d);const ss=d.createElement('style');ss.textContent='body{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}body.kr-sel,body.kr-sel *{-webkit-user-select:text!important;user-select:text!important}';d.head.append(ss);
+        fixOrphans(d);fixText(d);const ss=d.createElement('style');ss.textContent='p{margin-top:0!important;margin-bottom:.85em!important;padding-top:0!important;padding-bottom:0!important}p:empty{display:none!important}br+br{display:none!important}body{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}body.kr-sel,body.kr-sel *{-webkit-user-select:text!important;user-select:text!important}';d.head.append(ss);
         let tm=null,sx=0,sy=0,cx0=0,cy0=0,lastT=0;const cancel=()=>{if(tm){clearTimeout(tm);tm=null}};cancelers.add(cancel);
         d.addEventListener('touchstart',e=>{lastT=Date.now();const t=e.touches[0];if(!t||e.touches.length>1){cancel();return}sx=t.screenX;sy=t.screenY;cx0=t.clientX;cy0=t.clientY;cancel();
           tm=setTimeout(()=>{tm=null;if(Date.now()-lastScroll<400)return;try{d.body.classList.add('kr-sel');let rg=null;if(d.caretRangeFromPoint)rg=d.caretRangeFromPoint(cx0,cy0);else if(d.caretPositionFromPoint){const p=d.caretPositionFromPoint(cx0,cy0);if(p){rg=d.createRange();rg.setStart(p.offsetNode,p.offset);rg.collapse(true)}}
