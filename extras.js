@@ -14,6 +14,7 @@ const st=el('style');st.textContent=`
 .ex-sh{width:100%;max-width:520px;background:var(--card);color:var(--ink);border-radius:22px 22px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 40px rgba(0,0,0,.18);animation:in .25s ease both}
 .ex-sh h3{margin:0 0 4px;font:600 1.2rem var(--serif)}.ex-sh p{margin:0 0 14px;color:var(--mute);font-size:.92rem;line-height:1.5}
 .ex-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:8px;padding:14px 16px;border-radius:14px;background:var(--card);color:var(--ink);border:1px solid var(--line);font:500 1rem var(--sans);text-align:left}
+.ex-sh .ex-cl{margin:16px 0 0}.ex-cg{display:flex;align-items:center;gap:10px;margin-top:8px}.ex-cg input{flex:1;min-width:0;height:50px;padding:0 16px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font:500 1rem var(--sans)}.ex-cg span{color:var(--mute)}.ex-cg button{flex:none;height:50px;padding:0 22px}
 .ex-opt.on{border-color:var(--green);background:var(--soft)}.ex-opt span:last-child{color:var(--green);font-weight:600;font-size:.85rem}
 .ex-intro{position:fixed;inset:0;z-index:45;background:var(--bg);display:flex;flex-direction:column;padding:calc(28px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));animation:fade .25s ease both}
 .ex-slide{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:460px;width:100%;margin:0 auto;animation:in .3s ease both}
@@ -38,8 +39,16 @@ function sheet(build){
 const goal=()=>{const g=+get('kr_goal',10);return g>0?g:10};
 function pickGoal(after){
   sheet((b,close)=>{
-    b.append(el('h3','','Meta diaria'),el('p','','¿Cuántos minutos querés leer por día? Una meta chica y constante rinde más que una grande.'));
-    [5,10,20,30].forEach(m=>{const o=el('button','ex-opt'+(goal()===m?' on':''));o.type='button';o.append(el('span','',m+' minutos'),el('span','',goal()===m?'Actual':''));o.onclick=()=>{set('kr_goal',m);close();if(after)after();rerender()};b.append(o)});
+    const P=[5,10,20,30],g=goal();
+    b.append(el('h3','','Meta diaria'),el('p','','¿Cuántos minutos querés leer por día? Tu meta actual: '+g+' min. Una meta chica y constante rinde más que una grande.'));
+    const pick=m=>{set('kr_goal',m);close();if(after)after();rerender();say('Meta: '+m+' minutos por día','ok')};
+    P.forEach(m=>{const o=el('button','ex-opt'+(g===m?' on':''));o.type='button';o.append(el('span','',m+' minutos'),el('span','',g===m?'Actual':''));o.onclick=()=>pick(m);b.append(o)});
+    // cantidad a elección
+    const cw=el('div','ex-cg'),ci=el('input');ci.type='number';ci.inputMode='numeric';ci.min=1;ci.max=600;ci.placeholder='Otra cantidad';ci.setAttribute('aria-label','Minutos por día');if(!P.includes(g))ci.value=g;
+    const cb=el('button','','Guardar');cb.type='button';
+    const saveC=()=>{const m=Math.round(+ci.value);if(!(m>=1&&m<=600)){say('Elegí entre 1 y 600 minutos','err');ci.focus();return}pick(m)};
+    cb.onclick=saveC;ci.onkeydown=e=>{if(e.key==='Enter')saveC()};
+    cw.append(ci,el('span','','min'),cb);b.append(el('p','ex-cl','O escribí tus minutos:'),cw);
   });
 }
 

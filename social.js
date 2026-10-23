@@ -337,6 +337,87 @@ function decorate(b,actions){
 }
 
 
+// ---------- Mi cuenta igual en todos los dispositivos ----------
+// Cada dato guardado en el navegador (biblioteca y progreso, subrayados, marcadores, listas, meta, estadísticas,
+// ajustes del lector, mail) se copia en userData/{uid}/k/{clave}, privado de cada usuario.
+// Gana el cambio más nuevo; la biblioteca y las estadísticas se combinan para no perder lo leído en otro lado.
+const SY={uid:'',ready:false,unsub:null,state:'off',at:0,ui:0};
+const NOSYNC=/^(kr_ai$|kr_sum_|kr_q_|kr_bio_|kr_air$|kr_au$|kr_mus$|k_gt|k_sync_|k_lib_pub_|k_pets_ph$|k_inst_x$|k_welcome$)/;
+const syncable=k=>k==='mail'||(/^(kr_|k_)/.test(k)&&!NOSYNC.test(k));
+const MERGE=new Set(['kr_lib','kr_lib_rm','kr_st','kr_tot']);
+const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}},obj:k=>{try{return JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(e){return {}}}};
+const hsh=s=>{if(s==null)return 'n';let h=5381;for(let i=0;i<s.length;i++)h=((h*33)^s.charCodeAt(i))>>>0;return h.toString(36)+'.'+s.length};
+const pj=s=>{try{return JSON.parse(s)}catch(e){return undefined}};
+const kid=k=>encodeURIComponent(k).slice(0,1400);
+function mergeVal(k,a,b,first){ // a: local, b: de la nube. Devuelve el texto combinado o undefined si esa clave no se combina
+  const A=pj(a),B=pj(b);if(A===undefined||B===undefined)return undefined;
+  const maxMap=(x,y)=>{const o=Object.assign({},x||{});for(const [i,v] of Object.entries(y||{}))o[i]=Math.max(+o[i]||0,+v||0);return o};
+  if(k==='kr_tot')return String(Math.max(+A||0,+B||0));
+  if(k==='kr_st'||k==='kr_lib_rm')return JSON.stringify(maxMap(A,B));
+  if(k==='kr_lib'){const m=new Map();[...(Array.isArray(A)?A:[]),...(Array.isArray(B)?B:[])].forEach(x=>{if(x&&x.id){const o=m.get(x.id);if(!o||(+x.t||0)>(+o.t||0))m.set(x.id,x)}});
+    const rm=maxMap(LS.obj('kr_lib_rm'),{});return JSON.stringify([...m.values()].filter(x=>!(rm[x.id]>=(+x.t||0))).sort((x,y)=>(+y.t||0)-(+x.t||0)).slice(0,40))}
+  if(!first)return undefined;
+  // primera vez en este dispositivo: se suman subrayados, marcadores y listas en vez de pisarlos
+  if(Array.isArray(A)&&Array.isArray(B)){const id=x=>x&&(x.cfi||x.id)||JSON.stringify(x),seen=new Set(B.map(id));return JSON.stringify([...B,...A.filter(x=>!seen.has(id(x)))])}
+  if(k==='kr_lists'&&A&&B&&typeof A==='object'&&typeof B==='object'){const o={};new Set([...Object.keys(A),...Object.keys(B)]).forEach(i=>{o[i]=Object.assign({},B[i]||{},A[i]||{})});return JSON.stringify(o)}
+  return undefined;
+}
+const syMeta=()=>LS.obj('k_sync_m'),syHash=()=>LS.obj('k_sync_h');
+const sySave=(m,h)=>{LS.set('k_sync_m',JSON.stringify(m));LS.set('k_sync_h',JSON.stringify(h))};
+function syErr(e){SY.state=(e&&(e.code==='permission-denied'||/permission/i.test(e.message||'')))?'denied':'error';console.warn('sync',e);syncCard()}
+async function pushKey(k){
+  if(!SY.uid)return;const v=LS.get(k),m=Date.now(),meta=syMeta(),hs=syHash();meta[k]=m;hs[k]=hsh(v);sySave(meta,hs);
+  if(v&&v.length>900000){console.warn('sync: muy grande',k);return}
+  try{await setDoc(doc(db,'userData',SY.uid,'k',kid(k)),{k,v:v==null?null:v,m});if(SY.state!=='on'){SY.state='on';syncCard()}SY.at=Date.now()}
+  catch(e){const h2=syHash();delete h2[k];sySave(syMeta(),h2);SY.failAt=Date.now();syErr(e)} // queda pendiente para el próximo intento
+}
+function scan(){
+  if(!SY.ready||!SY.uid)return;if(SY.failAt&&Date.now()-SY.failAt<60000)return; // si la nube rechazó, se espera un minuto antes de reintentar
+  const hs=syHash(),keys=new Set(Object.keys(hs));
+  try{for(let i=0;i<localStorage.length;i++)keys.add(localStorage.key(i))}catch(e){}
+  keys.forEach(k=>{if(syncable(k)&&hsh(LS.get(k))!==hs[k])pushKey(k)});
+}
+function applyRemote(docs){
+  const meta=syMeta(),hs=syHash(),push=[];let changed=false;
+  docs.forEach(d=>{const r=d.data()||{},k=r.k;if(!k||!syncable(k))return;
+    const rv=r.v==null?null:String(r.v),rm=+r.m||0,lv=LS.get(k),lm=meta[k]||0,first=!(k in meta);
+    if(lv!=null&&rv!=null&&(MERGE.has(k)||first)){const mv=mergeVal(k,lv,rv,first);
+      if(mv!==undefined){if(mv!==lv){LS.set(k,mv);changed=true}meta[k]=Math.max(lm,rm);hs[k]=hsh(mv);if(mv!==rv)push.push(k);return}}
+    if(rm>lm){if(lv!==rv){LS.set(k,rv);changed=true}meta[k]=rm;hs[k]=hsh(rv)}
+  });
+  sySave(meta,hs);push.forEach(pushKey);
+  if(changed){clearTimeout(SY.ui);SY.ui=setTimeout(refreshAll,250)}
+}
+function refreshAll(){ // lo que llegó de otro dispositivo se ve sin recargar
+  try{const m=$('mail');if(m&&document.activeElement!==m)m.value=LS.get('mail')||''}catch(e){}
+  try{if(window.KReader){window.KReader.renderLibrary();window.KReader.continueReading()}}catch(e){}
+  try{window.KPets&&window.KPets.refresh()}catch(e){}
+}
+function syncStart(u){
+  syncStop();SY.uid=u.uid;SY.ready=false;SY.state='connecting';syncCard();
+  if(LS.get('k_sync_uid')!==u.uid){LS.set('k_sync_m',null);LS.set('k_sync_h',null);LS.set('k_sync_uid',u.uid)} // otra cuenta en este dispositivo: se arranca de cero
+  SY.unsub=onSnapshot(collection(db,'userData',u.uid,'k'),s=>{applyRemote(s.docs);SY.state='on';SY.at=SY.at||Date.now();if(!SY.ready){SY.ready=true;scan()}syncCard()},syErr);
+}
+function syncStop(){try{SY.unsub&&SY.unsub()}catch(e){}SY.unsub=null;SY.uid='';SY.ready=false;SY.state='off'}
+setInterval(scan,15000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')scan()});
+window.addEventListener('pagehide',scan);
+window.KSync={now:scan};
+
+function syncCard(){
+  const host=document.querySelector('.view[data-view="ajustes"]');if(!host)return;
+  let c=$('sync-set');if(!c){c=el('div','card');c.id='sync-set';c.style.marginTop='14px';const cfg=$('cfg');cfg?cfg.before(c):host.append(c)}
+  c.textContent='';c.append(el('b','','Tu cuenta en todos tus dispositivos'));
+  const p=t=>el('p','hint2',t);
+  if(!S.user){c.append(p('Entrá con Google y tu biblioteca, lo que llevás leído, subrayados, marcadores, listas, meta y estadísticas se ven igual en el celular y en la compu.'));const b=btn('Entrar con Google',login);b.style.marginTop='10px';c.append(b);return}
+  const who=S.user.email||S.user.displayName||'tu cuenta';
+  if(SY.state==='denied')c.append(p('Entraste como '+who+', pero la nube todavía no acepta guardar tus datos (falta un permiso en Firebase). Mientras tanto todo queda en este dispositivo.'));
+  else if(SY.state==='error')c.append(p('No se pudo sincronizar ahora. Se vuelve a intentar solo cuando haya conexión.'));
+  else if(SY.state==='connecting')c.append(p('Conectando con '+who+'…'));
+  else{c.append(p('✓ Sincronizado con '+who+'. Lo que hagas acá aparece en tus otros dispositivos al abrir Kinderly con la misma cuenta.'),p('Los EPUB que abriste desde un archivo propio no viajan: en el otro dispositivo volvé a elegir el archivo y sigue desde donde quedaste.'));
+    const b=btn('Sincronizar ahora',()=>{scan();say('Sincronizado','ok')},true);b.style.marginTop='10px';c.append(b)}
+}
+
 // ---------- Sugerencias ----------
 const SG={list:[]};
 function renderSug(){
@@ -410,7 +491,7 @@ window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,emai
 
 onAuthStateChanged(auth,async u=>{
   unsubscribe();S.user=u||null;S.username='';
-  if(u){await upsertProfile(u);subscribe();syncLibSoon();if(!S.username)setTimeout(()=>promptUsername(),600)}else clearToken();
-  render();renderSug();
+  if(u){syncStart(u);await upsertProfile(u);subscribe();syncLibSoon();if(!S.username)setTimeout(()=>promptUsername(),600)}else{clearToken();syncStop()}
+  render();renderSug();syncCard();
 });
-render();renderSug();
+render();renderSug();syncCard();

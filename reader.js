@@ -768,12 +768,14 @@ function renderLib(){
     const bar=el('div','lib-bar'),i=el('i');i.style.width=Math.round((x.pct||0)*100)+'%';bar.append(i);d.append(bar);
     const open1=btn('Leer',()=>open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local}));
     const rv=btn('Reseñas',()=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})},'Reseñas del libro','ghost');
-    const del=btn('Quitar',async()=>{if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
+    const del=btn('Quitar',async()=>{if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));{const rm=store.get('kr_lib_rm',{});rm[x.id]=Date.now();store.set('kr_lib_rm',rm)} // para que no vuelva desde otro dispositivo
+    store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
     r.append(d,open1,rv,del);sec.append(r);
   });
   host.append(sec);
   if(window.KEx)window.KEx.render(host);
   try{window.KSoc&&window.KSoc.syncLib&&window.KSoc.syncLib()}catch(e){} // la biblioteca que ven los amigos
+  try{window.KSync&&window.KSync.now()}catch(e){} // y la cuenta en los otros dispositivos
 }
 
 // ---- tarjeta “Seguí leyendo” (inicio) ----
