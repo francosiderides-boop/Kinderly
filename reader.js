@@ -773,6 +773,7 @@ function renderLib(){
   });
   host.append(sec);
   if(window.KEx)window.KEx.render(host);
+  try{window.KSoc&&window.KSoc.syncLib&&window.KSoc.syncLib()}catch(e){} // la biblioteca que ven los amigos
 }
 
 // ---- tarjeta “Seguí leyendo” (inicio) ----

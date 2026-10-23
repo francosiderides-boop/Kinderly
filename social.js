@@ -141,6 +141,44 @@ async function removeFriend(f){
   try{await deleteDoc(doc(db,'friendRequests',f.id))}catch(e){}
 }
 
+// ---------- Mi biblioteca, visible para mis amigos ----------
+// Se publica en users/{uid}.library: título, autor, % leído y el enlace legal. Nunca los archivos propios del celular.
+const shareLibOn=()=>{try{return localStorage.getItem('k_lib_share')!=='0'}catch(e){return true}};
+const libForFriends=()=>{let l=[];try{l=JSON.parse(localStorage.getItem('kr_lib')||'[]')}catch(e){}
+  return l.filter(x=>x&&x.title&&!x.local).slice(0,40).map(x=>({t:String(x.title).slice(0,200),a:String(x.author||'').slice(0,120),p:Math.round((x.pct||0)*100),u:hostOk(x.url)?x.url:''}))};
+let libT=0;
+async function syncLib(){
+  if(!S.user)return;const uid=S.user.uid,data=shareLibOn()?libForFriends():null,sig=JSON.stringify(data);
+  let last='';try{last=localStorage.getItem('k_lib_pub_'+uid)||''}catch(e){}
+  if(sig===last)return;
+  try{await setDoc(doc(db,'users',uid),data?{library:data,libraryAt:serverTimestamp()}:{library:deleteField(),libraryAt:deleteField()},{merge:true});try{localStorage.setItem('k_lib_pub_'+uid,sig)}catch(e){}}
+  catch(e){console.warn('biblioteca',e)}
+}
+const syncLibSoon=()=>{clearTimeout(libT);libT=setTimeout(syncLib,1500)};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')syncLib()});
+setInterval(syncLib,60000);
+function setShareLib(on){try{localStorage.setItem('k_lib_share',on?'1':'0')}catch(e){}syncLib();render();say(on?'Tus amigos ya pueden ver tu biblioteca':'Tu biblioteca dejó de estar visible para tus amigos','ok')}
+
+const reqText=x=>(x.t+(x.a?' — '+x.a:'')).slice(0,200);
+function friendLib(f){
+  modal('Biblioteca de '+f.name,(bx,close)=>{
+    const st=el('p','hint2','Cargando…'),l=el('div','ks-sec');bx.append(st,l);
+    const a=el('div','ks-acts');a.append(btn('Cerrar',close,true));
+    getDoc(doc(db,'users',f.uid)).then(s=>{
+      const lib=s.exists()&&Array.isArray(s.data().library)?s.data().library:[];
+      st.textContent=lib.length?(lib.length===1?'1 libro':lib.length+' libros')+'. Tocá “Pedir” y le llega tu pedido.':f.name+' todavía no compartió su biblioteca. Tiene que tener Kinderly actualizado y haber abierto algún libro en la app.';
+      lib.forEach(x=>{
+        const bs=[],asked=S.bookOut.some(r=>r.to===f.uid&&r.status!=='done'&&r.text===reqText(x));
+        if(x.u&&hostOk(x.u)&&window.KReader)bs.push(btn('Leer',()=>{close();window.KReader.open({title:x.t,author:x.a,url:x.u})},true));
+        const pb=el('button',asked?'ghost':'',asked?'Pedido ✓':'Pedir');pb.type='button';pb.disabled=asked;
+        pb.onclick=async()=>{pb.disabled=true;try{await addDoc(collection(db,'bookRequests'),{from:S.user.uid,to:f.uid,fromName:myName(),toName:f.name,text:reqText(x),status:'open',createdAt:serverTimestamp()});pb.textContent='Pedido ✓';pb.className='ghost';say('Le pediste “'+x.t+'” a '+f.name,'ok')}catch(e){pb.disabled=false;say(errMsg(e),'err')}};
+        bs.push(pb);l.append(row(x.t,[x.a,x.p?x.p+'% leído':''].filter(Boolean).join(' · '),bs));
+      });
+    }).catch(e=>{st.textContent='No se pudo cargar la biblioteca: '+errMsg(e)});
+    bx.append(a);
+  });
+}
+
 // ---------- UI ----------
 const css=document.createElement('style');
 css.textContent='.ks-ov{position:fixed;inset:0;background:rgba(10,20,30,.55);display:grid;place-items:center;z-index:20;padding:16px}'+
@@ -155,7 +193,7 @@ css.textContent='.ks-ov{position:fixed;inset:0;background:rgba(10,20,30,.55);dis
 '.kf-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 6px}.kf-t{margin:0;font:600 1.08rem var(--serif);color:var(--ink)}'+
 '.kf-b{min-width:22px;height:22px;border-radius:11px;background:var(--acc);color:#fff;font:600 .74rem var(--sans);display:grid;place-items:center;padding:0 7px}.kf-b0{background:var(--soft);color:var(--mute)}'+
 '.kf-me0{padding:18px 16px 8px}.kf-me{display:flex;align-items:center;gap:14px}.kf-me img,.kf-me .kf-av{width:52px;height:52px;border-radius:50%;flex:none;font-size:1.25rem}.kf-nm{font:600 1.15rem var(--serif);overflow-wrap:anywhere}.kf-tx small{display:block;color:var(--mute);font-size:.86rem;margin-top:2px;overflow-wrap:anywhere}'+
-'.kf-links{display:flex;gap:22px;margin-top:14px;padding-top:4px;border-top:1px solid var(--line)}'+
+'.kf-links{display:flex;flex-wrap:wrap;column-gap:18px;row-gap:0;margin-top:14px;padding-top:4px;border-top:1px solid var(--line)}.kf-me0>.kf-e{margin:2px 0 8px;font-size:.84rem}'+
 '.kf-l{background:none!important;border:0!important;box-shadow:none!important;color:var(--green)!important;font:500 .9rem var(--sans)!important;padding:12px 0!important;min-width:0!important;flex:0 0 auto!important;width:auto!important}'+
 '.kf-a .kf-l{color:var(--mute)!important}.kf-it .kf-s.kf-l{padding:10px 4px!important}'+
 '.kf-list{margin-top:2px}.kf-it{padding:13px 0;border-top:1px solid var(--line)}.kf-list>.kf-it:first-child{border-top:0}'+
@@ -211,8 +249,8 @@ function render(){
   const me=el('section','kf-c kf-me0'),mh=el('div','kf-me');
   if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;mh.append(im)}else mh.append(av(S.user.displayName||'?'));
   const who=el('div','kf-tx');who.append(el('b','kf-nm',S.user.displayName||S.user.email),el('small','',S.username?('@'+S.username):'Todavía no elegiste tu usuario'));mh.append(who);
-  const lk=el('div','kf-links');lk.append(link(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername()),link('Salir',logout));
-  me.append(mh,lk);body.append(me);
+  const lk=el('div','kf-links');lk.append(link(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername()),link(shareLibOn()?'Ocultar biblioteca':'Compartir biblioteca',()=>setShareLib(!shareLibOn())),link('Salir',logout));
+  me.append(mh,lk,el('p','kf-e',shareLibOn()?'Tus amigos ven los libros de tu biblioteca (no los archivos de tu celular) y te los pueden pedir.':'Tu biblioteca no se muestra a tus amigos.'));body.append(me);
 
   // Novedades (solo si hay algo que atender)
   const newShares=S.sharesIn.filter(s=>s.status!=='received'),openIn=S.bookIn.filter(r=>r.status==='open');
@@ -230,7 +268,7 @@ function render(){
     S.reqIn.forEach(r=>l.append(item({av:r.fromName,title:r.fromName||'Alguien',sub:'quiere ser tu amigo/a',acts:[btn('Aceptar',()=>guard(()=>acceptReq(r),'Ahora son amigos')),btn('Rechazar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)]})));
     newShares.forEach(s=>l.append(shareItem(s)));
     openIn.forEach(r=>l.append(item({av:r.fromName,title:(r.fromName||'Un amigo')+' busca',sub:'“'+r.text+'”',acts:[
-      btn('Buscar',()=>{window.showView('buscar');$('q').value=r.text;$('go').click()}),
+      btn('Buscar',()=>{window.showView('buscar');$('q').value=String(r.text||'').split(' — ')[0];$('go').click()}),
       btn('Listo',()=>guard(()=>updateDoc(doc(db,'bookRequests',r.id),{status:'done'})),true),
       link('Quitar',()=>guard(()=>deleteDoc(doc(db,'bookRequests',r.id))))]})));
     c.append(l);body.append(c);
@@ -243,7 +281,7 @@ function render(){
   const fl=list();
   S.reqOut.forEach(r=>fl.append(item({av:r.toName,title:r.toName||'Pendiente',sub:'Solicitud enviada, esperando respuesta',side:[small(link('Cancelar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id)))))]})));
   S.friends.forEach(f=>{const q=btn('×',()=>{if(confirm('¿Quitar a '+f.name+' de tus amigos?'))return guard(()=>removeFriend(f))},true);q.className='kf-x';q.setAttribute('aria-label','Quitar a '+f.name);q.title='Quitar';
-    fl.append(item({av:f.name,title:f.name,sub:'Amigo/a',side:[small(btn('Pedir libro',()=>askBook(f))),q]}))});
+    fl.append(item({av:f.name,title:f.name,sub:'Amigo/a',side:[q],acts:[btn('Ver biblioteca',()=>friendLib(f)),btn('Pedir otro libro',()=>askBook(f),true)]}))});
   if(fl.children.length)fc.append(fl);
   if(!S.friends.length&&!S.reqIn.length&&!S.reqOut.length)fc.append(el('p','kf-e','Todavía no agregaste a nadie. Escribí su nombre de usuario arriba. Tiene que haber entrado a Kinderly y elegido uno.'));
   body.append(fc);
@@ -368,11 +406,11 @@ function decorateRev(b,actions){
 }
 window.KRev={decorate:decorateRev,open:openReviews};
 
-window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,sendMail,decorate,openPanel};
+window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,sendMail,decorate,openPanel,syncLib:syncLibSoon};
 
 onAuthStateChanged(auth,async u=>{
   unsubscribe();S.user=u||null;S.username='';
-  if(u){await upsertProfile(u);subscribe();if(!S.username)setTimeout(()=>promptUsername(),600)}else clearToken();
+  if(u){await upsertProfile(u);subscribe();syncLibSoon();if(!S.username)setTimeout(()=>promptUsername(),600)}else clearToken();
   render();renderSug();
 });
 render();renderSug();
