@@ -142,7 +142,7 @@ async function removeFriend(f){
 }
 
 // ---------- Mi biblioteca, visible para mis amigos ----------
-// Se publica en users/{uid}.library: título, autor, % leído y el enlace legal. Nunca los archivos propios del celular.
+// Se publica en libraries/{uid} (solo la leen tus amigos): título, autor, % leído y el enlace legal. Nunca los archivos propios del celular.
 const shareLibOn=()=>{try{return localStorage.getItem('k_lib_share')!=='0'}catch(e){return true}};
 const libForFriends=()=>{let l=[];try{l=JSON.parse(localStorage.getItem('kr_lib')||'[]')}catch(e){}
   return l.filter(x=>x&&x.title&&!x.local).slice(0,40).map(x=>({t:String(x.title).slice(0,200),a:String(x.author||'').slice(0,120),p:Math.round((x.pct||0)*100),u:hostOk(x.url)?x.url:''}))};
@@ -151,7 +151,7 @@ async function syncLib(){
   if(!S.user)return;const uid=S.user.uid,data=shareLibOn()?libForFriends():null,sig=JSON.stringify(data);
   let last='';try{last=localStorage.getItem('k_lib_pub_'+uid)||''}catch(e){}
   if(sig===last)return;
-  try{await setDoc(doc(db,'users',uid),data?{library:data,libraryAt:serverTimestamp()}:{library:deleteField(),libraryAt:deleteField()},{merge:true});try{localStorage.setItem('k_lib_pub_'+uid,sig)}catch(e){}}
+  try{const ref=doc(db,'libraries',uid);if(data)await setDoc(ref,{items:data,updatedAt:serverTimestamp()});else await deleteDoc(ref);try{localStorage.setItem('k_lib_pub_'+uid,sig)}catch(e){}}
   catch(e){console.warn('biblioteca',e)}
 }
 const syncLibSoon=()=>{clearTimeout(libT);libT=setTimeout(syncLib,1500)};
@@ -164,8 +164,8 @@ function friendLib(f){
   modal('Biblioteca de '+f.name,(bx,close)=>{
     const st=el('p','hint2','Cargando…'),l=el('div','ks-sec');bx.append(st,l);
     const a=el('div','ks-acts');a.append(btn('Cerrar',close,true));
-    getDoc(doc(db,'users',f.uid)).then(s=>{
-      const lib=s.exists()&&Array.isArray(s.data().library)?s.data().library:[];
+    getDoc(doc(db,'libraries',f.uid)).then(s=>{
+      const lib=s.exists()&&Array.isArray(s.data().items)?s.data().items:[];
       st.textContent=lib.length?(lib.length===1?'1 libro':lib.length+' libros')+'. Tocá “Pedir” y le llega tu pedido.':f.name+' todavía no compartió su biblioteca. Tiene que tener Kinderly actualizado y haber abierto algún libro en la app.';
       lib.forEach(x=>{
         const bs=[],asked=S.bookOut.some(r=>r.to===f.uid&&r.status!=='done'&&r.text===reqText(x));

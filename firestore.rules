@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function areFriends(a, b) {
+      return exists(/databases/$(database)/documents/friendships/$(a + '_' + b))
+          || exists(/databases/$(database)/documents/friendships/$(b + '_' + a));
+    }
+    function onlyStatusChanges() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
+    function legalUrl(u) {
+      return u is string
+          && u.matches('https://([a-z0-9-]+\\.)*(gutenberg\\.org|archive\\.org|wikisource\\.org|wmcloud\\.org|books\\.google\\.com|library\\.oapen\\.org)/.*');
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'photo', 'updatedAt', 'username', 'usernameLower'])
+        && (!('usernameLower' in request.resource.data)
+            || (request.resource.data.usernameLower.matches('^[a-z0-9_.]{3,20}$')
+                && request.resource.data.username.lower() == request.resource.data.usernameLower
+                && get(/databases/$(database)/documents/usernames/$(request.resource.data.usernameLower)).data.uid == request.auth.uid));
+      allow delete: if false;
+    }
+
+    match /usernames/{name} {
+      allow read: if signedIn();
+      allow create: if signedIn() && name.matches('^[a-z0-9_.]{3,20}$')
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /friendRequests/{id} {
+      allow read: if signedIn() && request.auth.uid in resource.data.participants;
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid
+        && request.resource.data.to != request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.participants == [request.resource.data.from, request.resource.data.to]
+        && id == request.resource.data.from + '_' + request.resource.data.to;
+      allow update: if signedIn() && request.auth.uid == resource.data.to && onlyStatusChanges()
+        && request.resource.data.status in ['accepted', 'declined'];
+      allow delete: if signedIn() && request.auth.uid in resource.data.participants;
+    }
+
+    match /friendships/{id} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+      allow create: if signedIn() && request.resource.data.members.size() == 2
+        && request.auth.uid in request.resource.data.members
+        && id == request.resource.data.members[0] + '_' + request.resource.data.members[1]
+        && get(/databases/$(database)/documents/friendRequests/$(id)).data.status == 'accepted';
+      allow delete: if signedIn() && request.auth.uid in resource.data.members;
+    }
+
+    match /bookRequests/{id} {
+      allow read: if signedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid
+        && areFriends(request.auth.uid, request.resource.data.to)
+        && request.resource.data.status == 'open'
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 200;
+      allow update: if signedIn() && request.auth.uid == resource.data.to && onlyStatusChanges();
+      allow delete: if signedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);
+    }
+
+    match /shares/{id} {
+      allow read: if signedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid
+        && areFriends(request.auth.uid, request.resource.data.to)
+        && request.resource.data.status == 'new'
+        && request.resource.data.title is string && request.resource.data.title.size() <= 300
+        && legalUrl(request.resource.data.url);
+      allow update: if signedIn() && request.auth.uid == resource.data.to && onlyStatusChanges();
+      allow delete: if signedIn() && (request.auth.uid == resource.data.from || request.auth.uid == resource.data.to);
+    }
+
+    match /suggestions/{id} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['from', 'fromName', 'text', 'votes', 'createdAt'])
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 3 && request.resource.data.text.size() <= 400
+        && request.resource.data.votes == [request.auth.uid];
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['votes'])
+        && request.resource.data.votes.size() == resource.data.votes.size() + 1
+        && request.auth.uid in request.resource.data.votes
+        && !(request.auth.uid in resource.data.votes);
+      allow delete: if signedIn() && resource.data.from == request.auth.uid;
+    }
+
+    match /reviews/{id} {
+      allow read: if true;
+      allow create, update: if signedIn() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.bookKey is string && request.resource.data.bookKey.size() <= 80
+        && id == request.resource.data.bookKey + '_' + request.auth.uid
+        && request.resource.data.keys().hasOnly(['bookKey', 'title', 'author', 'uid', 'name', 'stars', 'text', 'updatedAt'])
+        && request.resource.data.stars is int && request.resource.data.stars >= 1 && request.resource.data.stars <= 5
+        && request.resource.data.text is string && request.resource.data.text.size() <= 600;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // v162 · Biblioteca que ven tus amigos: solo vos la escribís y solo vos y tus amigos la leen.
+    match /libraries/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || areFriends(request.auth.uid, uid));
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['items', 'updatedAt'])
+        && request.resource.data.items is list
+        && request.resource.data.items.size() <= 40;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // v162 · Tu cuenta en todos tus dispositivos: privado, solo lo lee y escribe su dueño.
+    match /userData/{uid}/k/{key} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['k', 'v', 'm'])
+        && request.resource.data.k is string
+        && (request.resource.data.v == null || request.resource.data.v is string)
+        && request.resource.data.m is int;
+    }
+  }
+}
