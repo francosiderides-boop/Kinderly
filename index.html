@@ -275,6 +275,10 @@ button:not(.ghost):not(.kf-l):not(.kr-gl):not(.ex-skip):not(.inst-x):not(.ex-opt
 button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-backdrop-filter:blur(8px) saturate(1.6);backdrop-filter:blur(8px) saturate(1.6);box-shadow:inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.85),inset -1px -1px 1px -.5px rgba(255,255,255,.5)}
 :root[data-theme="dark"] button.ghost{box-shadow:inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.22),inset -1px -1px 1px -.5px rgba(255,255,255,.1)}
 .search{border-radius:999px}
+/* v160 · los botones secundarios de cada libro se veían como texto suelto (borde de vidrio invisible sobre blanco) */
+.actions>button.ghost{border:1px solid var(--line)}
+/* v160 · el aviso quedaba debajo del lector (z 30) y de las mascotas: ahora va arriba de los dos */
+#status{z-index:35;cursor:pointer}
 </style>
 </head>
 <body>
@@ -338,8 +342,8 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v159'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.49 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v160'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.50 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra
 (function(){try{
@@ -376,12 +380,15 @@ $('mail').value=store.get('mail');
 $('save').onclick=()=>{const m=$('mail').value.trim();if(!/^\S+@\S+\.\S+$/.test(m)){say('Ese mail no parece válido','err');return}store.set('mail',m);say('Mail guardado','ok');$('cfg').open=false};
 if(!store.get('mail'))$('cfg').open=true;
 
-function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block'}
+// el aviso se va solo (los de "en curso…" quedan hasta que llegue el siguiente); tocarlo lo cierra
+let sayT=0;
+function say(t,c){const s=$('status');s.textContent=t;s.className=c||'';s.style.display='block';clearTimeout(sayT);if(/…$/.test(t)||/^Buscando/.test(t))return;sayT=setTimeout(()=>{s.style.display='none'},Math.min(9000,3200+t.length*45)+(c==='err'?2500:0))}
+$('status').addEventListener('click',()=>{clearTimeout(sayT);$('status').style.display='none'});
 const clean=s=>(s||'').replace(/<[^>]+>/g,'').trim();
 window.kTitle=function(s){return String(s||'').replace(/\s*:?\s*\$[a-z]\s+/gi,': ').replace(/\s*\$[a-z]\s*$/i,'').replace(/\s{2,}/g,' ').trim()};
 const slug=s=>clean(s).replace(/[^\p{L}\p{N}]+/gu,'_').slice(0,60)||'libro';
 const GET_CACHE=new Map();
-const j=async u=>{const hit=GET_CACHE.get(u);if(hit&&Date.now()-hit.at<30*60*1000)return hit.data;if(hit)GET_CACHE.delete(u);const r=await fetch(u,{signal:AbortSignal.timeout(12000)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');const d=await r.json();if(d&&d.ok===false)throw new Error(d.error||'La fuente no respondió');GET_CACHE.set(u,{at:Date.now(),data:d});if(GET_CACHE.size>80)GET_CACHE.delete(GET_CACHE.keys().next().value);return d};
+const j=async(u,ms=12000)=>{const hit=GET_CACHE.get(u);if(hit&&Date.now()-hit.at<30*60*1000)return hit.data;if(hit)GET_CACHE.delete(u);const r=await fetch(u,{signal:AbortSignal.timeout(ms)});if(!r.ok)throw new Error(`HTTP ${r.status} al consultar el servicio`);const ct=r.headers.get('content-type')||'';if(!ct.includes('json'))throw new Error('El servicio no devolvió JSON válido');const d=await r.json();if(d&&d.ok===false)throw new Error(d.error||'La fuente no respondió');GET_CACHE.set(u,{at:Date.now(),data:d});if(GET_CACHE.size>80)GET_CACHE.delete(GET_CACHE.keys().next().value);return d};
 const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\b([a-z])\s+\1\b/g,'$1$1').replace(/\s+/g,' ').trim();
 function cleanQuery(s){return (s||'').trim().replace(/^(?:(?:books?|novels?|libros?|novelas?|obras?|epubs?|ebooks?)\s+(?:de|del|by|por)\s+|(?:autor(?:a)?|author)\s*:\s*)/i,'').replace(/\s+(?:epubs?|ebooks?)$/i,'').trim()}
 const STOP=new Set('de la el los las y del un una en con por a al lo e o'.split(' '));
@@ -403,7 +410,8 @@ async function iaEpub(id){
 const ORDER=['Project Gutenberg','Wikisource','Internet Archive','Open Library','Google Books','OAPEN','DOAB','dBooks'];
 const SOURCES=[
  {name:'Project Gutenberg',async run(q){
-   const d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q));
+   // gutendex a veces tarda o se cae: se le da más tiempo y, si falla, se busca en el catálogo propio (catalog/*.json)
+   let d;try{d=await j('https://gutendex.com/books/?languages=es&search='+encodeURIComponent(q),25000)}catch(e){const l=await gutLocal(q).catch(()=>[]);if(l.length)return l;throw e}
    return d.results.filter(b=>b.languages?.includes('es')&&b.formats['application/epub+zip']).map(b=>({title:b.title,author:(b.authors[0]||{}).name||'',language:'es',img:b.formats['image/jpeg']||'',url:async()=>b.formats['application/epub+zip'],inf:async()=>({author:b.authors.map(a=>a.name+(a.birth_year?` (${a.birth_year}–${a.death_year||''})`:'')).join('; '),desc:(b.summaries||[])[0]||'',edition:'Project Gutenberg, dominio público'})}));}},
  {name:'Internet Archive',async run(q){
    const e=q.replace(/["():\[\]]/g,' ').trim();
@@ -421,19 +429,19 @@ const SOURCES=[
    return (d.items||[]).map(v=>{const i=v.volumeInfo||{},ai=v.accessInfo||{},ep=ai.epub||{},legal=!!(ai.publicDomain&&ep.isAvailable&&ep.downloadLink),sale=v.saleInfo||{};
      let buyUrl='';try{const u=new URL(sale.buyLink||'');if(u.protocol==='https:'&&['books.google.com','play.google.com'].includes(u.hostname))buyUrl=u.href}catch(e){}
      if(!legal&&!buyUrl)return null;
-     return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',language:i.language,img:((i.imageLinks||{}).thumbnail||'').replace('http:','https:'),page:i.infoLink||'',sendable:legal,buyUrl,url:async()=>{if(!legal)throw new Error('Esta edición no tiene un EPUB gratuito y autorizado.');return ep.downloadLink},inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description),pages:i.pageCount,edition:[i.publisher,(i.publishedDate||'').slice(0,4)].filter(Boolean).join(', ')})}}).filter(Boolean);}},
- {name:'OAPEN',async run(q){
+     return {title:i.title+(i.subtitle?': '+i.subtitle:''),author:(i.authors||[])[0]||'',language:i.language,img:((i.imageLinks||{}).thumbnail||'').replace('http:','https:'),page:i.infoLink||'',sendable:legal,buyUrl,url:async()=>{if(!legal)throw new Error('Esta edición no tiene un EPUB gratuito y autorizado.');return ep.downloadLink.replace(/^http:\/\//,'https://')},inf:async()=>({author:(i.authors||[]).join('; '),year:(i.publishedDate||'').slice(0,4),desc:txt(i.description),pages:i.pageCount,edition:[i.publisher,(i.publishedDate||'').slice(0,4)].filter(Boolean).join(', ')})}}).filter(Boolean);}},
+ {name:'OAPEN',quiet:true,async run(q){
    const d=await j(CATALOG_API_BASE+'/api/catalog-search?source=oapen&q='+encodeURIComponent(q)).catch(()=>j('https://library.oapen.org/rest/search?expand=metadata,bitstreams&query='+encodeURIComponent(q)));
    const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
    return (Array.isArray(d)?d:[]).map(it=>{
      const f=(it.bitstreams||[]).find(x=>/epub/i.test(x.mimeType||'')||/\.epub$/i.test(x.name||''));
      const rights=[...md(it,'dc.rights.uri'),...md(it,'dc.rights')].join(' '),licensed=hasOpenLicense(rights);
       return f?{title:it.name,author:(md(it,'dc.contributor.author')[0]||'').replace(/,\s*$/,''),language:[...md(it,'dc.language.iso'),...md(it,'dc.language')],img:(()=>{const t=(it.bitstreams||[]).find(x=>x.bundleName==='THUMBNAIL');return t?'https://library.oapen.org'+t.retrieveLink:''})(),sendable:licensed,url:async()=>{if(!licensed)throw new Error('OAPEN no declara una licencia abierta verificable para este archivo.');return 'https://library.oapen.org'+f.retrieveLink},inf:async()=>({year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:txt(md(it,'dc.description.abstract')[0]),edition:md(it,'publisher.name')[0]||md(it,'dc.publisher')[0],pages:md(it,'oapen.pages')[0]})}:null}).filter(Boolean);}},
- {name:'DOAB',async run(q){
+ {name:'DOAB',quiet:true,async run(q){
    const d=await j(CATALOG_API_BASE+'/api/catalog-search?source=doab&q='+encodeURIComponent(q));
    const md=(it,k)=>(it.metadata||[]).filter(m=>m.key===k).map(m=>m.value);
    return (Array.isArray(d)?d:[]).map(it=>({title:it.name||md(it,'dc.title')[0]||'',author:md(it,'dc.contributor.author')[0]||md(it,'dc.creator')[0]||'',img:'',sendable:false,page:it.handle?'https://directory.doabooks.org/handle/'+encodeURIComponent(it.handle):'',url:async()=>{throw new Error('DOAB muestra libros de acceso abierto; abrí el registro para elegir el formato disponible.')},inf:async()=>({author:md(it,'dc.contributor.author')[0]||md(it,'dc.creator')[0]||'',year:(md(it,'dc.date.issued')[0]||'').slice(0,4),desc:md(it,'dc.description.abstract')[0]||'',edition:md(it,'dc.publisher')[0]||'Directory of Open Access Books'})}));}},
- {name:'dBooks',async run(q){
+ {name:'dBooks',quiet:true,async run(q){
    const d=await j(CATALOG_API_BASE+'/api/catalog-search?source=dbooks&q='+encodeURIComponent(q));
    return (d.books||[]).map(b=>({title:[b.title,b.subtitle].filter(Boolean).join(': '),author:b.authors||'',img:b.image||'',sendable:false,page:b.url||'',url:async()=>{throw new Error('Abrí el registro de dBooks para revisar sus condiciones y formatos disponibles.')},inf:async()=>({author:b.authors||'',desc:b.subtitle||'',edition:'dBooks · ficha bibliográfica',pages:''})}));}},
    {name:'Wikisource',async run(q){
@@ -441,6 +449,13 @@ const SOURCES=[
    return d.query.search.map(b=>({title:b.title,author:'',language:'es',url:async()=>'https://ws-export.wmcloud.org/?format=epub&lang=es&page='+encodeURIComponent(b.title),inf:async()=>{const d=await j('https://es.wikisource.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=500&format=json&origin=*&titles='+encodeURIComponent(b.title));return{desc:Object.values(d.query.pages)[0].extract||'',edition:'Wikisource'}}}));}}
 ];
 
+const CATALOG_FILES=['top','reir','emocion','aventura','intriga','pensar','sonar','susto','breve','historia','teatro','poesia','chicos'];
+let gutLocalP=null;
+async function gutLocal(q){
+  gutLocalP=gutLocalP||Promise.allSettled(CATALOG_FILES.map(f=>j('catalog/'+f+'.json',8000).catch(()=>fetch('catalog/'+f+'.json').then(r=>r.json())))).then(rs=>{const m=new Map();rs.forEach(r=>{if(r.status==='fulfilled'&&Array.isArray(r.value))r.value.forEach(x=>{if(x&&x.e&&!m.has(x.i))m.set(x.i,x)})});if(!m.size)gutLocalP=null;return [...m.values()]});
+  const l=await gutLocalP,w=toks(q);
+  return l.filter(x=>{const h=' '+norm(x.t+' '+x.a)+' ';return w.every(t=>h.includes(' '+t)||h.includes(t+' '))}).map(x=>({title:x.t,author:x.a,language:'es',img:x.c||'',url:async()=>x.e,inf:async()=>({author:x.a,desc:x.s||'',edition:'Project Gutenberg, dominio público'})}));
+}
 const txt=h=>new DOMParser().parseFromString(String(h||''),'text/html').body.textContent.replace(/\s+/g,' ').trim();
 const cut=(s,n=600)=>s.length>n?s.slice(0,n).replace(/\s\S*$/,'')+'…':s;
 async function iaInfo(id){const m=(await j('https://archive.org/metadata/'+encodeURIComponent(id))).metadata||{};
@@ -469,7 +484,7 @@ async function resumir(b,r){
 let all=[],qt=[],qa=[],qn='',searchRun=0;
 function score(b){
   const t=norm(b.title),a=norm(b.author),query=qn;
-  const queryTokens=toks($('q').value), titleTokens=new Set(t.split(' ').filter(Boolean)), authorTokens=new Set(a.split(' ').filter(Boolean));
+  const queryTokens=qt, titleTokens=new Set(t.split(' ').filter(Boolean)), authorTokens=new Set(a.split(' ').filter(Boolean));
   const titleHits=queryTokens.filter(w=>titleTokens.has(w)).length, authorHits=queryTokens.filter(w=>authorTokens.has(w)).length;
   const fullTitle=t===query, titlePrefix=t.startsWith(query), authorPhrase=a.includes(query);
   let coverage=queryTokens.length? (titleHits+authorHits)/queryTokens.length:0;
@@ -477,7 +492,9 @@ function score(b){
   const authorOnlyQuery=queryTokens.length>=2&&authorHits>=Math.ceil(queryTokens.length*.8);
   const relevant=fullTitle||titlePrefix||authorPhrase||authorOnlyQuery||(titleHits===queryTokens.length&&t.length-query.length<=36)||(authorHits>=Math.ceil(queryTokens.length*.8)&&titleHits>0);
   if(!relevant)return -100;
-  return (authorPhrase?120:fullTitle?100:titlePrefix?80:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+coverage*10-Math.max(0,t.length-query.length)*.12;
+  // el título exacto gana; después el autor. Los que se pueden leer gratis suben un poco sobre los que solo se compran
+  const free=b.opts.some(o=>o.sendable&&typeof o.url==='function')?15:0;
+  return (fullTitle?130:authorPhrase?120:titlePrefix?80:authorHits>=Math.ceil(queryTokens.length*.8)?60:50)+free+coverage*10-Math.max(0,t.length-query.length)*.12;
 }
 function isSpanish(value){const codes=(Array.isArray(value)?value:[value]).flatMap(v=>String(v||'').toLowerCase().split(/[;,\s]+/)).map(v=>v.trim().replace(/^.*\//,'')).filter(Boolean);return codes.some(v=>v==='es'||v==='spa'||v==='spanish'||v==='espanol'||v==='español'||v==='castellano'||v==='castilian'||v.startsWith('es-'))}
 function add(src,list){list.forEach(b=>{if(b.title)b.title=window.kTitle(b.title);if(!b.title||!isSpanish(b.language))return;
@@ -552,11 +569,11 @@ async function search(author=''){
       // Preserve the exact query; broad single-word retries caused unrelated matches.
       if(run!==searchRun)return;
       add(s.name,results);
-    }catch(e){if(run===searchRun)failed.push(`${s.name}: ${e.message||'no respondió'}`)}
+    }catch(e){if(run===searchRun&&!s.quiet)failed.push(`${s.name}: ${e.message||'no respondió'}`)} // las fuentes "quiet" son extras: si fallan no se avisa
     if(run!==searchRun)return;
     done++;const n=render();say(`Buscando… (${done}/${SOURCES.length} fuentes · ${n} resultados)`,n?'ok':'');
   }));
-  if(run===searchRun){const n=render();const note=failed.length?(n?' Algunas fuentes no respondieron; podés reintentar para ver más opciones.':failed.length===SOURCES.length?'No se pudo conectar con los catálogos. Probá nuevamente en unos minutos.':'Algunas fuentes están demoradas. Probá de nuevo para ampliar la búsqueda.'):'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):failed.length?'No encontramos coincidencias por ahora. '+note:'No encontramos resultados en español. Probá con el título o el autor más exacto.')+(n?note:''),n?'ok':failed.length?'':'err')}
+  if(run===searchRun){const n=render();const note=failed.length?(n?' Algunas fuentes no respondieron; podés reintentar para ver más opciones.':failed.length===SOURCES.filter(s=>!s.quiet).length?'No se pudo conectar con los catálogos. Probá nuevamente en unos minutos.':'Algunas fuentes están demoradas. Probá de nuevo para ampliar la búsqueda.'):'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):failed.length?'No encontramos coincidencias por ahora. '+note:'No encontramos resultados en español. Probá con el título o el autor más exacto.')+(n?note:''),n?'ok':failed.length?'':'err')}
 }
 async function download(b,btn){
   const tab=window.open('about:blank','_blank');
@@ -659,11 +676,11 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=159"></script>
-<script src="discover.js?v=159"></script>
-<script src="extras.js?v=159"></script>
-<script src="pets.js?v=159"></script>
-<script type="module" src="social.js?v=159"></script>
+<script src="reader.js?v=160"></script>
+<script src="discover.js?v=160"></script>
+<script src="extras.js?v=160"></script>
+<script src="pets.js?v=160"></script>
+<script type="module" src="social.js?v=160"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;

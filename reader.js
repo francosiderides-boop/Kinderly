@@ -16,7 +16,8 @@ const prefs=()=>Object.assign({mode:'paginated',size:110,theme:'auto',font:'clas
 const setPref=(k,v)=>{const q=prefs();q[k]=v;store.set('kr_cfg',q)};
 const resolveTheme=()=>{const t=prefs().theme;if(t!=='auto')return THEMES[t]||THEMES.claro;const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);return dark?THEMES.noche:THEMES.claro};
 const lib=()=>store.get('kr_lib',[]);
-const saveLib=l=>store.set('kr_lib',l.slice(0,40));
+// la biblioteca guarda 40 libros; el EPUB de los que salen se borra del celular para no ocupar espacio de más
+const saveLib=l=>{const keep=l.slice(0,40);l.slice(40).forEach(x=>{if(x&&x.id&&!keep.some(y=>y.id===x.id))dbDel(x.id)});store.set('kr_lib',keep)};
 const QT={azul:{n:'Azul',bg:['#3E5287','#232B45'],fg:'#FFFFFF',ac:'#D9C58B',mu:'rgba(255,255,255,.7)',orb:'rgba(255,255,255,.07)'},
   papel:{n:'Papel',bg:['#F7F2E7','#EBE3D2'],fg:'#2B2523',ac:'#C8372D',mu:'rgba(43,37,35,.65)',orb:'rgba(200,55,45,.07)'},
   noche:{n:'Noche',bg:['#14171F','#0A0C11'],fg:'#EFEBE1',ac:'#D9C58B',mu:'rgba(239,235,225,.62)',orb:'rgba(217,197,139,.08)'},
@@ -100,8 +101,10 @@ let libsP=null;
 const libs=()=>libsP||(libsP=(async()=>{if(window.ePub)return;await addScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');try{await addScript('https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js')}catch(e){await addScript('https://unpkg.com/epubjs@0.3.93/dist/epub.min.js')}})().catch(e=>{libsP=null;throw e}));
 
 async function fetchBook(url){
-  const r=await fetch(DL_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'descargar',url}),signal:AbortSignal.timeout(90000)});
-  const d=await r.json();
+  let r,d;
+  try{r=await fetch(DL_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'descargar',url}),signal:AbortSignal.timeout(90000)})}
+  catch(e){throw new Error(e&&e.name==='TimeoutError'?'La descarga tardó demasiado. Probá de nuevo.':'No pude conectarme para descargar el libro. Revisá tu conexión.')}
+  try{d=await r.json()}catch(e){throw new Error('El servicio de descarga no respondió bien. Probá de nuevo en un momento.')}
   if(!d.ok)throw new Error(d.error||'No se pudo descargar el libro');
   const bin=atob(d.data),u=new Uint8Array(bin.length);
   for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
@@ -307,7 +310,7 @@ async function open(o){
     }catch(e){}
     const txt=a.join(' · ');pt.textContent=txt;foot.textContent=txt;pt.style.display=txt?'':'none';foot.style.display=txt?'':'none';
   };
-  const tick=setInterval(()=>{if(document.visibilityState==='visible')addSec(15)},15000);
+  const tick=setInterval(()=>{if(ready&&document.visibilityState==='visible')addSec(15)},15000);
   const save=()=>{if(!ready||!lastCfi)return;const l=lib().filter(x=>x.id!==id);l.unshift({id,url:o.url||'',title,author:o.author||entry().author||'',cfi:lastCfi,pct:(book.locations&&book.locations.length())?pct:(entry().pct||0),t:Date.now(),local:!!o.local||!!entry().local});saveLib(l)};
   const close=(fromPop)=>{
     if(closed)return;closed=true;clearInterval(tick);
@@ -611,7 +614,10 @@ async function open(o){
       }
     }else{
       const vs=devVoices();
-      if(!vs.length){b.append(el('p','hint2','No encontramos voces en español en este dispositivo. Podés instalarlas desde los ajustes del celular (Idioma → Texto a voz) o usar la voz con IA.'));if(window.speechSynthesis&&!AU.vwait){AU.vwait=1;setTimeout(()=>{AU.vwait=0;const h=pnl.querySelector('h4');if(pnl.classList.contains('on')&&h&&/Audiolectura/.test(h.textContent)&&devVoices().length)audioPanel()},900)}}
+      if(!vs.length){b.append(el('p','hint2','No encontramos voces en español en este dispositivo. Podés instalarlas desde los ajustes del celular (Idioma → Texto a voz) o usar la voz con IA.'));if(window.speechSynthesis&&!AU.vwait){AU.vwait=1;let done=false;
+        // las voces llegan un rato después de abrir (sobre todo en Android): cuando aparecen, se redibuja el panel
+        const re=()=>{if(done)return;done=true;AU.vwait=0;try{speechSynthesis.removeEventListener('voiceschanged',re)}catch(e){}const h=pnl.querySelector('h4');if(pnl.classList.contains('on')&&h&&/Audio/.test(h.textContent)&&devVoices().length)audioPanel()};
+        try{speechSynthesis.addEventListener('voiceschanged',re)}catch(e){}setTimeout(re,1500)}}
       else{const s=document.createElement('select');s.style.cssText='width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin:6px 0';vs.forEach(v=>{const o2=document.createElement('option');o2.value=v.voiceURI;o2.textContent=v.name+' ('+v.lang+')';s.append(o2)});s.value=vs.some(v=>v.voiceURI===c.dev)?c.dev:vs[0].voiceURI;s.onchange=()=>setA('dev',s.value);b.append(s)}
     }
     chips('Velocidad',[['Lenta',0.85],['Normal',1],['Rápida',1.25],['Muy rápida',1.5]],()=>aCfg().rate,v=>{setA('rate',v);if(AU.audio)AU.audio.playbackRate=v});
@@ -673,9 +679,9 @@ async function open(o){
 
   try{
     await libs();
-    let buf=o.buf||await dbGet(id);
-    if(!buf){msg.textContent='Descargando “'+title+'”… (puede tardar unos segundos)';buf=await fetchBook(o.url);}
-    if(o.buf||!(await dbGet(id)))dbPut(id,buf);
+    let buf=o.buf||await dbGet(id);const fromDb=!o.buf&&!!buf;
+    if(!buf){if(!o.url)throw new Error('Este archivo ya no está guardado en el celular. Volvé a elegirlo desde “Elegir archivo EPUB”.');msg.textContent='Descargando “'+title+'”… (puede tardar unos segundos)';buf=await fetchBook(o.url);}
+    if(!fromDb)dbPut(id,buf);
     if(closed)return;
     book=ePub(buf.slice?buf.slice(0):buf);
     loadMarks();

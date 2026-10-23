@@ -330,7 +330,8 @@ onSnapshot(query(collection(db,'suggestions'),limit(100)),s=>{SG.list=s.docs.map
 const normT=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 function bookKey(b){const a=normT(String(b.author||'').split(/[;,]/)[0]),t=normT(b.title).replace(/^(el|la|los|las|un|una) /,'');const s=t+'|'+a;let h1=0x811c9dc5,h2=5381;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);h1=Math.imul(h1^c,16777619)>>>0;h2=((h2*33)^c)>>>0}return 'b'+h1.toString(36)+h2.toString(36)}
 const RV={cache:{},badges:{}};
-async function loadReviews(key,force){if(!force&&RV.cache[key])return RV.cache[key];const s=await getDocs(query(collection(db,'reviews'),where('bookKey','==',key),limit(60)));const l=s.docs.map(d=>({id:d.id,...d.data()}));RV.cache[key]=l;return l}
+// se guarda la promesa: si varias tarjetas del mismo libro piden a la vez, va una sola consulta a Firestore
+function loadReviews(key,force){if(!force&&RV.cache[key])return RV.cache[key];const p=getDocs(query(collection(db,'reviews'),where('bookKey','==',key),limit(60))).then(s=>s.docs.map(d=>({id:d.id,...d.data()})));RV.cache[key]=p;p.catch(()=>{if(RV.cache[key]===p)delete RV.cache[key]});return p}
 const avgR=l=>l.length?l.reduce((a,r)=>a+r.stars,0)/l.length:0;
 const starsTxt=n=>'★'.repeat(n)+'☆'.repeat(5-n);
 const refreshBadges=key=>(RV.badges[key]||[]).forEach(f=>f());
@@ -363,7 +364,7 @@ function openReviews(b){
 function decorateRev(b,actions){
   const key=bookKey(b),x=el('button','ghost','☆ Reseñas');x.type='button';x.onclick=()=>openReviews(b);actions.append(x);
   const upd=async()=>{try{const l=await loadReviews(key);x.textContent=l.length?('★ '+avgR(l).toFixed(1)+' ('+l.length+')'):'☆ Reseñas'}catch(e){}};
-  (RV.badges[key]=RV.badges[key]||[]).push(upd);upd();
+  upd.alive=()=>x.isConnected;RV.badges[key]=(RV.badges[key]||[]).filter(f=>f.alive());RV.badges[key].push(upd);upd();
 }
 window.KRev={decorate:decorateRev,open:openReviews};
 
