@@ -365,11 +365,15 @@ function mergeVal(k,a,b,first){ // a: local, b: de la nube. Devuelve el texto co
 const syMeta=()=>LS.obj('k_sync_m'),syHash=()=>LS.obj('k_sync_h');
 const sySave=(m,h)=>{LS.set('k_sync_m',JSON.stringify(m));LS.set('k_sync_h',JSON.stringify(h))};
 function syErr(e){SY.state=(e&&(e.code==='permission-denied'||/permission/i.test(e.message||'')))?'denied':'error';console.warn('sync',e);syncCard()}
+// se marca como subido recién cuando la nube confirma: si la página se cierra a mitad, el cambio se reintenta la próxima vez
+const pending=new Set();
 async function pushKey(k){
-  if(!SY.uid)return;const v=LS.get(k),m=Date.now(),meta=syMeta(),hs=syHash();meta[k]=m;hs[k]=hsh(v);sySave(meta,hs);
+  if(!SY.uid||pending.has(k))return;const v=LS.get(k),m=Date.now(),meta=syMeta();meta[k]=m;sySave(meta,syHash());
   if(v&&v.length>900000){console.warn('sync: muy grande',k);return}
-  try{await setDoc(doc(db,'userData',SY.uid,'k',kid(k)),{k,v:v==null?null:v,m});if(SY.state!=='on'){SY.state='on';syncCard()}SY.at=Date.now()}
-  catch(e){const h2=syHash();delete h2[k];sySave(syMeta(),h2);SY.failAt=Date.now();syErr(e)} // queda pendiente para el próximo intento
+  pending.add(k);
+  try{await setDoc(doc(db,'userData',SY.uid,'k',kid(k)),{k,v:v==null?null:v,m});const hs=syHash();hs[k]=hsh(v);sySave(syMeta(),hs);if(SY.state!=='on'){SY.state='on';syncCard()}SY.at=Date.now()}
+  catch(e){SY.failAt=Date.now();syErr(e)}
+  finally{pending.delete(k)}
 }
 function scan(){
   if(!SY.ready||!SY.uid)return;if(SY.failAt&&Date.now()-SY.failAt<60000)return; // si la nube rechazó, se espera un minuto antes de reintentar

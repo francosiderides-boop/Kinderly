@@ -346,8 +346,8 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v164'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.54 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v165'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.55 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra
 (function(){try{
@@ -570,6 +570,7 @@ async function search(author=''){
     if(run!==searchRun)return;
     done++;const n=render();say(`Buscando… (${done}/${SOURCES.length} fuentes · ${n} resultados)`,n?'ok':'');
   }));
+  if(run===searchRun&&navigator.onLine===false){const n=render();say(n?`Estás sin conexión: encontré ${n} en el catálogo que Kinderly tiene guardado.`:'Estás sin conexión. Conectate para buscar en todas las bibliotecas.',n?'ok':'err');return}
   if(run===searchRun){const n=render();const note=failed.length?(n?' Algunas fuentes no respondieron; podés reintentar para ver más opciones.':failed.length===SOURCES.length?'No se pudo conectar con los catálogos. Probá nuevamente en unos minutos.':'Algunas fuentes están demoradas. Probá de nuevo para ampliar la búsqueda.'):'';say((n?(n>40?`Encontré ${n} coincidencias; muestro las 40 más relevantes.`:`Encontré ${n} coincidencias.`):failed.length?'No encontramos coincidencias por ahora. '+note:'No encontramos resultados en español. Probá con el título o el autor más exacto.')+(n?note:''),n?'ok':failed.length?'':'err')}
 }
 async function download(b,btn){
@@ -673,11 +674,11 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=164"></script>
-<script src="discover.js?v=164"></script>
-<script src="extras.js?v=164"></script>
-<script src="pets.js?v=164"></script>
-<script type="module" src="social.js?v=164"></script>
+<script src="reader.js?v=165"></script>
+<script src="discover.js?v=165"></script>
+<script src="extras.js?v=165"></script>
+<script src="pets.js?v=165"></script>
+<script type="module" src="social.js?v=165"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;

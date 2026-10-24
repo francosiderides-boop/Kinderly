@@ -264,10 +264,15 @@ try{if(!localStorage.getItem('k_welcome'))intro()}catch(e){}
 (function(){const h=document.querySelector('.view[data-view="ajustes"]');if(!h||$('ex-bk'))return;
   const c=el('div','card');c.id='ex-bk';c.style.marginTop='14px';c.append(el('b','','Copia de seguridad'),el('p','hint2','Guardá tu biblioteca, subrayados, marcadores, listas y estadísticas en un archivo, y pasalos a otro celular cuando quieras. No incluye tu clave de IA.'));
   const a=el('div','ex-la'),e1=el('button','ghost','Guardar copia'),e2=el('button','ghost','Restaurar copia');e1.type=e2.type='button';
-  e1.onclick=()=>{const o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^(kr_|k_)/.test(k)&&k!=='kr_ai')o[k]=localStorage.getItem(k)}}catch(e){}
+  // qué entra en la copia: tus datos (no la clave de IA, ni las marcas internas de la sincronización, que son de cada dispositivo)
+  const inBackup=k=>k==='mail'||(/^(kr_|k_)/.test(k)&&k!=='kr_ai'&&!/^(k_sync_|k_lib_pub_)/.test(k));
+  e1.onclick=()=>{const o={};try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(inBackup(k))o[k]=localStorage.getItem(k)}}catch(e){}
     const u=URL.createObjectURL(new Blob([JSON.stringify({app:'kinderly',v:1,t:Date.now(),data:o})],{type:'application/json'})),l=document.createElement('a');l.href=u;l.download='kinderly-copia-'+new Date().toLocaleDateString('sv')+'.json';document.body.append(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);say('Copia guardada','ok')};
   const f=el('input');f.type='file';f.accept='application/json,.json';f.hidden=true;
-  f.onchange=async()=>{try{const j=JSON.parse(await f.files[0].text());if(j.app!=='kinderly'||!j.data)throw 0;let n=0;Object.keys(j.data).forEach(k=>{if(/^(kr_|k_)/.test(k)&&k!=='kr_ai'){localStorage.setItem(k,j.data[k]);n++}});say('Copia restaurada ('+n+' datos). Reiniciando…','ok');setTimeout(()=>location.reload(),900)}catch(e){say('Ese archivo no es una copia de Kinderly','err')}};
+  f.onchange=async()=>{try{const j=JSON.parse(await f.files[0].text());if(j.app!=='kinderly'||!j.data)throw 0;let n=0;const now=Date.now();let sm={};try{sm=JSON.parse(localStorage.getItem('k_sync_m')||'{}')||{}}catch(e){}
+      Object.keys(j.data).forEach(k=>{if(inBackup(k)){localStorage.setItem(k,j.data[k]);sm[k]=now;n++}});
+      // lo restaurado cuenta como el cambio más nuevo: se sube a tu cuenta en vez de que la nube lo pise
+      try{localStorage.setItem('k_sync_m',JSON.stringify(sm));localStorage.removeItem('k_sync_h')}catch(e){}say('Copia restaurada ('+n+' datos). Reiniciando…','ok');setTimeout(()=>location.reload(),900)}catch(e){say('Ese archivo no es una copia de Kinderly','err')}};
   e2.onclick=()=>f.click();a.append(e1,e2);c.append(a,f);h.append(c)})();
 rerender();
 })();
