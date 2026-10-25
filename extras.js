@@ -97,7 +97,7 @@ function decorate(b,actions){
 let seg='toread';
 function render(host){
   if(!host)return;
-  const c=el('div','card');c.style.marginTop='14px';c.append(el('b','','Mis listas'));
+  const c=el('div','card ex-lists');c.style.marginTop='14px';c.append(el('b','','Mis listas'));
   const s=el('div','ex-seg');
   LISTS.forEach(([k,name])=>{const n=Object.keys(lists()[k]).length,b=el('button',seg===k?'on':'',name+(n?' · '+n:''));b.type='button';b.onclick=()=>{seg=k;rerender()};s.append(b)});
   c.append(s);

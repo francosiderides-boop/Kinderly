@@ -292,11 +292,23 @@ body{padding-left:28px;padding-right:28px}
 nav.tabs{max-width:640px!important;left:0!important;right:0!important}
 #res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
 #res>*{min-width:0}
-.view.on[data-view="biblioteca"]{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:0 20px;align-items:start}
-.view.on[data-view="biblioteca"]>*{min-width:0;grid-column:2;margin-top:0;margin-bottom:16px}
-.view.on[data-view="biblioteca"]>.vt,.view.on[data-view="biblioteca"]>.vs{grid-column:1/-1;margin-bottom:6px}
-.view.on[data-view="biblioteca"]>.vs{margin-bottom:18px}
-.view.on[data-view="biblioteca"]>.kr-recent{grid-column:1;grid-row:3/span 40;margin:0 0 16px!important}
+.view.on[data-view="biblioteca"]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 20px;align-items:start}
+.view.on[data-view="biblioteca"]>*{min-width:0;margin:0 0 16px}
+.view.on[data-view="biblioteca"]>.vt{grid-column:1/-1;order:-3;margin-bottom:6px}
+.view.on[data-view="biblioteca"]>.vs{grid-column:1/-1;order:-2;margin-bottom:18px}
+.view.on[data-view="biblioteca"]>.kr-recent{grid-column:1/-1;order:-1;margin-top:0!important}
+.view.on[data-view="biblioteca"]>.kr-stats,.view.on[data-view="biblioteca"]>.kr-sn{grid-column:1/-1}
+.view.on[data-view="biblioteca"]>.ex-ach{grid-column:1;grid-row:span 2;order:1}
+.view.on[data-view="biblioteca"]>.ex-lists{grid-column:2;order:2}
+.view.on[data-view="biblioteca"]>.kr-open{grid-column:2;order:3}
+.kr-recent{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px 18px}
+.kr-recent>b{grid-column:1/-1}
+.kr-recent .lib-item{display:flex;flex-direction:column;align-items:stretch;border:0;padding:0;gap:8px}
+.kr-recent .lib-item>div{flex:none;order:2}
+.kr-recent .lib-cov{order:1;width:100%;height:auto;aspect-ratio:2/3;max-width:200px;border-radius:6px 12px 12px 6px;box-shadow:0 8px 18px rgba(0,0,0,.25)}
+.kr-recent .lib-item>.lib-btns{order:3;flex:none;gap:6px}
+.kr-recent .lib-btns button{padding:9px 12px;font-size:.82rem}
+.kr-recent .lib-item b{font-size:.95rem}.kr-recent .lib-item small{font-size:.76rem}
 .lead{font-size:1.9rem}
 }
 @media(min-width:1100px){#res{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -363,7 +375,7 @@ nav.tabs{max-width:640px!important;left:0!important;right:0!important}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v167'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v168'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · Beta 0.11.55 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra

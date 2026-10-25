@@ -224,7 +224,7 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr textarea,#kr input[type=text],#kr input[type=search]{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,.5);background:transparent;color:inherit;font:inherit}'+
 '#kr .ai-out{white-space:pre-wrap;line-height:1.55;margin:10px 0}'+
 '#kr .note{font-size:.78rem;opacity:.7;margin:8px 0 0}'+
-'.lib-item{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 0;border-top:1px solid var(--line)}.lib-item>div{flex:1 1 calc(100% - 72px);min-width:0}.lib-cov{flex:none;width:60px;height:86px;object-fit:cover;border-radius:4px 8px 8px 4px;box-shadow:0 4px 10px rgba(0,0,0,.22)}.lib-item b{display:block;font:600 1rem var(--serif);line-height:1.25;overflow-wrap:anywhere}.lib-item small{display:block}.lib-item small{color:var(--mute)}'+
+'.lib-item{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 0;border-top:1px solid var(--line)}.lib-item>div{flex:1 1 calc(100% - 72px);min-width:0}.lib-btns{display:flex;flex-wrap:wrap;gap:10px}.lib-item>.lib-btns{flex:1 1 100%}.lib-cov{flex:none;width:60px;height:86px;object-fit:cover;border-radius:4px 8px 8px 4px;box-shadow:0 4px 10px rgba(0,0,0,.22)}.lib-item b{display:block;font:600 1rem var(--serif);line-height:1.25;overflow-wrap:anywhere}.lib-item small{display:block}.lib-item small{color:var(--mute)}'+
 '.lib-bar{height:5px;border-radius:3px;background:var(--soft);margin-top:6px;overflow:hidden}.lib-bar i{display:block;height:100%;background:var(--green)}'+
 '#kr-cont{margin:0 0 16px;display:flex;align-items:center;gap:12px}#kr-cont>div{flex:1;min-width:0}#kr-cont b{display:block;font:600 1rem var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#kr-cont small{color:var(--mute)}';
 document.head.append(css);
@@ -796,7 +796,7 @@ function renderLib(){
   for(let i=6;i>=0;i--){const x=new Date();x.setDate(x.getDate()-i);const v=stt[dk(x)]||0,col=el('div','kr-wc'),bar=el('div','kr-wb'),f=el('i');f.style.height=Math.max(v?8:3,Math.round(v/maxS*100))+'%';if(v>=gS)f.className='done';bar.append(f);col.append(bar,el('small',i===0?'on':'','DLMXJVS'[x.getDay()]));wk.append(col)}
   sc.append(gw,wk);{const mb=btn('Ver todas mis estadísticas',()=>{if(window.KEx&&window.KEx.statsPage)window.KEx.statsPage()},'Estadísticas','ghost');mb.style.cssText='grid-column:1/-1;margin:12px 8px 0;width:calc(100% - 16px)';sc.append(mb)}host.append(sc);
   if(!S0.week)host.append(el('p','hint2 kr-sn','Leé un minuto hoy en la app y empieza tu racha.'));
-  const top=el('div','card');
+  const top=el('div','card kr-open');
   top.append(el('b','','Abrir un libro de tu celular'),el('p','hint2','Elegí un archivo .epub que ya tengas guardado (descargas, Drive, mail…). Queda en esta biblioteca y no sale de tu dispositivo.'));
   const b=btn('Elegir archivo EPUB',pickFile);b.style.marginTop='10px';top.append(b);host.append(top);
   const l=lib();
@@ -809,7 +809,7 @@ function renderLib(){
     const rv=btn('Reseñas',()=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})},'Reseñas del libro','ghost');
     const del=btn('Quitar',async()=>{if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));{const rm=store.get('kr_lib_rm',{});rm[x.id]=Date.now();store.set('kr_lib_rm',rm)} // para que no vuelva desde otro dispositivo
     store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);store.del('kr_cov_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
-    r.append(d,open1,rv,del);sec.append(r);
+    const bw=el('div','lib-btns');bw.append(open1,rv,del);r.append(d,bw);sec.append(r);
   });
   host.append(sec);
   if(window.KEx)window.KEx.render(host);
