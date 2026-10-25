@@ -149,6 +149,7 @@ const sst=el('style');sst.textContent=`
 .ls-card .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.ls-card .chips span{display:inline-flex;align-items:center;padding:6px 11px;border-radius:999px;background:var(--soft);font-size:.82rem}
 .ls-card p{margin:10px 0 0;color:var(--mute);font-size:.88rem}
 .ls-onm{display:flex;align-items:center}
+.ls-card,.ls-card p,.ls-card .chips span{white-space:normal}
 .ls-sf .kr-hs{padding-top:12px}.ls-sf .kr-bk{flex-basis:25%}.ls-sf .kr-bk.sel .kr-bkc{outline:3px solid var(--btn);outline-offset:2px;transform:translateY(-6px)}.ls-sf .kr-bkc{transition:transform .2s}
 @media(prefers-reduced-motion:reduce){.ls-sf .kr-bkc,.ls-fr .chev{transition:none}}
 `;document.head.append(sst);
@@ -229,6 +230,118 @@ function openLists(){
   draw();document.body.append(ov);requestAnimationFrame(()=>ov.classList.add('on'));
 }
 
+// ---------- vocabulario personal (diccionario propio + práctica) ----------
+const vget=()=>{const v=get('kr_vocab',[]);return Array.isArray(v)?v:[]};
+const vsave=v=>set('kr_vocab',v);
+const vstate=x=>!x.reps?'n':((x.ivl||0)>=21?'m':'l');
+const vdue=x=>!x.reps||(x.due||0)<=Date.now();
+const vHas=w=>vget().some(x=>x.id===norm(w));
+function vocabAdd(o){const v=vget(),id=norm(o.w);if(!id)return 'bad';if(v.some(x=>x.id===id))return 'exists';
+  v.unshift({id,w:String(o.w).trim().slice(0,60),d:String(o.d||'').slice(0,400),q:String(o.q||'').slice(0,400),book:o.book||'',bid:o.bid||'',au:o.au||'',cfi:o.cfi||'',note:'',reps:0,ivl:0,due:0,t:Date.now()});vsave(v);rerender();return 'added'}
+const VL={n:'nueva',l:'aprendiendo',m:'dominada'};
+const nextDays=(x,r)=>{const n=x.reps||0,i=x.ivl||0;return r===1?Math.max(1,Math.round(i*1.2)||1):r===2?(n?Math.round(i*2.2):3):(n?Math.round(i*3.2):7)};
+const fmtD=d=>d<7?(d===1?'1 día':d+' días'):d<30?Math.round(d/7)+' sem.':Math.round(d/30)+(Math.round(d/30)>1?' meses':' mes');
+function vrate(id,r){const v=vget(),y=v.find(z=>z.id===id);if(!y)return;if(r===0){y.due=Date.now()+10*60000}else{const d=nextDays(y,r);y.ivl=d;y.reps=(y.reps||0)+1;y.due=Date.now()+d*864e5}vsave(v)}
+const vst=el('style');vst.textContent=`
+.vc-hd{display:flex;align-items:center;gap:8px;margin-bottom:4px}.vc-hd h3{margin:0;font:600 1.3rem var(--serif);flex:1;min-width:0}
+.vc-pr{padding:9px 14px;font-size:.84rem;white-space:nowrap}.vc-x{padding:8px 11px;font-size:.84rem}
+.vc-in{width:100%;height:46px;padding:0 14px;border:1px solid var(--line);border-radius:14px;background:var(--soft);color:var(--ink);font:500 1rem var(--sans)}
+.vc-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 8px}.vc-row label{color:var(--mute);font-size:.8rem}
+.vc-sel{font:inherit;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:6px 8px;max-width:100%}
+.vc-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.vc-chips button{padding:7px 12px;font-size:.8rem}.vc-chips button.on{background:var(--btn)!important;color:var(--btnInk)!important}
+.vc-az{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}.vc-az button{padding:4px 0;width:28px;font-size:.76rem;background:var(--soft)!important;color:var(--ink)!important;border:1px solid var(--line)!important}.vc-az button.on{background:var(--btn)!important;color:var(--btnInk)!important}.vc-az button[disabled]{opacity:.3}
+.vc-lt{background:var(--soft);padding:2px 12px;margin:10px 0 2px;border-radius:8px;font:600 .8rem var(--sans);color:var(--mute)}
+.vc-w{border-top:1px solid var(--line);padding:11px 0}.vc-lt+.vc-w{border-top:0}
+.vc-wh{display:flex;align-items:center;gap:8px;width:100%;background:none!important;color:var(--ink)!important;padding:0!important;border-radius:0!important;text-align:left;box-shadow:none!important;border:0!important;cursor:pointer}.vc-wh b{font:600 1.05rem var(--serif)}.vc-wh small{margin-left:auto;color:var(--mute);font:500 .78rem var(--sans)}
+.vc-dot{width:10px;height:10px;border-radius:50%;flex:none}.vc-dot.n{background:#f29bb3}.vc-dot.l{background:#e0b72f}.vc-dot.m{background:#5fb872}
+.vc-wb{display:none;margin-top:8px}.vc-w.open .vc-wb{display:block}.vc-wb p{margin:0 0 6px;font-size:.92rem}
+.vc-q{color:var(--mute);font-family:var(--serif);font-style:italic;border-left:3px solid var(--gold);padding-left:10px}
+.vc-w mark,.vc-q mark{background:rgba(245,200,60,.4);color:inherit;border-radius:3px;padding:0 2px;font-style:normal}
+.vc-bk{display:inline-block;padding:2px 9px;border-radius:999px;background:var(--soft);font-size:.74rem;color:var(--mute);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vc-nt label{display:block;font-size:.78rem;color:var(--mute);margin:8px 0 3px}.vc-nt textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--soft);color:var(--ink);font:inherit;padding:8px 10px}
+.vc-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}.vc-act button{padding:7px 12px;font-size:.8rem}.vc-sp{flex:1}
+.vc-add{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.vc-fc{perspective:900px;margin:8px 0 12px}.vc-fi{position:relative;min-height:240px;transition:transform .5s;transform-style:preserve-3d;cursor:pointer}.vc-fc.flip .vc-fi{transform:rotateY(180deg)}
+.vc-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;background:var(--soft);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;text-align:center;overflow:auto}
+.vc-face.back{transform:rotateY(180deg)}.vc-word{font:600 2rem var(--serif);overflow-wrap:anywhere}.vc-hint{color:var(--mute);font-size:.8rem;margin-top:10px}.vc-def{font:500 1.05rem var(--serif);margin:0 0 10px}
+.vc-bar{height:6px;border-radius:3px;background:var(--soft);overflow:hidden;flex:1}.vc-bar i{display:block;height:100%;background:var(--btn);transition:width .3s}
+.vc-rate{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.vc-rate button{display:flex;flex-direction:column;gap:2px;padding:10px 2px;border-radius:14px;font-size:.84rem}.vc-rate small{font-weight:500;opacity:.8;font-size:.7rem}
+.vc-rate .a{background:#f29bb3!important;color:#2b0f19!important}.vc-rate .d{background:#f5d142!important;color:#2e2600!important}.vc-rate .k{background:var(--btn)!important;color:var(--btnInk)!important}.vc-rate .e{background:#7fd18b!important;color:#0d2a14!important}
+.vc-end{text-align:center;padding:22px 6px}.vc-end b{font:600 1.3rem var(--serif);display:block;margin-bottom:6px}
+.ex-vocab .ls-fake{margin-top:10px;padding:9px 12px;border-radius:12px;background:var(--soft);color:var(--mute);font-size:.88rem}
+@media(prefers-reduced-motion:reduce){.vc-fi,.vc-bar i{transition:none}}
+`;document.head.append(vst);
+const vnrm=s=>norm(s);
+function hiNode(text,q){const f=document.createDocumentFragment();text=String(text||'');if(!q){f.append(text);return f}const n=text.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  // el texto sin acentos puede tener otro largo: se busca sobre una copia letra por letra
+  let map=[],plain='';for(let i=0;i<text.length;i++){const c=text[i].normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();for(const ch of c){plain+=ch;map.push(i)}}
+  const k=vnrm(q).replace(/\s+/g,' ').trim();if(!k){f.append(text);return f}
+  let i=0,at=0,j;while((j=plain.indexOf(k,at))>=0){const a=map[j],b=map[j+k.length-1]+1;if(a>i)f.append(text.slice(i,a));const m=document.createElement('mark');m.textContent=text.slice(a,b);f.append(m);i=b;at=j+k.length}
+  if(i<text.length)f.append(text.slice(i));return f}
+const vhay=(x,q)=>{const k=vnrm(q);return vnrm(x.w).includes(k)||vnrm(x.d).includes(k)||vnrm(x.q).includes(k)||vnrm(x.note||'').includes(k)};
+function openVocab(opts){
+  if($('vc-ov'))return;opts=opts||{};
+  const ov=el('div','ls-ov');ov.id='vc-ov';const sh=el('div','ls-sh');sh.setAttribute('role','dialog');sh.setAttribute('aria-label','Mi vocabulario');ov.append(sh);
+  const close=()=>{ov.classList.remove('on');setTimeout(()=>{ov.remove();rerender()},200);document.removeEventListener('keydown',esc)};
+  const esc=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',esc);
+  ov.addEventListener('click',e=>{if(e.target===ov)close()});
+  let filter='all',term='',book='',sort='az',letter='',view=opts.practice?'practice':'list';const openIds=new Set();
+  let queue=[],total=0,done=0,flipped=false,azEl=null,hostEl=null;
+  const startPractice=()=>{const v=vget().filter(vdue).sort((a,b)=>(a.due||0)-(b.due||0));queue=v.map(x=>x.id);total=queue.length;done=0;flipped=false;view='practice';draw()};
+  const header=right=>{const hd=el('div','vc-hd');hd.append(el('h3','',view==='practice'?'Practicar':'Mi vocabulario'));right.forEach(x=>hd.append(x));sh.append(hd)};
+  const readIn=x=>{const lib=get('kr_lib',[])||[];const e=lib.find(y=>y.id===x.bid);if(!e||!window.KReader){say('Ese libro ya no está en tu biblioteca','err');return}close();setTimeout(()=>window.KReader.open({id:e.id,url:e.url,title:e.title,author:e.author,cached:true,local:e.local,cfi:x.cfi||undefined}),230)};
+  const draw=()=>{const sc=sh.scrollTop;sh.textContent='';const all=vget(),due=all.filter(vdue).length;
+    if(view==='practice'){practice(due);sh.scrollTop=sc;return}
+    const pr=el('button','vc-pr','Practicar'+(due?' · '+due:''));pr.type='button';pr.disabled=!due;if(!due)pr.style.opacity='.5';pr.onclick=startPractice;pr.setAttribute('aria-label','Practicar: repasar palabras');
+    const x=el('button','ghost vc-x','✕');x.type='button';x.setAttribute('aria-label','Cerrar');x.onclick=close;header([pr,x]);
+    sh.append(el('p','ls-sub',all.length+(all.length===1?' palabra':' palabras')+' · '+due+' para practicar hoy. La búsqueda mira la palabra, la definición, la frase y tus notas.'));
+    const q=el('input','vc-in');q.type='search';q.placeholder='Buscar en mi vocabulario';q.value=term;q.setAttribute('aria-label','Buscar en mi vocabulario');q.oninput=()=>{term=q.value.trim();list();};sh.append(q);
+    const row=el('div','vc-row');const bs=[...new Set(all.map(x=>x.book).filter(Boolean))];
+    const sb=el('select','vc-sel');sb.setAttribute('aria-label','Libro');sb.append(new Option('Todos los libros',''));bs.forEach(b=>sb.append(new Option(b,b)));sb.value=book;sb.onchange=()=>{book=sb.value;list()};
+    const ss=el('select','vc-sel');ss.setAttribute('aria-label','Orden');ss.append(new Option('A–Z','az'),new Option('Más recientes','new'));ss.value=sort;ss.onchange=()=>{sort=ss.value;list()};row.append(sb,ss);sh.append(row);
+    const ch=el('div','vc-chips');[['all','Todas'],['due','Para practicar'],['l','Aprendiendo'],['m','Dominadas']].forEach(([k,n])=>{const b=el('button',filter===k?'on':'ghost',n);b.type='button';b.onclick=()=>{filter=k;draw()};ch.append(b)});sh.append(ch);
+    azEl=el('div','vc-az');sh.append(azEl);hostEl=el('div');sh.append(hostEl);
+    const ad=el('div','vc-add');ad.append(el('div','ls-sub','Agregar una palabra sin estar leyendo'));const ar=el('div','vc-row');ar.style.margin='0';const ai=el('input','vc-in');ai.type='text';ai.placeholder='Escribí la palabra';ai.setAttribute('aria-label','Palabra nueva');ai.style.flex='1';ai.style.minWidth='140px';
+    const ab=el('button','','Buscar y agregar');ab.type='button';ab.onclick=async()=>{const w=ai.value.trim();if(!w)return ai.focus();if(vHas(w)){say('Esa palabra ya está','err');return}ab.disabled=true;ab.textContent='Buscando…';let d='';try{const r=window.KReader&&window.KReader.wik?await window.KReader.wik(w):null;const it=r&&r.items.find(i=>i.d);d=it?it.d:''}catch(e){}
+      vocabAdd({w,d,q:'',book:'Agregadas a mano'});ai.value='';ab.disabled=false;ab.textContent='Buscar y agregar';say(d?'Agregada a tu vocabulario':'Agregada. No encontré la definición, podés escribirla en tu nota.','ok');draw()};
+    ar.append(ai,ab);ad.append(ar);sh.append(ad);
+    list();sh.scrollTop=sc};
+  function list(){const all=vget();const az=azEl,host=hostEl;if(!az||!host)return;
+    const have=new Set(all.map(x=>vnrm(x.w)[0]));az.textContent='';'abcdefghijklmnopqrstuvwxyz'.split('').forEach(L=>{const b=el('button',letter===L?'on':'',L.toUpperCase());b.type='button';b.disabled=!have.has(L);b.onclick=()=>{letter=letter===L?'':L;list();};az.append(b)});
+    let f=all.filter(x=>(filter==='all'||(filter==='due'?vdue(x):vstate(x)===filter))&&(!book||x.book===book)&&(!term||vhay(x,term))&&(!letter||vnrm(x.w)[0]===letter));
+    f=sort==='az'?f.slice().sort((a,b)=>a.w.localeCompare(b.w,'es')):f.slice().sort((a,b)=>(b.t||0)-(a.t||0));
+    host.textContent='';if(!f.length){host.append(el('p','ls-sub',all.length?'No hay palabras con ese filtro.':'Todavía no guardaste palabras. Tocá una palabra mientras leés y elegí “Guardar en mi vocabulario”.'));return}
+    let last='';f.forEach(x=>{
+      if(sort==='az'&&vnrm(x.w)[0]!==last){last=vnrm(x.w)[0];host.append(el('div','vc-lt',last.toUpperCase()))}
+      const d=el('div','vc-w'+((openIds.has(x.id)||(term&&!vnrm(x.w).includes(vnrm(term))))?' open':''));
+      const h=el('button','vc-wh');h.type='button';const dot=el('i','vc-dot '+vstate(x)),b=el('b');b.append(hiNode(x.w,term));h.append(dot,b,el('small','',VL[vstate(x)]+(vdue(x)?' · practicar':'')));
+      h.onclick=()=>{d.classList.toggle('open');d.classList.contains('open')?openIds.add(x.id):openIds.delete(x.id)};d.append(h);
+      const bd=el('div','vc-wb');const p1=el('p');p1.append(hiNode(x.d||'Sin definición todavía. Escribila en tu nota.',term));bd.append(p1);
+      if(x.q){const p2=el('p','vc-q');p2.append(hiNode(x.q,term||x.w));bd.append(p2)}
+      const meta=el('div','vc-act');if(x.book)meta.append(el('span','vc-bk',x.book));meta.append(el('span','vc-sp'));bd.append(meta);
+      const nt=el('div','vc-nt');nt.append(el('label','','Tu nota'));const ta=el('textarea');ta.rows=2;ta.placeholder='Escribí con tus palabras qué significa, un ejemplo…';ta.value=x.note||'';ta.setAttribute('aria-label','Nota sobre '+x.w);nt.append(ta);bd.append(nt);
+      const ac=el('div','vc-act');const sv=el('button','','Guardar nota');sv.type='button';sv.onclick=()=>{const v=vget(),y=v.find(z=>z.id===x.id);if(y){y.note=ta.value.trim().slice(0,500);vsave(v);say('Nota guardada','ok')}};ac.append(sv);
+      if(x.bid&&(get('kr_lib',[])||[]).some(y=>y.id===x.bid)){const go=el('button','ghost','Ver en el libro');go.type='button';go.onclick=()=>readIn(x);ac.append(go)}
+      ac.append(el('span','vc-sp'));const rm=el('button','ghost','Quitar');rm.type='button';rm.onclick=()=>{vsave(vget().filter(z=>z.id!==x.id));draw()};ac.append(rm);bd.append(ac);d.append(bd);host.append(d)})}
+  function practice(due){
+    const back=el('button','ghost vc-x','‹ Volver');back.type='button';back.onclick=()=>{view='list';draw()};const x=el('button','ghost vc-x','✕');x.type='button';x.setAttribute('aria-label','Cerrar');x.onclick=close;header([back,x]);
+    const v=vget();
+    if(!total){sh.append(Object.assign(el('div','vc-end'),{}));const e=sh.lastChild;e.append(el('b','','Todo al día'),el('p','ls-sub','No hay palabras para practicar ahora.'));return}
+    if(!queue.length){const e=el('div','vc-end');e.append(el('b','','Práctica completa'),el('p','ls-sub','Practicaste '+total+(total===1?' palabra':' palabras')+'. Las difíciles vuelven pronto.'));const b=el('button','','Volver al vocabulario');b.type='button';b.onclick=()=>{view='list';draw()};e.append(b);sh.append(e);return}
+    const c=v.find(z=>z.id===queue[0]);if(!c){queue.shift();draw();return}
+    const top=el('div','vc-row');top.style.margin='0 0 6px';top.append(el('small','ls-sub',(done+1)+' de '+total));const bar=el('div','vc-bar'),bi=el('i');bi.style.width=(done/total*100)+'%';bar.append(bi);top.append(bar);sh.append(top);
+    const fc=el('div','vc-fc'+(flipped?' flip':'')),fi=el('div','vc-fi');fi.tabIndex=0;fi.setAttribute('role','button');fi.setAttribute('aria-label','Girar tarjeta');
+    const f1=el('div','vc-face');f1.append(el('div','vc-word',c.w),el('div','vc-hint','Pensá qué significa y tocá para ver la respuesta'));
+    const f2=el('div','vc-face back');f2.append(el('div','vc-def',c.d||'Sin definición. Mirá tu nota.'));if(c.q)f2.append(Object.assign(el('div','vc-q'),{}));if(c.q)f2.lastChild.append(hiNode(c.q,c.w));if(c.note){const n=el('div','ls-sub','Tu nota: '+c.note);n.style.marginTop='8px';f2.append(n)}
+    fi.append(f1,f2);fc.append(fi);sh.append(fc);
+    const rt=el('div','vc-rate');rt.style.cssText=flipped?'':'opacity:.4;pointer-events:none';
+    [['Otra vez','a','10 min',0],['Difícil','d',fmtD(nextDays(c,1)),1],['Bien','k',fmtD(nextDays(c,2)),2],['Fácil','e',fmtD(nextDays(c,3)),3]].forEach(([n,k,s,r])=>{const b=el('button',k);b.type='button';b.append(n,el('small','',s));
+      b.onclick=()=>{const id=queue.shift();vrate(id,r);if(r===0)queue.push(id);else done++;flipped=false;draw()};rt.append(b)});sh.append(rt);
+    const flip=()=>{flipped=!flipped;fc.classList.toggle('flip',flipped);rt.style.cssText=flipped?'':'opacity:.4;pointer-events:none'};fi.onclick=flip;fi.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}};
+  }
+  draw();document.body.append(ov);requestAnimationFrame(()=>ov.classList.add('on'));
+}
+
 let seg='toread';
 function render(host){
   if(!host)return;
@@ -238,6 +351,11 @@ function render(host){
   const ch=el('div','chips');fs.slice(0,6).forEach(f=>{const s=el('span','');const d=el('i','ls-dot');d.style.background=f.color;s.append(d,f.name+' · '+Object.keys(l[f.id]||{}).length);ch.append(s)});if(fs.length>6)ch.append(el('span','','+'+(fs.length-6)));c.append(ch);
   if(!total)c.append(el('p','','Tocá “Guardar” en cualquier libro para armar tus listas, o creá tus propias carpetas.'));
   c.onclick=openLists;host.append(c);
+  {const vv=vget(),vd=vv.filter(vdue).length;const t=el('button','card ex-vocab ls-card');t.type='button';t.style.marginTop='14px';t.setAttribute('aria-label','Abrir Mi vocabulario');
+   const tp=el('div','top');tp.append(el('b','','Mi vocabulario'),el('span','go','Abrir ›'));t.append(tp);
+   const ch=el('div','chips');ch.append(el('span','',vv.length+(vv.length===1?' palabra':' palabras')),el('span','',vd+' para practicar'));t.append(ch);
+   t.append(el('div','ls-fake','Buscar una palabra…'));if(!vv.length)t.append(el('p','','Al leer, tocá una palabra y elegí “Guardar en mi vocabulario”.'));
+   t.onclick=()=>openVocab();host.append(t)}
   try{ach(host)}catch(e){}
 }
 
@@ -385,7 +503,7 @@ button.ex-ab{background:none!important;border:0!important;padding:4px 0!importan
 .ex-ab{text-align:center;opacity:.35;filter:grayscale(1);transition:opacity .3s,filter .3s}.ex-ab.on{opacity:1;filter:none}.ex-ae{display:grid;place-items:center;width:46px;height:46px;margin:0 auto 4px;border-radius:50%;background:var(--soft);font-size:1.4rem}.ex-ab.on .ex-ae{background:color-mix(in srgb,var(--gold) 38%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 70%,transparent)}.ex-ab small{display:block;font-size:.66rem;line-height:1.15;color:var(--mute)}.ex-ab.on small{color:var(--ink);font-weight:600}
 .ex-bio{display:flex;gap:12px;align-items:center;margin-bottom:8px}.ex-bio-img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}.ex-bio b{display:block}.ex-bio small{display:block;opacity:.7;font-size:.84rem}.ex-bio-t{margin:6px 0;line-height:1.55}.ex-bio-a{font-size:.88rem;color:inherit;text-decoration:underline}`;
 
-window.KEx={listSheet,openLists,shelfData,intro,pickGoal,goal,decorate,render,bioView,statsPage};
+window.KEx={listSheet,openLists,openVocab,vocabAdd,vHas,shelfData,intro,pickGoal,goal,decorate,render,bioView,statsPage};
 
 // introducción la primera vez; en Ajustes se puede volver a ver
 try{if(!localStorage.getItem('k_welcome'))intro()}catch(e){}

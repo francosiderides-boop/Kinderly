@@ -361,43 +361,27 @@ async function open(o){
     const ta=el('textarea');ta.rows=3;ta.placeholder='Tu nota…';ta.value=m.note||'';b.append(ta);
     const r2=el('div','row');
     r2.append(btn('Guardar nota',()=>{m.note=ta.value.trim().slice(0,500);saveMarks();say('Nota guardada','ok');closePanel()}),
-      btn('Definir',()=>define(m.text)),
+      btn('Definir',()=>define(m.text,'',m.cfi)),
       btn('Borrar subrayado',()=>{try{rend.annotations.remove(m.cfi,'highlight')}catch(e){}marks=marks.filter(x=>x!==m);saveMarks();closePanel()}));
     b.append(r2);
   });
 
   // ----- diccionario -----
-  const dictCache={};
-  async function wik(word){
-    const w=word.toLowerCase().replace(/[.,;:!?¿¡"“”«»()\[\]—–-]+/g,'').trim();
-    if(!w||w.split(/\s+/).length>3)return null;
-    if(dictCache[w]!==undefined)return dictCache[w];
-    try{
-      const r=await fetch('https://es.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&exsectionformat=plain&redirects=1&titles='+encodeURIComponent(w)+'&format=json&origin=*',{signal:AbortSignal.timeout(12000)});
-      const d=await r.json();const p=Object.values((d.query||{}).pages||{})[0];
-      let txt=(p&&p.extract)||'';
-      const i=txt.indexOf('\nEspañol\n');if(i<0){dictCache[w]=null;return null}
-      txt=txt.slice(i+9);const j=txt.search(/\n(Alemán|Catalán|Francés|Gallego|Inglés|Italiano|Latín|Portugués|Asturiano|Náhuatl|Aragonés)\n/);if(j>0)txt=txt.slice(0,j);
-      const lines=txt.split('\n').map(s=>s.trim()).filter(Boolean),out=[];let skip=false;
-      for(const ln of lines){
-        if(/^(Etimología|Pronunciación|Información adicional|Locuciones|Refranes|Conjugación|Véase también|Traducciones|Términos relacionados|Descendientes|Derivad|Sinónimos|Antónimos|Hiperónimos|Hipónimos|Cognados|Ejemplo)/i.test(ln)){skip=true;continue}
-        if(/^(Sustantivo|Adjetivo|Verbo|Adverbio|Pronombre|Interjección|Preposición|Conjunción|Forma|Artículo|Locución)/i.test(ln)&&ln.length<70){skip=false;out.push({h:ln});continue}
-        if(skip)continue;
-        if(/^\d+\s/.test(ln)&&out.length)out.push({d:ln.replace(/^\d+\s+/,'')});
-      }
-      const res=out.filter(x=>x.h||x.d).slice(0,16);dictCache[w]=res.some(x=>x.d)?{w,items:res}:null;return dictCache[w];
-    }catch(e){return null}
-  }
-  async function define(word,ctx){
+  async function define(word,ctx,cfi){
     const clean=word.replace(/\s+/g,' ').trim().slice(0,120);
     panel('Definición',async b=>{
       b.append(el('h3','',clean));const out=el('div');out.textContent='Buscando…';b.append(out);
       const acts=el('div','row');b.append(acts);
       acts.append(btn('RAE',()=>window.open('https://dle.rae.es/'+encodeURIComponent(clean.split(' ')[0]),'_blank','noopener')));
       if(ai()&&ai().key){const bt=btn('Explicar con IA',async()=>{bt.disabled=true;out.textContent='Consultando IA…';try{out.textContent=await askAI('Explicá en español claro y breve (máximo 60 palabras) qué significa «'+clean+'»'+(ctx?' en esta frase de un libro: «'+ctx+'»':'')+'. Si es una palabra antigua o de época, aclaralo.')}catch(e){out.textContent='No se pudo: '+e.message}bt.disabled=false});acts.append(bt)}
-      const r=await wik(clean.split(' ').length===1?clean:clean);
+      const sentence=(()=>{const c=(ctx||'').replace(/\s+/g,' ').trim();if(!c)return '';const k=clean.toLowerCase();const parts=c.split(/(?<=[.!?…])\s+/);const hit=parts.find(x=>x.toLowerCase().includes(k));return (hit||c).slice(0,300)})();
+      let found=null;
+      if(window.KEx&&window.KEx.vocabAdd&&clean.split(' ').length<=3){const sv=btn(window.KEx.vHas(clean)?'Ya está en tu vocabulario ✓':'Guardar en mi vocabulario',()=>{if(window.KEx.vHas(clean)){window.KEx.openVocab();return}
+          const it=found&&found.items.find(i=>i.d);const res=window.KEx.vocabAdd({w:clean,d:it?it.d:'',q:sentence,book:title,bid:id,au:o.author||entry().author||'',cfi:cfi||''});
+          if(res==='added'){sv.textContent='Guardada ✓ · Ver mi vocabulario';say('Guardada en tu vocabulario','ok')}});acts.append(sv)}
+      const r=await wik(clean.split(' ').length===1?clean:clean);found=r;
       out.textContent='';
-      if(!r){out.append(el('p','','No encontramos esa palabra en el diccionario libre (Wikcionario). Probá con la RAE'+(ai()?' o con la IA':'')+'.'));return}
+      if(!r){out.append(el('p','','No encontramos esa palabra en el diccionario libre (Wikcionario). Probá con la RAE'+(ai()?' o con la IA':'')+'. Igual podés guardarla en tu vocabulario y escribir tu nota.'));return}
       r.items.forEach(x=>{if(x.h){const h=el('b','',x.h);h.style.display='block';h.style.margin='10px 0 2px';out.append(h)}else{const p=el('div','','• '+x.d);p.style.margin='4px 0';out.append(p)}});
       out.append(el('p','note','Fuente: Wikcionario (licencia libre).'));
     });
@@ -693,7 +677,7 @@ async function open(o){
   // barra de selección
   const selBtns=()=>{selbar.textContent='';
     Object.keys(HL).forEach(c=>{const x=btn('',()=>{if(!curSel)return;const q0=curSel.text;addMark(curSel.cfi,curSel.text,c);try{curSel.contents.window.getSelection().removeAllRanges()}catch(e){}hideSel();if(q0.trim().length>=20&&store.get('kr_qs_off',false)!==true)setTimeout(()=>quoteCard(q0,title,o.author||entry().author||''),250)},'Subrayar '+c,'dot');x.style.background=HL[c];selbar.append(x)});
-    selbar.append(btn('Nota',()=>{if(!curSel)return;const m=addMark(curSel.cfi,curSel.text,'amarillo');hideSel();editMark(m)}),btn('Definir',()=>{if(!curSel)return;const w=curSel.text,cx=curSel.ctx;hideSel();define(w,cx)}),btn('Copiar',()=>{if(curSel){try{navigator.clipboard.writeText(curSel.text);say('Copiado','ok')}catch(e){}}hideSel()}),btn('Imagen',()=>{if(!curSel)return;const q=curSel.text;hideSel();quoteCard(q,title,o.author||entry().author||'')},'Compartir como imagen'),btn('✕',hideSel,'Cancelar'));};
+    selbar.append(btn('Nota',()=>{if(!curSel)return;const m=addMark(curSel.cfi,curSel.text,'amarillo');hideSel();editMark(m)}),btn('Definir',()=>{if(!curSel)return;const w=curSel.text,cx=curSel.ctx,cf=curSel.cfi;hideSel();define(w,cx,cf)}),btn('Copiar',()=>{if(curSel){try{navigator.clipboard.writeText(curSel.text);say('Copiado','ok')}catch(e){}}hideSel()}),btn('Imagen',()=>{if(!curSel)return;const q=curSel.text;hideSel();quoteCard(q,title,o.author||entry().author||'')},'Compartir como imagen'),btn('✕',hideSel,'Cancelar'));};
   selBtns();
   root.append(top,view,bot,selbar,pnl,foot);view.append(msg);
   // gestos del lector fuera del iframe: en iOS/iPad los toques dentro del iframe no siempre llegan
@@ -757,7 +741,7 @@ root.append(warmEl,dimEl);comfort();document.body.append(root);fit();document.bo
     onSelHook=(cfi,contents)=>{
       try{const r=rend.getRange(cfi),text=(r?r.toString():'').replace(/\s+/g,' ').trim();if(text.length<2)return;
         let ctx='';try{ctx=(r.startContainer.parentElement.textContent||'').replace(/\s+/g,' ').trim().slice(0,300)}catch(e){}
-        curSel={cfi,text,contents,ctx};closePanel();if(text.length<=30&&!/\s/.test(text)){const n=Date.now();if(window.__krW&&window.__krW.w===text&&n-window.__krW.t<2500)return;window.__krW={w:text,t:n};hideSel();define(text,ctx);return}selbar.classList.add('on')}catch(e){}
+        curSel={cfi,text,contents,ctx};if(text.length<=30&&!/\s/.test(text)){const n=Date.now();if(window.__krW&&window.__krW.w===text&&n-window.__krW.t<2500)return;window.__krW={w:text,t:n};closePanel();hideSel();define(text,ctx,cfi);return}closePanel();selbar.classList.add('on')}catch(e){}
     };
     rend.on('selected',onSelHook);
     };
@@ -810,6 +794,29 @@ async function openFile(file){
 function pickFile(){const i=document.createElement('input');i.type='file';i.accept='.epub,application/epub+zip';i.onchange=()=>openFile(i.files&&i.files[0]);i.click()}
 
 // ---- pestaña Biblioteca ----
+// ----- diccionario (Wikcionario) -----
+const dictCache={};
+async function wik(word){
+  const w=word.toLowerCase().replace(/[.,;:!?¿¡"“”«»()\[\]—–-]+/g,'').trim();
+  if(!w||w.split(/\s+/).length>3)return null;
+  if(dictCache[w]!==undefined)return dictCache[w];
+  try{
+    const r=await fetch('https://es.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&exsectionformat=plain&redirects=1&titles='+encodeURIComponent(w)+'&format=json&origin=*',{signal:AbortSignal.timeout(12000)});
+    const d=await r.json();const p=Object.values((d.query||{}).pages||{})[0];
+    let txt=(p&&p.extract)||'';
+    const i=txt.indexOf('\nEspañol\n');if(i<0){dictCache[w]=null;return null}
+    txt=txt.slice(i+9);const j=txt.search(/\n(Alemán|Catalán|Francés|Gallego|Inglés|Italiano|Latín|Portugués|Asturiano|Náhuatl|Aragonés)\n/);if(j>0)txt=txt.slice(0,j);
+    const lines=txt.split('\n').map(s=>s.trim()).filter(Boolean),out=[];let skip=false;
+    for(const ln of lines){
+      if(/^(Etimología|Pronunciación|Información adicional|Locuciones|Refranes|Conjugación|Véase también|Traducciones|Términos relacionados|Descendientes|Derivad|Sinónimos|Antónimos|Hiperónimos|Hipónimos|Cognados|Ejemplo)/i.test(ln)){skip=true;continue}
+      if(/^(Sustantivo|Adjetivo|Verbo|Adverbio|Pronombre|Interjección|Preposición|Conjunción|Forma|Artículo|Locución)/i.test(ln)&&ln.length<70){skip=false;out.push({h:ln});continue}
+      if(skip)continue;
+      if(/^\d+\s/.test(ln)&&out.length)out.push({d:ln.replace(/^\d+\s+/,'')});
+    }
+    const res=out.filter(x=>x.h||x.d).slice(0,16);dictCache[w]=res.some(x=>x.d)?{w,items:res}:null;return dictCache[w];
+  }catch(e){return null}
+}
+
 // ---- acciones de un libro de la biblioteca (botones y menú al mantener apretado) ----
 let lpT=0;
 const actReviews=x=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})};
@@ -980,6 +987,6 @@ function decorate(b,actions){
   actions.append(x);
 }
 
-window.KReader={open,openFile,pickFile,decorate,continueReading:cont,renderLibrary:renderLib};
+window.KReader={open,openFile,pickFile,wik,decorate,continueReading:cont,renderLibrary:renderLib};
 cont();renderLib();aiSettings();
 })();
