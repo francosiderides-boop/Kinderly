@@ -1,4 +1,4 @@
-// Kinderly · extras: introducción, meta diaria, listas (Para leer / Favoritos)
+// Kinderly · extras: introducción, meta diaria, listas y carpetas (Para leer / Favoritos / las tuyas)
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
@@ -76,43 +76,172 @@ function intro(done){
 }
 
 // ---------- listas ----------
-const LISTS=[['toread','Para leer','Quiero leerlo'],['fav','Favoritos','Favorito']];
-const lists=()=>{const l=get('kr_lists',{});LISTS.forEach(([k])=>{if(!l[k])l[k]={}});return l};
-const inList=(b,k)=>!!lists()[k][keyOf(b)];
-function toggle(b,k){const l=lists(),key=keyOf(b);if(l[k][key])delete l[k][key];else l[k][key]={title:b.title,author:b.author||'',t:Date.now()};set('kr_lists',l)}
+// ---------- listas y carpetas ----------
+const BASE=[{id:'toread',name:'Para leer',color:'#3E5287',verb:'Quiero leerlo',base:1},{id:'fav',name:'Favoritos',color:'#8A3B3B',verb:'Favorito',base:1}];
+const PALETTE=['#3E5287','#8A3B3B','#2F6B5A','#7A5A2B','#5B3F7A','#2B5F7A','#6B2F4F','#4A5568','#8A6D1F','#2F4F7A'];
+const folders=()=>{let f=get('kr_folders',null);f=Array.isArray(f)?f.filter(x=>x&&x.id&&x.name):[];
+  BASE.slice().reverse().forEach(b=>{if(!f.some(x=>x.id===b.id))f.unshift({id:b.id,name:b.name,color:b.color})});
+  return f.map(x=>{const b=BASE.find(y=>y.id===x.id);return b?Object.assign({},x,{base:1,verb:b.verb,name:x.name||b.name}):Object.assign({},x)})};
+const saveFolders=f=>set('kr_folders',f.map(x=>({id:x.id,name:x.name,color:x.color})));
+const lists=()=>{const l=get('kr_lists',{});folders().forEach(f=>{if(!l[f.id])l[f.id]={}});return l};
+const inList=(b,k)=>!!(lists()[k]||{})[keyOf(b)];
+function toggle(b,k){const l=lists(),key=keyOf(b);if(l[k][key])delete l[k][key];else{const os=Object.values(l[k]).map(v=>v.o).filter(n=>typeof n==='number');l[k][key]={title:b.title,author:b.author||'',t:Date.now(),o:os.length?Math.min(...os)-1:0}}set('kr_lists',l)}
+const ordered=id=>Object.entries(lists()[id]||{}).map(([key,v])=>Object.assign({key},v)).sort((a,b)=>(typeof a.o==='number'?a.o:-(a.t||0))-(typeof b.o==='number'?b.o:-(b.t||0)));
+function moveBook(id,key,dir){const arr=ordered(id),i=arr.findIndex(x=>x.key===key),j=i+dir;if(i<0||j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];const l=lists();arr.forEach((x,n)=>{l[id][x.key].o=n});set('kr_lists',l)}
+function sendBook(from,to,key){const l=lists(),v=l[from][key];if(!v)return;delete l[from][key];if(!l[to][key]){const os=Object.values(l[to]).map(x=>x.o).filter(n=>typeof n==='number');l[to][key]=Object.assign({},v,{o:os.length?Math.min(...os)-1:0})}set('kr_lists',l)}
+function dropBook(id,key){const l=lists();delete l[id][key];set('kr_lists',l)}
+function addFolder(name,color){const f=folders(),id='f'+Date.now().toString(36);f.push({id,name:name.trim().slice(0,30)||'Carpeta',color:color||PALETTE[f.length%PALETTE.length]});saveFolders(f);return id}
+function editFolder(id,patch){const f=folders();const x=f.find(y=>y.id===id);if(x)Object.assign(x,patch);saveFolders(f)}
+function removeFolder(id){saveFolders(folders().filter(x=>x.id!==id||x.base));const l=get('kr_lists',{});delete l[id];set('kr_lists',l)}
+function shiftFolder(id,dir){const f=folders(),i=f.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=f.length)return;[f[i],f[j]]=[f[j],f[i]];saveFolders(f)}
 function rerender(){try{window.KReader&&window.KReader.renderLibrary()}catch(e){}}
 function decorate(b,actions){
   const x=el('button','ghost');x.type='button';
-  const lab=()=>{const on=LISTS.some(([k])=>inList(b,k));x.textContent=on?'Guardado':'Guardar';x.classList.toggle('saved',on)};lab();
+  const lab=()=>{const on=folders().some(f=>inList(b,f.id));x.textContent=on?'Guardado':'Guardar';x.classList.toggle('saved',on)};lab();
   x.onclick=()=>listSheet(b,lab);
   actions.append(x);
 }
 function listSheet(b,lab){
   sheet((sh,close)=>{
-    sh.append(el('h3','',b.title),el('p','',b.author||'Guardalo en una de tus listas.'));
-    LISTS.forEach(([k,name,verb])=>{const o=el('button','ex-opt'+(inList(b,k)?' on':''));o.type='button';
-      const paint=()=>{o.classList.toggle('on',inList(b,k));o.lastChild.textContent=inList(b,k)?'Guardado':''};
-      o.append(el('span','',verb),el('span',''));paint();
-      o.onclick=()=>{toggle(b,k);paint();if(lab)lab();rerender();say(inList(b,k)?'Guardado en '+name:'Quitado de '+name,'ok')};sh.append(o)});
-    const c=el('button','ex-opt');c.type='button';c.append(el('span','','Listo'),el('span',''));c.onclick=close;sh.append(c);
+    const draw=()=>{sh.textContent='';
+      sh.append(el('h3','',b.title),el('p','',b.author||'Guardalo en una o más de tus listas.'));
+      folders().forEach(f=>{const o=el('button','ex-opt'+(inList(b,f.id)?' on':''));o.type='button';
+        const dot=el('i','ls-dot');dot.style.background=f.color;
+        const nm=el('span','ls-onm');nm.append(dot,f.verb||f.name);
+        o.append(nm,el('span','',inList(b,f.id)?'Guardado':''));
+        o.onclick=()=>{toggle(b,f.id);if(lab)lab();rerender();say(inList(b,f.id)?'Guardado en '+f.name:'Quitado de '+f.name,'ok');draw()};sh.append(o)});
+      const nb=el('button','ex-opt','');nb.type='button';nb.append(el('span','','＋ Nueva carpeta'),el('span',''));
+      nb.onclick=()=>{const g=el('div','ex-cg'),i=el('input');i.type='text';i.maxLength=30;i.placeholder='Nombre de la carpeta';i.setAttribute('aria-label','Nombre de la carpeta');
+        const ok=el('button','','Crear');ok.type='button';ok.onclick=()=>{if(!i.value.trim())return;const id=addFolder(i.value);toggle(b,id);if(lab)lab();rerender();say('Guardado en '+i.value.trim(),'ok');draw()};
+        g.append(i,ok);nb.replaceWith(g);i.focus()};
+      sh.append(nb);
+      const c=el('button','ex-opt');c.type='button';c.append(el('span','','Listo'),el('span',''));c.onclick=close;sh.append(c)};
+    draw();
   });
 }
+
+// ---------- ventana «Mis listas» (estantes / lista) ----------
+const sst=el('style');sst.textContent=`
+.ls-ov{position:fixed;inset:0;z-index:42;background:rgba(10,12,20,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .2s}.ls-ov.on{opacity:1}
+.ls-sh{width:100%;max-width:680px;max-height:94vh;max-height:94dvh;overflow:auto;background:var(--card);color:var(--ink);border-radius:26px 26px 0 0;padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px));box-shadow:0 -14px 50px rgba(0,0,0,.35)}
+@media(min-width:700px){.ls-ov{align-items:center}.ls-sh{border-radius:26px;max-height:90vh}}
+.ls-hd{display:flex;align-items:center;gap:10px;margin-bottom:4px}.ls-hd h3{margin:0;font:600 1.3rem var(--serif);flex:1}
+.ls-tg{display:flex;padding:3px;border-radius:999px;background:var(--soft);border:1px solid var(--line)}.ls-tg button{padding:7px 13px;font-size:.8rem;background:transparent;color:var(--mute);border-radius:999px}.ls-tg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.ls-x{padding:8px 12px;font-size:.8rem}
+.ls-sub{margin:0 0 14px;color:var(--mute);font-size:.85rem}
+.ls-sf{margin:0 0 22px}.ls-sfh{display:flex;align-items:center;gap:8px;margin:0 2px 6px}.ls-dot{display:inline-block;width:12px;height:12px;border-radius:50%;flex:none;margin-right:8px;vertical-align:-1px}
+.ls-sfh .ls-dot{margin:0}.ls-sfh b{font:600 1.02rem var(--serif);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ls-sfh small{color:var(--mute)}
+.ls-sm{padding:6px 12px;font-size:.78rem}
+.ls-wheel{position:relative;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;display:flex;padding-top:26px;scrollbar-width:none;-webkit-overflow-scrolling:touch}.ls-wheel::-webkit-scrollbar{display:none}
+.ls-spine{flex:0 0 25%;scroll-snap-align:start;display:flex;justify-content:center;align-items:flex-end;padding:0 4px;height:218px}
+.ls-sp{position:relative;width:100%;max-width:74px;border:0;border-radius:5px 5px 2px 2px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:10px 4px 8px;cursor:pointer;box-shadow:inset 3px 0 0 rgba(255,255,255,.16),inset -3px 0 0 rgba(0,0,0,.25),0 6px 14px rgba(0,0,0,.4);transition:transform .25s}
+.ls-sp::before,.ls-sp::after{content:"";position:absolute;left:8px;right:8px;height:2px;background:rgba(255,255,255,.35);border-radius:2px}.ls-sp::before{top:22px}.ls-sp::after{bottom:26px}
+.ls-sp .t{writing-mode:vertical-rl;transform:rotate(180deg);font:600 .88rem var(--serif);line-height:1.1;max-height:100%;overflow:hidden;text-align:center;flex:1;margin:34px 0;letter-spacing:.02em}
+.ls-sp .a{position:absolute;bottom:6px;font-size:.6rem;opacity:.85;letter-spacing:.04em}.ls-sp.up{transform:translateY(-22px)}
+.ls-bd{height:16px;margin:0 -4px;border-radius:4px;background:linear-gradient(180deg,#5a4333,#3b2c22 40%,#2a1f18);box-shadow:0 8px 14px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12)}
+.ls-empty{height:218px;display:grid;place-items:center;color:var(--mute);font-size:.86rem;padding:0 20px;text-align:center;width:100%}
+.ls-pk,.ls-ed{margin:10px 0 0;padding:12px;border-radius:16px;background:var(--soft);border:1px solid var(--line)}.ls-pk b{display:block;font:600 1rem var(--serif)}.ls-pk small{color:var(--mute)}
+.ls-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.ls-row button{padding:8px 13px;font-size:.8rem}
+.ls-ed input[type=text]{width:100%;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+.ls-swa{display:flex;gap:8px;margin:10px 0;flex-wrap:wrap}.ls-swa i{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent}.ls-swa i.on{border-color:var(--ink)}
+.ls-new{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:18px;background:transparent;border:1.5px dashed var(--line);color:var(--ink)}
+.ls-hint{margin:8px 2px 0;color:var(--mute);font-size:.74rem;text-align:center}
+.ls-tree{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.ls-fr{display:flex;align-items:center;gap:10px;width:100%;padding:13px 14px;background:var(--soft);color:var(--ink);border-radius:0;border-top:1px solid var(--line);text-align:left;font:600 .98rem var(--serif)}.ls-fr:first-child{border-top:0}
+.ls-fr .chev{width:14px;color:var(--mute);transition:transform .15s;font-size:.8rem}.ls-fr.open .chev{transform:rotate(90deg)}.ls-fr .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ls-fr small{color:var(--mute);font:500 .8rem var(--sans)}
+.ls-bk{padding:10px 14px 10px 38px;border-top:1px solid var(--line);background:var(--card)}.ls-bk b{display:block;font:600 .95rem var(--serif);overflow-wrap:anywhere}.ls-bk small{color:var(--mute)}
+.ls-fe{padding:10px 14px 12px 38px;border-top:1px solid var(--line);background:var(--card)}
+.ls-card{display:block;width:100%;text-align:left;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:18px;padding:16px 18px;cursor:pointer}
+.ls-card .top{display:flex;align-items:center;justify-content:space-between;gap:10px}.ls-card b{font:600 1rem var(--sans)}.ls-card .go{color:var(--green);font-weight:600;font-size:.88rem}
+.ls-card .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.ls-card .chips span{display:inline-flex;align-items:center;padding:6px 11px;border-radius:999px;background:var(--soft);font-size:.82rem}
+.ls-card p{margin:10px 0 0;color:var(--mute);font-size:.88rem}
+.ls-onm{display:flex;align-items:center}
+@media(prefers-reduced-motion:reduce){.ls-sp,.ls-fr .chev{transition:none}}
+`;document.head.append(sst);
+
+const hash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h)};
+const readBook=v=>{try{const k=keyOf(v),x=(get('kr_lib',[])||[]).find(y=>keyOf(y)===k);if(x&&window.KReader){window.KReader.open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local});return true}}catch(e){}return false};
+const inLib=v=>{try{const k=keyOf(v);return (get('kr_lib',[])||[]).some(y=>keyOf(y)===k)}catch(e){return false}};
+function openLists(){
+  if($('ls-ov'))return;
+  const ov=el('div','ls-ov');ov.id='ls-ov';const sh=el('div','ls-sh');sh.setAttribute('role','dialog');sh.setAttribute('aria-label','Mis listas');ov.append(sh);
+  const close=()=>{ov.classList.remove('on');setTimeout(()=>{ov.remove();rerender()},200);document.removeEventListener('keydown',esc)};
+  const esc=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',esc);
+  ov.addEventListener('click',e=>{if(e.target===ov)close()});
+  let view=get('kr_lview','shelves')==='list'?'list':'shelves';const open=new Set(),editing=new Set();let pickedKey=null,pickedFolder=null,moving=false,creating=false,sure=null;
+  const curve=w=>{const r=w.getBoundingClientRect();if(!r.width)return;const cx=r.left+r.width/2;w.querySelectorAll('.ls-spine').forEach(s=>{const q=s.getBoundingClientRect(),a=Math.max(-2,Math.min(2,(q.left+q.width/2-cx)/(r.width/4)));s.style.transform='perspective(520px) rotateY('+(-a*20)+'deg) translateZ('+(-Math.abs(a)*26)+'px) scale('+(1-Math.abs(a)*.05)+')';s.style.opacity=String(1-Math.max(0,Math.abs(a)-1.2)*.5)})};
+  const draw=()=>{const sc=sh.scrollTop;sh.textContent='';
+    const hd=el('div','ls-hd');hd.append(el('h3','','Mis listas'));
+    const tg=el('div','ls-tg');tg.setAttribute('role','group');tg.setAttribute('aria-label','Vista');
+    [['shelves','Estantes'],['list','Lista']].forEach(([k,n])=>{const b=el('button',view===k?'on':'',n);b.type='button';b.setAttribute('aria-pressed',view===k);b.onclick=()=>{view=k;set('kr_lview',k);draw()};tg.append(b)});
+    const x=el('button','ghost ls-x','Cerrar');x.type='button';x.onclick=close;hd.append(tg,x);sh.append(hd);
+    sh.append(el('p','ls-sub',view==='shelves'?'Cada lista es un estante. Deslizá para girar la rueda y tocá un lomo.':'Tus carpetas, como en el explorador de archivos. Tocá una para abrirla.'));
+    const body=el('div');sh.append(body);
+    if(view==='shelves')folders().forEach(f=>shelf(body,f));else{const tree=el('div','ls-tree');folders().forEach(f=>row(tree,f));body.append(tree);body.style.marginBottom='16px'}
+    // nueva carpeta
+    if(creating){const e=el('div','ls-ed'),i=el('input');i.type='text';i.maxLength=30;i.placeholder='Nombre (por ejemplo: Ciencia ficción)';i.setAttribute('aria-label','Nombre de la carpeta');let c=PALETTE[folders().length%PALETTE.length];
+      const sw=el('div','ls-swa');const ps=()=>{sw.textContent='';PALETTE.forEach(p=>{const d=el('i',p===c?'on':'');d.style.background=p;d.onclick=()=>{c=p;ps()};sw.append(d)})};ps();
+      const r=el('div','ls-row');const ok=el('button','','Crear carpeta');ok.type='button';ok.onclick=()=>{if(!i.value.trim()){i.focus();return}addFolder(i.value,c);creating=false;draw()};const no=el('button','ghost','Cancelar');no.type='button';no.onclick=()=>{creating=false;draw()};r.append(ok,no);e.append(i,sw,r);sh.append(e);setTimeout(()=>i.focus(),0)}
+    else{const nb=el('button','ls-new','＋ Nueva carpeta');nb.type='button';nb.onclick=()=>{creating=true;draw()};sh.append(nb)}
+    sh.append(el('p','ls-hint','Vos decidís cómo agrupar tus libros: por género, por época, por ánimo…'));
+    sh.scrollTop=sc;requestAnimationFrame(()=>sh.querySelectorAll('.ls-wheel').forEach(curve));
+  };
+  const editor=(f,parent)=>{const ed=el('div','ls-ed');
+    if(!f.base){const i=el('input');i.type='text';i.maxLength=30;i.value=f.name;i.setAttribute('aria-label','Nombre de la carpeta');ed.append(i);ed._i=i}
+    const sw=el('div','ls-swa');PALETTE.forEach(p=>{const d=el('i',p===f.color?'on':'');d.style.background=p;d.onclick=()=>{if(ed._i)editFolder(f.id,{name:ed._i.value.trim()||f.name});editFolder(f.id,{color:p});draw()};sw.append(d)});ed.append(sw);
+    const r=el('div','ls-row');
+    if(!f.base){const ok=el('button','','Guardar nombre');ok.type='button';ok.onclick=()=>{editFolder(f.id,{name:ed._i.value.trim()||f.name});draw()};r.append(ok)}
+    const fs=folders(),ix=fs.findIndex(x=>x.id===f.id);
+    const up=el('button','ghost',view==='shelves'?'↑ Subir estante':'↑ Subir');up.type='button';up.disabled=ix<=0;up.onclick=()=>{shiftFolder(f.id,-1);draw()};
+    const dn=el('button','ghost',view==='shelves'?'↓ Bajar estante':'↓ Bajar');dn.type='button';dn.disabled=ix>=fs.length-1;dn.onclick=()=>{shiftFolder(f.id,1);draw()};r.append(up,dn);
+    if(!f.base){const del=el('button','ghost',sure===f.id?'Tocá otra vez para eliminar':'Eliminar carpeta');del.type='button';del.onclick=()=>{if(sure!==f.id){sure=f.id;draw();return}sure=null;removeFolder(f.id);editing.delete(f.id);draw()};r.append(del)}
+    ed.append(r);if(!f.base)ed.append(el('p','ls-hint','Eliminar la carpeta no borra los libros de tu biblioteca.'));parent.append(ed)};
+  const actions=(f,v,box)=>{const r=el('div','ls-row');
+    const rd=el('button','',inLib(v)?'Leer':'Buscar');rd.type='button';rd.onclick=()=>{if(inLib(v)){close();readBook(v)}else{close();try{window.showView('buscar');$('q').value=v.title;$('go').click()}catch(e){}}};r.append(rd);
+    const arr=ordered(f.id),i=arr.findIndex(x=>x.key===v.key);
+    const a=el('button','ghost','←');a.type='button';a.setAttribute('aria-label','Mover antes');a.disabled=i<=0;a.onclick=()=>{moveBook(f.id,v.key,-1);draw()};
+    const b=el('button','ghost','→');b.type='button';b.setAttribute('aria-label','Mover después');b.disabled=i>=arr.length-1;b.onclick=()=>{moveBook(f.id,v.key,1);draw()};
+    const mv=el('button','ghost','Mover a…');mv.type='button';mv.onclick=()=>{moving=!moving;draw()};
+    const rm=el('button','ghost','Quitar');rm.type='button';rm.onclick=()=>{dropBook(f.id,v.key);pickedKey=null;draw()};
+    r.append(a,b,mv,rm);box.append(r);
+    if(moving){const d=el('div','ls-row');folders().filter(x=>x.id!==f.id).forEach(x=>{const o=el('button','ghost','→ '+x.name);o.type='button';o.onclick=()=>{sendBook(f.id,x.id,v.key);pickedKey=null;moving=false;draw()};d.append(o)});box.append(d)}};
+  function shelf(parent,f){const w=el('div','ls-sf'),books=ordered(f.id);
+    const h=el('div','ls-sfh'),dot=el('span','ls-dot');dot.style.background=f.color;
+    const eb=el('button','ghost ls-sm','Editar');eb.type='button';eb.onclick=()=>{editing.has(f.id)?editing.delete(f.id):editing.add(f.id);sure=null;draw()};
+    h.append(dot,el('b','',f.name),el('small','',books.length+(books.length===1?' libro':' libros')),eb);w.append(h);
+    const wh=el('div','ls-wheel');
+    if(!books.length)wh.append(el('div','ls-empty','Este estante está vacío. Guardá libros desde la búsqueda o movelos acá.'));
+    books.forEach(v=>{const s=el('div','ls-spine'),sp=el('button','ls-sp'+(pickedFolder===f.id&&pickedKey===v.key?' up':''));sp.type='button';sp.setAttribute('aria-label',v.title);
+      sp.style.background=PALETTE[hash(v.key)%PALETTE.length];sp.style.height=(168+(hash(v.key)%5)*10)+'px';
+      sp.append(el('div','t',window.kTitle?window.kTitle(v.title):v.title),el('div','a',(String(v.author||'').split(/[;,]/)[0].trim().split(' ').slice(-1)[0]||'').slice(0,9)));
+      sp.onclick=()=>{if(pickedFolder===f.id&&pickedKey===v.key){pickedKey=null;pickedFolder=null}else{pickedKey=v.key;pickedFolder=f.id}moving=false;draw()};s.append(sp);wh.append(s)});
+    let t;wh.addEventListener('scroll',()=>{cancelAnimationFrame(t);t=requestAnimationFrame(()=>curve(wh))},{passive:true});
+    w.append(wh,el('div','ls-bd'));
+    if(pickedFolder===f.id){const v=books.find(x=>x.key===pickedKey);if(v){const pk=el('div','ls-pk');pk.append(el('b','',window.kTitle?window.kTitle(v.title):v.title),el('small','',v.author||''));actions(f,v,pk);w.append(pk)}}
+    if(editing.has(f.id))editor(f,w);
+    parent.append(w)}
+  function row(parent,f){const books=ordered(f.id),isOpen=open.has(f.id);
+    const tree=parent;
+    const r=el('button','ls-fr'+(isOpen?' open':''));r.type='button';r.setAttribute('aria-expanded',isOpen);
+    const dot=el('span','ls-dot');dot.style.background=f.color;dot.style.margin='0';
+    r.append(el('span','chev','▶'),dot,el('span','nm',f.name),el('small','',String(books.length)));r.onclick=()=>{isOpen?open.delete(f.id):open.add(f.id);draw()};tree.append(r);
+    if(!isOpen)return;
+    if(!books.length){const em=el('div','ls-bk');em.append(el('small','','Carpeta vacía'));tree.append(em)}
+    books.forEach(v=>{const bk=el('div','ls-bk');bk.append(el('b','',window.kTitle?window.kTitle(v.title):v.title),el('small','',v.author||''));if(pickedFolder===f.id&&pickedKey===v.key)actions(f,v,bk);
+      bk.style.cursor='pointer';bk.onclick=e=>{if(e.target.closest('button'))return;if(pickedFolder===f.id&&pickedKey===v.key){pickedKey=null;pickedFolder=null}else{pickedKey=v.key;pickedFolder=f.id}moving=false;draw()};tree.append(bk)});
+    const fe=el('div','ls-fe'),eb=el('button','ghost ls-sm',editing.has(f.id)?'Cerrar edición':'Editar carpeta');eb.type='button';eb.onclick=()=>{editing.has(f.id)?editing.delete(f.id):editing.add(f.id);sure=null;draw()};fe.append(eb);if(editing.has(f.id))editor(f,fe);tree.append(fe)}
+  draw();document.body.append(ov);requestAnimationFrame(()=>ov.classList.add('on'));
+}
+
 let seg='toread';
 function render(host){
   if(!host)return;
-  const c=el('div','card ex-lists');c.style.marginTop='14px';c.append(el('b','','Mis listas'));
-  const s=el('div','ex-seg');
-  LISTS.forEach(([k,name])=>{const n=Object.keys(lists()[k]).length,b=el('button',seg===k?'on':'',name+(n?' · '+n:''));b.type='button';b.onclick=()=>{seg=k;rerender()};s.append(b)});
-  c.append(s);
-  const items=Object.entries(lists()[seg]).sort((a,b)=>b[1].t-a[1].t);
-  if(!items.length)c.append(el('p','hint2',seg==='toread'?'Tocá “Guardar” en cualquier libro para armar tu lista de pendientes.':'Marcá tus libros preferidos con “Guardar” para tenerlos a mano.'));
-  items.forEach(([key,v])=>{
-    const r=el('div','ex-li');r.append(el('b','',v.title));if(v.author)r.append(el('small','',v.author));
-    const a=el('div','ex-la'),go=el('button','','Buscar');go.type='button';go.onclick=()=>{try{window.showView('buscar');$('q').value=v.title;$('go').click()}catch(e){}};
-    const rm=el('button','ghost','Quitar');rm.type='button';rm.onclick=()=>{const l=lists();delete l[seg][key];set('kr_lists',l);rerender()};
-    a.append(go,rm);r.append(a);c.append(r);
-  });
-  host.append(c);
+  const fs=folders(),l=lists(),total=fs.reduce((n,f)=>n+Object.keys(l[f.id]||{}).length,0);
+  const c=el('button','card ex-lists ls-card');c.type='button';c.style.marginTop='14px';c.setAttribute('aria-label','Abrir Mis listas');
+  const top=el('div','top');top.append(el('b','','Mis listas'),el('span','go','Abrir ›'));c.append(top);
+  const ch=el('div','chips');fs.slice(0,6).forEach(f=>{const s=el('span','');const d=el('i','ls-dot');d.style.background=f.color;s.append(d,f.name+' · '+Object.keys(l[f.id]||{}).length);ch.append(s)});if(fs.length>6)ch.append(el('span','','+'+(fs.length-6)));c.append(ch);
+  if(!total)c.append(el('p','','Tocá “Guardar” en cualquier libro para armar tus listas, o creá tus propias carpetas.'));
+  c.onclick=openLists;host.append(c);
   try{ach(host)}catch(e){}
 }
 
@@ -195,7 +324,7 @@ function ach(host){
   let best=0,run=0,prev=null;days.forEach(k=>{if((stt[k]||0)>=60){const d=new Date(k+'T12:00:00');run=prev&&Math.round((d-prev)/864e5)===1?run+1:1;prev=d;best=Math.max(best,run)}else{run=0;prev=null}});
   const done=lib.filter(b=>(b.pct||0)>=.97).length;
   let hl=0;try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(/^kr_hl_/.test(k)){try{hl+=JSON.parse(localStorage.getItem(k)).length}catch(e){}}}}catch(e){}
-  const lists=get('kr_lists',{toread:{},fav:{}}),nl=Object.keys(lists.toread||{}).length+Object.keys(lists.fav||{}).length;
+  const lsAll=get('kr_lists',{}),nl=Object.values(lsAll).reduce((n,o)=>n+Object.keys(o||{}).length,0);
   const B=[['📖','Primera página','Abrí tu primer libro',lib.length>=1],['🔥','Racha de 3','3 días leyendo seguido',best>=3],['🌟','Racha de 7','Una semana sin faltar',best>=7],['🏆','Racha de 30','Un mes de lectura',best>=30],
     ['⏱️','Una hora','1 hora leída en total',tot>=3600],['🕰️','Diez horas','10 horas de lectura',tot>=36000],['🏁','Libro terminado','Llegá al final de un libro',done>=1],['📚','Tres libros','Terminá 3 libros',done>=3],
     ['🖍️','Subrayador','Subrayá 5 pasajes',hl>=5],['🗂️','Coleccionista','Tené 5 libros en tu biblioteca',lib.length>=5],['🔖','Curador','Guardá 5 libros en tus listas',nl>=5]];
@@ -249,7 +378,7 @@ st.textContent+=`.ks-pg{position:fixed;inset:0;z-index:55;background:var(--bg);c
 .ex-sugs{margin:14px 0 18px}.ex-sg-t{display:block;font:600 1.02rem var(--serif);margin-bottom:10px}.ex-sg-row{display:flex;gap:12px;overflow-x:auto;margin:0 -18px;padding:2px 18px 8px;scrollbar-width:none}.ex-sg-row::-webkit-scrollbar{display:none}.ex-sg{flex:none;width:150px;height:170px;border:0;border-radius:22px;padding:16px;text-align:left;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(20,25,50,.22)}.ex-sg::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.12)}.ex-sge{position:absolute;left:16px;top:14px;font-size:1.9rem}.ex-sg b{font:600 1.02rem/1.2 var(--serif);color:#fff;display:block}.ex-sg small{opacity:.8;font-size:.78rem}.ex-sg{white-space:normal}.ex-sg b,.ex-sg small{white-space:normal}\n.ex-ov{position:fixed;inset:0;z-index:60;background:rgba(10,12,20,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .25s}.ex-ov.on{opacity:1}\n.ex-sb{width:100%;max-width:520px;max-height:88vh;overflow:auto;background:var(--card);color:var(--ink);border-radius:26px 26px 0 0;padding:16px 18px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(40px);transition:transform .45s cubic-bezier(.34,1.4,.64,1)}#ex-sug.on .ex-sb{transform:none}.ex-sg-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.ex-sg-h b{font:600 1.15rem var(--serif)}.ex-sg-h button{width:40px;padding:0}.ex-si{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.ex-sn{flex:none;width:26px;height:26px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font:600 .8rem var(--sans);color:var(--mute)}.ex-si>div{flex:1;min-width:0}.ex-si b{display:block;font:600 .98rem/1.25 var(--serif)}.ex-si small{color:var(--mute);font-size:.8rem;line-height:1.3;display:block}.ex-si button{flex:none;padding:8px 14px}\n.ex-agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.ex-ab{text-align:center;opacity:.35;filter:grayscale(1);transition:opacity .3s,filter .3s}.ex-ab.on{opacity:1;filter:none}.ex-ae{display:grid;place-items:center;width:46px;height:46px;margin:0 auto 4px;border-radius:50%;background:var(--soft);font-size:1.4rem}.ex-ab.on .ex-ae{background:color-mix(in srgb,var(--gold) 38%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 70%,transparent)}.ex-ab small{display:block;font-size:.66rem;line-height:1.15;color:var(--mute)}.ex-ab.on small{color:var(--ink);font-weight:600}
 .ex-bio{display:flex;gap:12px;align-items:center;margin-bottom:8px}.ex-bio-img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}.ex-bio b{display:block}.ex-bio small{display:block;opacity:.7;font-size:.84rem}.ex-bio-t{margin:6px 0;line-height:1.55}.ex-bio-a{font-size:.88rem;color:inherit;text-decoration:underline}`;
 
-window.KEx={listSheet,intro,pickGoal,goal,decorate,render,bioView,statsPage};
+window.KEx={listSheet,openLists,intro,pickGoal,goal,decorate,render,bioView,statsPage};
 
 // introducción la primera vez; en Ajustes se puede volver a ver
 try{if(!localStorage.getItem('k_welcome'))intro()}catch(e){}
