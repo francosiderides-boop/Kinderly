@@ -800,7 +800,7 @@ function renderLib(){
   top.append(el('b','','Abrir un libro de tu celular'),el('p','hint2','Elegí un archivo .epub que ya tengas guardado (descargas, Drive, mail…). Queda en esta biblioteca y no sale de tu dispositivo.'));
   const b=btn('Elegir archivo EPUB',pickFile);b.style.marginTop='10px';top.append(b);host.append(top);
   const l=lib();
-  const sec=el('div','card');sec.style.marginTop='14px';sec.append(el('b','','Leídos recientemente'));
+  const sec=el('div','card kr-recent');sec.style.marginTop='14px';sec.append(el('b','','Leídos recientemente'));
   if(!l.length){sec.append(el('p','hint2','Todavía no abriste ningún libro. Buscá uno y tocá “Leer en la app”, o abrí un archivo.'));const g=btn('Buscar mi primer libro',()=>window.showView&&window.showView('buscar'));g.classList.add('empty-cta');sec.append(g)};
   l.forEach(x=>{
     const r=el('div','lib-item'),d=el('div'),cv=store.get('kr_cov_'+x.id,'')||x.img||'';if(cv){const im=el('img','lib-cov');im.src=cv;im.alt='';im.loading='lazy';im.onerror=()=>im.remove();r.append(im)}d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
