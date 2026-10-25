@@ -12,6 +12,7 @@ const ALLOWED=['gutenberg.org','archive.org','wikisource.org','wmcloud.org','boo
 const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
 const provider=new GoogleAuthProvider();
 provider.addScope('https://www.googleapis.com/auth/gmail.send');
+provider.addScope('https://www.googleapis.com/auth/drive.file'); // subir libros a la carpeta Kinderly del Drive de cada persona (solo ve lo que crea la app)
 provider.setCustomParameters({prompt:'select_account'});
 
 const $=id=>document.getElementById(id);
@@ -33,11 +34,11 @@ const myMail=()=>{let m='';try{m=localStorage.getItem('mail')||''}catch(e){}retu
 const secs=x=>(x&&x.createdAt&&x.createdAt.seconds)||Date.now()/1000;
 
 let needConsent=false;
-async function popup(){
+async function popup(need){need=need||'gmail.send';
   provider.setCustomParameters({prompt:needConsent?'consent':'select_account'});needConsent=false;
   const r=await signInWithPopup(auth,provider);
   const c=GoogleAuthProvider.credentialFromResult(r);
-  if(c&&c.accessToken){let ok=true;try{const ti=await(await fetch('https://oauth2.googleapis.com/tokeninfo?access_token='+encodeURIComponent(c.accessToken))).json();ok=!ti.scope||ti.scope.includes('gmail.send')}catch(e){}if(!ok){needConsent=true;throw Object.assign(new Error('Falta el permiso de enviar correo. Tocá “Entrar con Google” de nuevo y tildá la casilla de enviar correo.'),{code:'no-scope'})}setToken(c.accessToken)}
+  if(c&&c.accessToken){let ok=true,drive=false;try{const ti=await(await fetch('https://oauth2.googleapis.com/tokeninfo?access_token='+encodeURIComponent(c.accessToken))).json();ok=!ti.scope||ti.scope.includes(need);drive=!!ti.scope&&ti.scope.includes('drive.file')}catch(e){}if(!ok){needConsent=true;throw Object.assign(new Error(need==='drive.file'?'Falta el permiso de Drive. Tocá de nuevo “Subir al Drive” y tildá la casilla de Drive.':'Falta el permiso de enviar correo. Tocá “Entrar con Google” de nuevo y tildá la casilla de enviar correo.'),{code:'no-scope'})}setToken(c.accessToken);try{sessionStorage.setItem('k_gt_drive',drive?'1':'0')}catch(e){}}
   return r.user;
 }
 async function login(){try{const u=await popup();say('Hola, '+(u.displayName||u.email)+'. Ya podés enviar desde tu Gmail.','ok')}catch(e){say(errMsg(e),'err')}}
@@ -45,6 +46,12 @@ async function ensureToken(){
   if(!auth.currentUser)return false;
   if(tokenOk())return true;
   try{await popup();return tokenOk()}catch(e){say(errMsg(e),'err');return false}
+}
+// token para Drive: si falta el permiso se vuelve a pedir (tiene que llamarse directo desde un toque, por el bloqueo de ventanas)
+const driveOk=()=>{try{return sessionStorage.getItem('k_gt_drive')==='1'}catch(e){return false}};
+async function driveToken(){
+  if(auth.currentUser&&tokenOk()&&driveOk())return token;
+  try{if(auth.currentUser&&!driveOk())needConsent=true;await popup('drive.file');return(tokenOk()&&driveOk())?token:null}catch(e){say(errMsg(e),'err');return null}
 }
 async function logout(){clearToken();try{await signOut(auth)}catch(e){}}
 
@@ -491,7 +498,7 @@ function decorateRev(b,actions){
 }
 window.KRev={decorate:decorateRev,open:openReviews};
 
-window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,sendMail,decorate,openPanel,syncLib:syncLibSoon};
+window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,driveToken,sendMail,decorate,openPanel,syncLib:syncLibSoon};
 
 onAuthStateChanged(auth,async u=>{
   unsubscribe();S.user=u||null;S.username='';
