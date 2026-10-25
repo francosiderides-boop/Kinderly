@@ -816,13 +816,65 @@ const actReviews=x=>{if(window.KRev)window.KRev.open({title:x.title,author:x.aut
 const actList=x=>{if(window.KEx&&window.KEx.listSheet)window.KEx.listSheet({title:x.title,author:x.author})};
 async function actRemove(x){if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));{const rm=store.get('kr_lib_rm',{});rm[x.id]=Date.now();store.set('kr_lib_rm',rm)} // para que no vuelva desde otro dispositivo
   store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);store.del('kr_cov_'+x.id);await dbDel(x.id);renderLib();cont()}
+
+// ---- subir un libro a la carpeta “Kinderly” del Drive de la persona (para leerlo en otro dispositivo) ----
+const GD='https://www.googleapis.com/';
+async function gdFolder(tok){
+  const H={Authorization:'Bearer '+tok,'Content-Type':'application/json'};
+  let id=store.get('k_drive_folder','');
+  if(id){try{const g=await fetch(GD+'drive/v3/files/'+id+'?fields=id,trashed',{headers:H});if(g.ok){const j=await g.json();if(!j.trashed)return id}}catch(e){}}
+  const q=encodeURIComponent("name='Kinderly' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  const f=await fetch(GD+'drive/v3/files?q='+q+'&fields=files(id)',{headers:H});
+  if(f.status===403||f.status===401)throw new Error(await gdErr(f));
+  if(f.ok){const j=await f.json();if(j.files&&j.files[0]){store.set('k_drive_folder',j.files[0].id);return j.files[0].id}}
+  const c=await fetch(GD+'drive/v3/files?fields=id',{method:'POST',headers:H,body:JSON.stringify({name:'Kinderly',mimeType:'application/vnd.google-apps.folder'})});
+  if(!c.ok)throw new Error(await gdErr(c));
+  id=(await c.json()).id;store.set('k_drive_folder',id);return id;
+}
+async function gdErr(res){let m='';try{const j=await res.json();m=(j.error&&(j.error.message||j.error.status))||''}catch(e){}
+  if(res.status===403&&/not been used|disabled|accessNotConfigured/i.test(m))return 'Google Drive todavía no está activado para la app (hay que habilitar la API de Drive en Google Cloud).';
+  if(res.status===401)return 'Se venció el permiso de Drive. Probá de nuevo.';
+  return 'Drive respondió '+res.status+(m?': '+m:'')}
+async function gdUpload(tok,buf,name){
+  const folder=await gdFolder(tok),mime='application/epub+zip';
+  const init=await fetch(GD+'upload/drive/v3/files?uploadType=resumable&fields=id,name',{method:'POST',headers:{Authorization:'Bearer '+tok,'Content-Type':'application/json; charset=UTF-8','X-Upload-Content-Type':mime,'X-Upload-Content-Length':String(buf.byteLength)},body:JSON.stringify({name,parents:[folder],mimeType:mime})});
+  if(!init.ok)throw new Error(await gdErr(init));
+  const loc=init.headers.get('Location');let res;
+  if(loc){res=await fetch(loc,{method:'PUT',headers:{'Content-Type':mime},body:buf})}
+  else{const B='kinderly'+Date.now(),pre=new Blob(['--'+B+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'+JSON.stringify({name,parents:[folder],mimeType:mime})+'\r\n--'+B+'\r\nContent-Type: '+mime+'\r\n\r\n']),post=new Blob(['\r\n--'+B+'--']);
+    res=await fetch(GD+'upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{Authorization:'Bearer '+tok,'Content-Type':'multipart/related; boundary='+B},body:new Blob([pre,buf,post])})}
+  if(!res.ok)throw new Error(await gdErr(res));
+  return {folder,file:await res.json()};
+}
+async function actDrive(x){
+  if(!window.KSoc||!window.KSoc.driveToken){say('Entrá con Google desde la pestaña Amigos para usar Drive.','err');return}
+  const tok=await window.KSoc.driveToken();if(!tok)return; // primero el permiso: la ventana de Google tiene que abrirse directo desde el toque
+  try{
+    const buf=await dbGet(x.id);
+    if(!buf){say('Abrí el libro una vez en la app para poder subirlo.','err');return}
+    say('Subiendo “'+(window.kTitle?window.kTitle(x.title):x.title)+'” a tu Drive…');
+    const nm=String(window.kTitle?window.kTitle(x.title):x.title||'Libro').replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim().slice(0,100)+(x.author?' - '+String(x.author).split(/[;,]/)[0].trim().slice(0,40):'')+'.epub';
+    const out=await gdUpload(tok,buf,nm);
+    driveDone(out.folder,nm);
+  }catch(e){say((e&&e.message)||'No se pudo subir a Drive.','err')}
+}
+function driveDone(folder,name){
+  const old=document.getElementById('kr-act');if(old)old.remove();
+  const ov=el('div','kr-act');ov.id='kr-act';const sh=el('div','kr-act-sh');ov.append(sh);
+  const close=()=>{ov.classList.remove('on');setTimeout(()=>ov.remove(),180)};ov.addEventListener('click',e=>{if(e.target===ov)close()});
+  sh.append(el('b','','Subido a tu Drive'),el('small','','Carpeta “Kinderly” · '+name));
+  sh.append(el('p','hint2','Para leerlo en otro dispositivo: abrí Drive, descargá el archivo y, en Kinderly, tocá “Elegir archivo EPUB” en la Biblioteca.'));
+  const a=el('a','kr-act-a','Ver en Drive');a.href='https://drive.google.com/drive/folders/'+folder;a.target='_blank';a.rel='noopener';sh.append(a);
+  const c=btn('Listo',close,'Listo','ghost');sh.append(c);
+  document.body.append(ov);requestAnimationFrame(()=>ov.classList.add('on'));
+}
 function actionMenu(x){
   if(document.getElementById('kr-act'))return;
   const ov=el('div','kr-act');ov.id='kr-act';const sh=el('div','kr-act-sh');sh.setAttribute('role','dialog');sh.setAttribute('aria-label','Opciones de '+x.title);ov.append(sh);
   const close=()=>{ov.classList.remove('on');setTimeout(()=>ov.remove(),180)};
   ov.addEventListener('click',e=>{if(e.target===ov)close()});
   sh.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',x.author||''));
-  [['Reseñas',actReviews],['Lista',actList],['Quitar',actRemove]].forEach(([n,fn],i)=>{const b=btn(n,()=>{close();setTimeout(()=>fn(x),120)},n,i?'ghost':'');sh.append(b)});
+  [['Reseñas',actReviews],['Lista',actList],['Subir al Drive',actDrive],['Quitar',actRemove]].forEach(([n,fn],i)=>{const b=btn(n,()=>{close();if(fn===actDrive)fn(x);else setTimeout(()=>fn(x),120)},n,i?'ghost':'');sh.append(b)});
   const c=btn('Cancelar',close,'Cancelar','ghost');c.classList.add('kr-act-c');sh.append(c);
   document.body.append(ov);requestAnimationFrame(()=>ov.classList.add('on'));
 }
@@ -888,8 +940,9 @@ function renderLib(){
     const go=()=>open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local});
     const ls=btn('Lista',()=>actList(x),'Agregar a una lista','ghost');
     const rv=btn('Reseñas',()=>actReviews(x),'Reseñas del libro','ghost');
+    const dv=btn('Drive',()=>actDrive(x),'Subir a Google Drive','ghost');
     const del=btn('Quitar',()=>actRemove(x),'Quitar','ghost');
-    const bw=el('div','lib-btns');bw.append(rv,ls,del);r.append(d,bw);longPress(r,()=>actionMenu(x));grid.append(r);
+    const bw=el('div','lib-btns');bw.append(rv,ls,dv,del);r.append(d,bw);longPress(r,()=>actionMenu(x));grid.append(r);
   });
   host.append(sec);
   if(window.KEx)window.KEx.render(host);
