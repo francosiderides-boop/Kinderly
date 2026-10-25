@@ -84,15 +84,18 @@ function rerender(){try{window.KReader&&window.KReader.renderLibrary()}catch(e){
 function decorate(b,actions){
   const x=el('button','ghost');x.type='button';
   const lab=()=>{const on=LISTS.some(([k])=>inList(b,k));x.textContent=on?'Guardado':'Guardar';x.classList.toggle('saved',on)};lab();
-  x.onclick=()=>sheet((sh,close)=>{
+  x.onclick=()=>listSheet(b,lab);
+  actions.append(x);
+}
+function listSheet(b,lab){
+  sheet((sh,close)=>{
     sh.append(el('h3','',b.title),el('p','',b.author||'Guardalo en una de tus listas.'));
     LISTS.forEach(([k,name,verb])=>{const o=el('button','ex-opt'+(inList(b,k)?' on':''));o.type='button';
       const paint=()=>{o.classList.toggle('on',inList(b,k));o.lastChild.textContent=inList(b,k)?'Guardado':''};
       o.append(el('span','',verb),el('span',''));paint();
-      o.onclick=()=>{toggle(b,k);paint();lab();rerender();say(inList(b,k)?'Guardado en '+name:'Quitado de '+name,'ok')};sh.append(o)});
+      o.onclick=()=>{toggle(b,k);paint();if(lab)lab();rerender();say(inList(b,k)?'Guardado en '+name:'Quitado de '+name,'ok')};sh.append(o)});
     const c=el('button','ex-opt');c.type='button';c.append(el('span','','Listo'),el('span',''));c.onclick=close;sh.append(c);
   });
-  actions.append(x);
 }
 let seg='toread';
 function render(host){
@@ -246,7 +249,7 @@ st.textContent+=`.ks-pg{position:fixed;inset:0;z-index:55;background:var(--bg);c
 .ex-sugs{margin:14px 0 18px}.ex-sg-t{display:block;font:600 1.02rem var(--serif);margin-bottom:10px}.ex-sg-row{display:flex;gap:12px;overflow-x:auto;margin:0 -18px;padding:2px 18px 8px;scrollbar-width:none}.ex-sg-row::-webkit-scrollbar{display:none}.ex-sg{flex:none;width:150px;height:170px;border:0;border-radius:22px;padding:16px;text-align:left;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;position:relative;overflow:hidden;box-shadow:0 10px 24px rgba(20,25,50,.22)}.ex-sg::after{content:"";position:absolute;right:-30px;top:-30px;width:110px;height:110px;border-radius:50%;background:rgba(255,255,255,.12)}.ex-sge{position:absolute;left:16px;top:14px;font-size:1.9rem}.ex-sg b{font:600 1.02rem/1.2 var(--serif);color:#fff;display:block}.ex-sg small{opacity:.8;font-size:.78rem}.ex-sg{white-space:normal}.ex-sg b,.ex-sg small{white-space:normal}\n.ex-ov{position:fixed;inset:0;z-index:60;background:rgba(10,12,20,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .25s}.ex-ov.on{opacity:1}\n.ex-sb{width:100%;max-width:520px;max-height:88vh;overflow:auto;background:var(--card);color:var(--ink);border-radius:26px 26px 0 0;padding:16px 18px calc(18px + env(safe-area-inset-bottom,0px));transform:translateY(40px);transition:transform .45s cubic-bezier(.34,1.4,.64,1)}#ex-sug.on .ex-sb{transform:none}.ex-sg-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.ex-sg-h b{font:600 1.15rem var(--serif)}.ex-sg-h button{width:40px;padding:0}.ex-si{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}.ex-sn{flex:none;width:26px;height:26px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font:600 .8rem var(--sans);color:var(--mute)}.ex-si>div{flex:1;min-width:0}.ex-si b{display:block;font:600 .98rem/1.25 var(--serif)}.ex-si small{color:var(--mute);font-size:.8rem;line-height:1.3;display:block}.ex-si button{flex:none;padding:8px 14px}\n.ex-agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.ex-ab{text-align:center;opacity:.35;filter:grayscale(1);transition:opacity .3s,filter .3s}.ex-ab.on{opacity:1;filter:none}.ex-ae{display:grid;place-items:center;width:46px;height:46px;margin:0 auto 4px;border-radius:50%;background:var(--soft);font-size:1.4rem}.ex-ab.on .ex-ae{background:color-mix(in srgb,var(--gold) 38%,transparent);box-shadow:0 0 0 2px color-mix(in srgb,var(--gold) 70%,transparent)}.ex-ab small{display:block;font-size:.66rem;line-height:1.15;color:var(--mute)}.ex-ab.on small{color:var(--ink);font-weight:600}
 .ex-bio{display:flex;gap:12px;align-items:center;margin-bottom:8px}.ex-bio-img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}.ex-bio b{display:block}.ex-bio small{display:block;opacity:.7;font-size:.84rem}.ex-bio-t{margin:6px 0;line-height:1.55}.ex-bio-a{font-size:.88rem;color:inherit;text-decoration:underline}`;
 
-window.KEx={intro,pickGoal,goal,decorate,render,bioView,statsPage};
+window.KEx={listSheet,intro,pickGoal,goal,decorate,render,bioView,statsPage};
 
 // introducción la primera vez; en Ajustes se puede volver a ver
 try{if(!localStorage.getItem('k_welcome'))intro()}catch(e){}

@@ -188,6 +188,7 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr button{background:transparent;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:10px;min-width:40px;height:40px;padding:0 10px;font:600 .9rem var(--sans);white-space:nowrap}'+
 '#kr button.sel{background:rgba(31,140,110,.25);border-color:rgba(31,140,110,.8)}'+
 '#kr .kr-title{flex:1;min-width:0;text-align:center;font:600 .92rem var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
+'#kr .kr-tz{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));width:24%;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent}#kr .kr-tz.l{left:0}#kr .kr-tz.r{right:0}#kr-view[data-mode=scrolled]~.kr-tz{display:none}'+
 '#kr-view{position:absolute;inset:0;z-index:0}#kr-view[data-mode=paginated] .epub-container{overflow:hidden!important}'+
 '#kr .kr-msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;pointer-events:none;opacity:.8}'+
 '#kr .kr-prog{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}#kr .kr-prog input{width:100%}#kr .kr-prog span{font-size:.72rem;text-align:center;opacity:.75}'+
@@ -224,7 +225,7 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr textarea,#kr input[type=text],#kr input[type=search]{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,.5);background:transparent;color:inherit;font:inherit}'+
 '#kr .ai-out{white-space:pre-wrap;line-height:1.55;margin:10px 0}'+
 '#kr .note{font-size:.78rem;opacity:.7;margin:8px 0 0}'+
-'.lib-item{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 0;border-top:1px solid var(--line)}.lib-item>div{flex:1 1 calc(100% - 72px);min-width:0}.lib-btns{display:flex;flex-wrap:wrap;gap:10px}.lib-item>.lib-btns{flex:1 1 100%}.lib-cov{flex:none;width:60px;height:86px;object-fit:cover;border-radius:4px 8px 8px 4px;box-shadow:0 4px 10px rgba(0,0,0,.22)}.lib-item b{display:block;font:600 1rem var(--serif);line-height:1.25;overflow-wrap:anywhere}.lib-item small{display:block}.lib-item small{color:var(--mute)}'+
+'.lib-item{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 0;border-top:1px solid var(--line)}.lib-item>div{flex:1 1 calc(100% - 72px);min-width:0}.lib-cov.ph{display:grid;place-items:center;border:0;background:var(--btn,#5468A3);color:#fff;font:700 1.6rem var(--serif);padding:0}.lib-btns{display:flex;flex-wrap:wrap;gap:10px}.lib-item>.lib-btns{flex:1 1 100%}.lib-cov{cursor:pointer;flex:none;width:60px;height:86px;object-fit:cover;border-radius:4px 8px 8px 4px;box-shadow:0 4px 10px rgba(0,0,0,.22)}.lib-item b{display:block;font:600 1rem var(--serif);line-height:1.25;overflow-wrap:anywhere}.lib-item small{display:block}.lib-item small{color:var(--mute)}'+
 '.lib-bar{height:5px;border-radius:3px;background:var(--soft);margin-top:6px;overflow:hidden}.lib-bar i{display:block;height:100%;background:var(--green)}'+
 '#kr-cont{margin:0 0 16px;display:flex;align-items:center;gap:12px}#kr-cont>div{flex:1;min-width:0}#kr-cont b{display:block;font:600 1rem var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#kr-cont small{color:var(--mute)}';
 document.head.append(css);
@@ -694,6 +695,12 @@ async function open(o){
     Object.keys(HL).forEach(c=>{const x=btn('',()=>{if(!curSel)return;const q0=curSel.text;addMark(curSel.cfi,curSel.text,c);try{curSel.contents.window.getSelection().removeAllRanges()}catch(e){}hideSel();if(q0.trim().length>=20&&store.get('kr_qs_off',false)!==true)setTimeout(()=>quoteCard(q0,title,o.author||entry().author||''),250)},'Subrayar '+c,'dot');x.style.background=HL[c];selbar.append(x)});
     selbar.append(btn('Nota',()=>{if(!curSel)return;const m=addMark(curSel.cfi,curSel.text,'amarillo');hideSel();editMark(m)}),btn('Definir',()=>{if(!curSel)return;const w=curSel.text,cx=curSel.ctx;hideSel();define(w,cx)}),btn('Copiar',()=>{if(curSel){try{navigator.clipboard.writeText(curSel.text);say('Copiado','ok')}catch(e){}}hideSel()}),btn('Imagen',()=>{if(!curSel)return;const q=curSel.text;hideSel();quoteCard(q,title,o.author||entry().author||'')},'Compartir como imagen'),btn('✕',hideSel,'Cancelar'));};
   selBtns();
+  // zonas de toque tipo Kindle (fuera del iframe, para que también anden en iOS)
+  {const mk=(cls,dir)=>{const z=el('div','kr-tz '+cls);let sx=0,sy=0;
+    z.addEventListener('touchstart',e=>{const t=e.touches[0];if(t){sx=t.clientX;sy=t.clientY}},{passive:true});
+    z.addEventListener('touchend',e=>{const t=e.changedTouches[0];if(!t||!rend)return;const dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)){e.preventDefault();dx<0?rend.next():rend.prev()}},{passive:false});
+    z.onclick=()=>{if(!rend)return;closePanel();dir>0?rend.next():rend.prev()};return z};
+   root.append(mk('l',-1),mk('r',1))}
   root.append(top,view,bot,selbar,pnl,foot);view.append(msg);root.append(warmEl,dimEl);comfort();document.body.append(root);document.body.style.overflow='hidden';cur=root;airTip(root,()=>closed);
   try{history.pushState({kr:1},'')}catch(e){}
   window.addEventListener('popstate',pop);document.addEventListener('keydown',key);
@@ -718,18 +725,13 @@ async function open(o){
             if(rg){const s=d.getSelection();s.removeAllRanges();s.addRange(rg);if(s.modify){s.modify('move','backward','word');s.modify('extend','forward','word')}}}catch(e){}},700)},{passive:true});
         d.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&(Math.abs(t.screenX-sx)>6||Math.abs(t.screenY-sy)>6))cancel()},{passive:true});d.addEventListener('scroll',()=>{lastScroll=Date.now();cancel()},true);
         d.addEventListener('touchend',()=>{lastT=Date.now();cancel()});d.addEventListener('touchcancel',cancel);
-        // toque tipo Kindle: borde izquierdo = página anterior, borde derecho = siguiente (no depende del evento click de iOS)
-        let tx=0,ty=0,tt=0,mv=false;
-        d.addEventListener('touchstart',e=>{const t=e.touches[0];if(!t||e.touches.length>1){tt=0;return}tx=t.clientX;ty=t.clientY;tt=Date.now();mv=false},{passive:true});
-        d.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&(Math.abs(t.clientX-tx)>10||Math.abs(t.clientY-ty)>10))mv=true},{passive:true});
-        d.addEventListener('touchend',()=>{if(!tt||mv||Date.now()-tt>350)return;tt=0;try{const s=d.getSelection();if(sc||selbar.classList.contains('on')||d.body.classList.contains('kr-sel')||(s&&!s.isCollapsed))return;const w=(d.defaultView&&d.defaultView.innerWidth)||innerWidth,x=tx%w;if(x<w*0.3){window.__krTap=Date.now();closePanel();rend.prev()}else if(x>w*0.7){window.__krTap=Date.now();closePanel();rend.next()}}catch(e){}},{passive:true});
         d.addEventListener('mousedown',()=>{if(Date.now()-lastT>900)d.body.classList.add('kr-sel')});
         d.addEventListener('selectionchange',()=>{try{const s=d.getSelection();if(!s||s.isCollapsed)d.body.classList.remove('kr-sel')}catch(e){}});
         const l=d.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600&family=Lora:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Bitter:ital,wght@0,400;0,700;1,400&family=Nunito:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;600&display=swap';d.head.append(l)}catch(e){}});
       style();
       await rend.display(cfi||undefined);
     rend.on('relocated',loc=>{if(closed)return;lastCfi=loc.start.cfi;if(book.locations&&book.locations.length()){pct=book.locations.percentageFromCfi(lastCfi)||0;range.value=Math.round(pct*1000)}upd();hideSel();trackSpeed();save();rlSoon()});
-    rend.on('click',e=>{if(window.__krTap&&Date.now()-window.__krTap<700)return;if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();if(!sc&&x<w*0.28)rend.prev();else if(!sc&&x>w*0.72)rend.next();else root.classList.toggle('hide')});
+    rend.on('click',e=>{if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();if(!sc&&x<w*0.28)rend.prev();else if(!sc&&x>w*0.72)rend.next();else root.classList.toggle('hide')});
     let sx=0;rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX});rend.on('touchend',e=>{const dx=e.changedTouches[0].screenX-sx;if(!sc&&Math.abs(dx)>60){dx<0?rend.next():rend.prev()}});
     rend.on('keyup',e=>{if(e.key==='ArrowRight')rend.next();if(e.key==='ArrowLeft')rend.prev()});
     rend.on('selected',(cfi,contents)=>{
@@ -808,13 +810,15 @@ function renderLib(){
   const sec=el('div','card kr-recent');sec.style.marginTop='14px';sec.append(el('b','','Leídos recientemente'));
   if(!l.length){sec.append(el('p','hint2','Todavía no abriste ningún libro. Buscá uno y tocá “Leer en la app”, o abrí un archivo.'));const g=btn('Buscar mi primer libro',()=>window.showView&&window.showView('buscar'));g.classList.add('empty-cta');sec.append(g)};
   l.forEach(x=>{
-    const r=el('div','lib-item'),d=el('div'),cv=store.get('kr_cov_'+x.id,'')||x.img||'';if(cv){const im=el('img','lib-cov');im.src=cv;im.alt='';im.loading='lazy';im.onerror=()=>im.remove();r.append(im)}d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
+    const r=el('div','lib-item'),d=el('div'),cv=store.get('kr_cov_'+x.id,'')||x.img||'';{const ph=()=>{const p=el('button','lib-cov ph',(window.kTitle?window.kTitle(x.title):x.title).trim().charAt(0).toUpperCase());p.type='button';p.setAttribute('aria-label','Leer '+x.title);p.onclick=()=>go();return p};
+      if(cv){const im=el('img','lib-cov');im.src=cv;im.alt='Leer '+x.title;im.loading='lazy';im.onclick=()=>go();im.onerror=()=>im.replaceWith(ph());r.append(im)}else r.append(ph())}d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
     const bar=el('div','lib-bar'),i=el('i');i.style.width=Math.round((x.pct||0)*100)+'%';bar.append(i);d.append(bar);
-    const open1=btn('Leer',()=>open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local}));
+    const go=()=>open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local});
+    const ls=btn('Lista',()=>{if(window.KEx&&window.KEx.listSheet)window.KEx.listSheet({title:x.title,author:x.author})},'Agregar a una lista','ghost');
     const rv=btn('Reseñas',()=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})},'Reseñas del libro','ghost');
     const del=btn('Quitar',async()=>{if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));{const rm=store.get('kr_lib_rm',{});rm[x.id]=Date.now();store.set('kr_lib_rm',rm)} // para que no vuelva desde otro dispositivo
     store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);store.del('kr_cov_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
-    const bw=el('div','lib-btns');bw.append(open1,rv,del);r.append(d,bw);sec.append(r);
+    const bw=el('div','lib-btns');bw.append(rv,ls,del);r.append(d,bw);sec.append(r);
   });
   host.append(sec);
   if(window.KEx)window.KEx.render(host);
