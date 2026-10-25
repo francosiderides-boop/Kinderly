@@ -789,6 +789,30 @@ async function openFile(file){
 function pickFile(){const i=document.createElement('input');i.type='file';i.accept='.epub,application/epub+zip';i.onchange=()=>openFile(i.files&&i.files[0]);i.click()}
 
 // ---- pestaña Biblioteca ----
+// ---- acciones de un libro de la biblioteca (botones y menú al mantener apretado) ----
+let lpT=0;
+const actReviews=x=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})};
+const actList=x=>{if(window.KEx&&window.KEx.listSheet)window.KEx.listSheet({title:x.title,author:x.author})};
+async function actRemove(x){if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));{const rm=store.get('kr_lib_rm',{});rm[x.id]=Date.now();store.set('kr_lib_rm',rm)} // para que no vuelva desde otro dispositivo
+  store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);store.del('kr_cov_'+x.id);await dbDel(x.id);renderLib();cont()}
+function actionMenu(x){
+  if(document.getElementById('kr-act'))return;
+  const ov=el('div','kr-act');ov.id='kr-act';const sh=el('div','kr-act-sh');sh.setAttribute('role','dialog');sh.setAttribute('aria-label','Opciones de '+x.title);ov.append(sh);
+  const close=()=>{ov.classList.remove('on');setTimeout(()=>ov.remove(),180)};
+  ov.addEventListener('click',e=>{if(e.target===ov)close()});
+  sh.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',x.author||''));
+  [['Reseñas',actReviews],['Lista',actList],['Quitar',actRemove]].forEach(([n,fn],i)=>{const b=btn(n,()=>{close();setTimeout(()=>fn(x),120)},n,i?'ghost':'');sh.append(b)});
+  const c=btn('Cancelar',close,'Cancelar','ghost');c.classList.add('kr-act-c');sh.append(c);
+  document.body.append(ov);requestAnimationFrame(()=>ov.classList.add('on'));
+}
+// mantener apretado (≈0,5 s) o clic derecho abre el menú
+function longPress(node,fn){let tm=0,sx=0,sy=0;const fire=()=>{tm=0;lpT=Date.now();try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}fn()};
+  node.addEventListener('touchstart',e=>{const t=e.touches[0];if(!t||e.touches.length>1)return;sx=t.clientX;sy=t.clientY;clearTimeout(tm);tm=setTimeout(fire,500)},{passive:true});
+  node.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10)){clearTimeout(tm);tm=0}},{passive:true});
+  ['touchend','touchcancel'].forEach(n=>node.addEventListener(n,()=>{clearTimeout(tm);tm=0},{passive:true}));
+  node.addEventListener('contextmenu',e=>{e.preventDefault();if(Date.now()-lpT>800){lpT=Date.now();fn()}});
+}
+
 // ---- estantería: primera fila “Leídos recientemente”, debajo una fila por lista ----
 function libShelves(sec,l){
   const wrap=el('div','kr-shelves');sec.append(wrap);
@@ -804,7 +828,7 @@ function libShelves(sec,l){
   const shelf=(name,color,count,tiles,empty)=>{const w=el('div','kr-sf'),h=el('div','kr-sfh'),dot=el('i','kr-dot');dot.style.background=color;
     h.append(dot,el('b','',name),el('small','',count+(count===1?' libro':' libros')));w.append(h);
     const row=el('div','kr-hs');if(tiles.length)tiles.forEach(t=>row.append(t));else row.append(el('p','hint2 kr-em',empty));w.append(row,el('div','kr-bd'));wrap.append(w)};
-  shelf('Leídos recientemente','#5468A3',l.length,l.map(x=>tile(x.title,x.author,store.get('kr_cov_'+x.id,'')||x.img||'',()=>goLib(x))),'Todavía no abriste ningún libro.');
+  shelf('Leídos recientemente','#5468A3',l.length,l.map(x=>{const t=tile(x.title,x.author,store.get('kr_cov_'+x.id,'')||x.img||'',()=>{if(Date.now()-lpT>700)goLib(x)});longPress(t,()=>actionMenu(x));return t}),'Todavía no abriste ningún libro.');
   data.forEach(f=>shelf(f.name,f.color,f.books.length,f.books.map(v=>tile(v.title,v.author,v.cover,()=>{if(v.entry)goLib(v.entry);else{try{window.showView('buscar');$('q').value=v.title;$('go').click()}catch(e){}}})),'Este estante está vacío. Guardá libros con “Lista”.'));
 }
 
@@ -832,19 +856,19 @@ function renderLib(){
    const tg=el('div','kr-vt');tg.setAttribute('role','group');tg.setAttribute('aria-label','Vista de la biblioteca');
    [['grid','Cuadrícula'],['shelves','Estantes']].forEach(([k,n])=>{const b=el('button',showMode===k?'on':'',n);b.type='button';b.setAttribute('aria-pressed',showMode===k);b.onclick=()=>{if(showMode!==k){store.set('kr_lshow',k);renderLib()}};tg.append(b)});
    hd.append(tg);sec.append(hd)}
+  if(showMode==='grid')sec.append(el('p','hint2 kr-lph','Mantené apretada una portada para ver Reseñas, Lista y Quitar.'));
   const grid=el('div','kr-rgrid');sec.append(grid);
   if(!l.length){(showMode==='grid'?grid:sec).append(el('p','hint2','Todavía no abriste ningún libro. Buscá uno y tocá “Leer en la app”, o abrí un archivo.'));const g=btn('Buscar mi primer libro',()=>window.showView&&window.showView('buscar'));g.classList.add('empty-cta');(showMode==='grid'?grid:sec).append(g)};
   if(showMode==='shelves')libShelves(sec,l);
   else l.forEach(x=>{
-    const r=el('div','lib-item'),d=el('div'),cv=store.get('kr_cov_'+x.id,'')||x.img||'';{const ph=()=>{const p=el('button','lib-cov ph',(window.kTitle?window.kTitle(x.title):x.title).trim().charAt(0).toUpperCase());p.type='button';p.setAttribute('aria-label','Leer '+x.title);p.onclick=()=>go();return p};
-      if(cv){const im=el('img','lib-cov');im.src=cv;im.alt='Leer '+x.title;im.loading='lazy';im.onclick=()=>go();im.onerror=()=>im.replaceWith(ph());r.append(im)}else r.append(ph())}d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
+    const r=el('div','lib-item'),d=el('div'),cv=store.get('kr_cov_'+x.id,'')||x.img||'';{const ph=()=>{const p=el('button','lib-cov ph',(window.kTitle?window.kTitle(x.title):x.title).trim().charAt(0).toUpperCase());p.type='button';p.setAttribute('aria-label','Leer '+x.title);p.onclick=()=>{if(Date.now()-lpT>700)go()};return p};
+      if(cv){const im=el('img','lib-cov');im.src=cv;im.alt='Leer '+x.title;im.loading='lazy';im.onclick=()=>{if(Date.now()-lpT>700)go()};im.onerror=()=>im.replaceWith(ph());r.append(im)}else r.append(ph())}d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
     const bar=el('div','lib-bar'),i=el('i');i.style.width=Math.round((x.pct||0)*100)+'%';bar.append(i);d.append(bar);
     const go=()=>open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local});
-    const ls=btn('Lista',()=>{if(window.KEx&&window.KEx.listSheet)window.KEx.listSheet({title:x.title,author:x.author})},'Agregar a una lista','ghost');
-    const rv=btn('Reseñas',()=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})},'Reseñas del libro','ghost');
-    const del=btn('Quitar',async()=>{if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));{const rm=store.get('kr_lib_rm',{});rm[x.id]=Date.now();store.set('kr_lib_rm',rm)} // para que no vuelva desde otro dispositivo
-    store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);store.del('kr_cov_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
-    const bw=el('div','lib-btns');bw.append(rv,ls,del);r.append(d,bw);grid.append(r);
+    const ls=btn('Lista',()=>actList(x),'Agregar a una lista','ghost');
+    const rv=btn('Reseñas',()=>actReviews(x),'Reseñas del libro','ghost');
+    const del=btn('Quitar',()=>actRemove(x),'Quitar','ghost');
+    const bw=el('div','lib-btns');bw.append(rv,ls,del);r.append(d,bw);longPress(r,()=>actionMenu(x));grid.append(r);
   });
   host.append(sec);
   if(window.KEx)window.KEx.render(host);
