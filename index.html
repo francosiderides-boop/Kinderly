@@ -71,7 +71,7 @@ details#cfg{background:var(--card);border:1px solid var(--line);border-radius:16
 #cfg label{display:block;margin:12px 0 6px;font-size:.86rem;color:var(--mute)}
 #cfg input{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);flex:none;padding:11px 12px}
 .hint2{color:var(--mute);font-size:.8rem;margin:10px 0 0}
-#status{display:none;position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:648px;margin:0 auto;padding:13px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--gold);box-shadow:var(--sh);z-index:5;font-size:.92rem}
+#status{display:none;position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:648px;margin:0 auto;padding:13px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--gold);box-shadow:var(--sh);z-index:5;font-size:.92rem;overflow-wrap:anywhere}
 #status.ok{border-left-color:var(--ok)}#status.err{border-left-color:var(--err);color:var(--err)}
 #file{display:none}
 #cam{position:fixed;inset:0;background:#000;display:none;flex-direction:column;z-index:9}
@@ -284,6 +284,21 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 /* v162 · en modo claro el borde de vidrio de los botones secundarios no se veía en ningún lado */
 :root[data-theme="light"] button.ghost{border-color:var(--line)}
 </style>
+<style>
+/* iPad / tablets: aprovechar el ancho */
+@media(min-width:768px){
+body{padding-left:28px;padding-right:28px}
+.app{max-width:1040px}
+nav.tabs{max-width:640px!important;left:0!important;right:0!important}
+#res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+#res>*{min-width:0}
+.view[data-view="biblioteca"]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px;align-items:start}
+.view[data-view="biblioteca"]>*{min-width:0}
+.view[data-view="biblioteca"]>.vt,.view[data-view="biblioteca"]>.vs,.view[data-view="biblioteca"]>.kr-sn,.view[data-view="biblioteca"]>.kr-stats{grid-column:1/-1}
+.lead{font-size:1.9rem}
+}
+@media(min-width:1100px){#res{grid-template-columns:repeat(3,minmax(0,1fr))}}
+</style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
@@ -346,7 +361,7 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v165'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v166'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · Beta 0.11.55 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra

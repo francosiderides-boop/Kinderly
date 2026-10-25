@@ -224,7 +224,7 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr textarea,#kr input[type=text],#kr input[type=search]{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(128,128,128,.5);background:transparent;color:inherit;font:inherit}'+
 '#kr .ai-out{white-space:pre-wrap;line-height:1.55;margin:10px 0}'+
 '#kr .note{font-size:.78rem;opacity:.7;margin:8px 0 0}'+
-'.lib-item{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 0;border-top:1px solid var(--line)}.lib-item>div{flex:1 1 100%;min-width:0}.lib-item b{display:block;font:600 1rem var(--serif);line-height:1.25;overflow-wrap:anywhere}.lib-item small{display:block}.lib-item small{color:var(--mute)}'+
+'.lib-item{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 0;border-top:1px solid var(--line)}.lib-item>div{flex:1 1 calc(100% - 72px);min-width:0}.lib-cov{flex:none;width:60px;height:86px;object-fit:cover;border-radius:4px 8px 8px 4px;box-shadow:0 4px 10px rgba(0,0,0,.22)}.lib-item b{display:block;font:600 1rem var(--serif);line-height:1.25;overflow-wrap:anywhere}.lib-item small{display:block}.lib-item small{color:var(--mute)}'+
 '.lib-bar{height:5px;border-radius:3px;background:var(--soft);margin-top:6px;overflow:hidden}.lib-bar i{display:block;height:100%;background:var(--green)}'+
 '#kr-cont{margin:0 0 16px;display:flex;align-items:center;gap:12px}#kr-cont>div{flex:1;min-width:0}#kr-cont b{display:block;font:600 1rem var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#kr-cont small{color:var(--mute)}';
 document.head.append(css);
@@ -318,7 +318,7 @@ async function open(o){
     const txt=a.join(' · ');pt.textContent=txt;foot.textContent=txt;pt.style.display=txt?'':'none';foot.style.display=txt?'':'none';
   };
   const tick=setInterval(()=>{if(ready&&document.visibilityState==='visible')addSec(15)},15000);
-  const save=()=>{if(!ready||!lastCfi)return;const l=lib().filter(x=>x.id!==id);l.unshift({id,url:o.url||'',title,author:o.author||entry().author||'',cfi:lastCfi,pct:(book.locations&&book.locations.length())?pct:(entry().pct||0),t:Date.now(),local:!!o.local||!!entry().local});saveLib(l)};
+  const save=()=>{if(!ready||!lastCfi)return;const l=lib().filter(x=>x.id!==id);l.unshift({id,url:o.url||'',title,img:o.img||entry().img||'',author:o.author||entry().author||'',cfi:lastCfi,pct:(book.locations&&book.locations.length())?pct:(entry().pct||0),t:Date.now(),local:!!o.local||!!entry().local});saveLib(l)};
   const close=(fromPop)=>{
     if(closed)return;closed=true;clearInterval(tick);
     try{stopAudio()}catch(e){}save();
@@ -734,10 +734,12 @@ async function open(o){
     });
     };
     remount=async()=>{const c=lastCfi;try{rend.destroy()}catch(e){}rend=null;await (mountP=mount(c));marks.forEach(paint);closePanel()};
+    // portada del propio EPUB, guardada chica para la biblioteca
+    const grabCover=async()=>{if(store.get('kr_cov_'+id))return;try{const u=await book.coverUrl();if(!u)return;const im=new Image();im.src=u;await im.decode();const w=160,h=Math.round(w*im.naturalHeight/im.naturalWidth),c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);store.set('kr_cov_'+id,c.toDataURL('image/jpeg',.78));if(document.querySelector('.view[data-view="biblioteca"].on'))renderLib()}catch(e){}};
     // título y autor reales para archivos del celular
     book.loaded.metadata.then(md=>{if(o.local&&md){const t=(md.title||'').trim();if(t){ttl.textContent=t;o.title=t;title=t}if(md.creator)o.author=md.creator;}}).catch(()=>{});
     await (mountP=mount(o.cfi||entry().cfi||undefined));
-    msg.remove();ready=true;marks.forEach(paint);
+    msg.remove();ready=true;marks.forEach(paint);grabCover();
     if(o.local){try{const md=await book.loaded.metadata;if(md&&md.title){o.title=md.title.trim();title=o.title}if(md&&md.creator)o.author=md.creator}catch(e){}}
     book.loaded.navigation.then(nav=>{const add=(items,d)=>items.forEach(it=>{tocItems.push({label:(it.label||'').trim(),href:it.href,d});if(it.subitems&&it.subitems.length)add(it.subitems,1)});add(nav.toc||[],0)}).catch(()=>{}).then(autoToc);
     // índice armado por la app cuando el libro no trae uno (pasa con los EPUB convertidos desde un PDF):
@@ -792,7 +794,7 @@ function renderLib(){
   const gbar=el('div','kr-gbar'),gi=el('i');gi.style.width=Math.round(pctG*100)+'%';if(pctG>=1)gi.className='done';gbar.append(gi);gw.append(gh,gbar);
   const wk=el('div','kr-wk'),stt=stGet(),maxS=Math.max(gS,...Array.from({length:7},(_,i)=>{const x=new Date();x.setDate(x.getDate()-i);return stt[dk(x)]||0}));
   for(let i=6;i>=0;i--){const x=new Date();x.setDate(x.getDate()-i);const v=stt[dk(x)]||0,col=el('div','kr-wc'),bar=el('div','kr-wb'),f=el('i');f.style.height=Math.max(v?8:3,Math.round(v/maxS*100))+'%';if(v>=gS)f.className='done';bar.append(f);col.append(bar,el('small',i===0?'on':'','DLMXJVS'[x.getDay()]));wk.append(col)}
-  sc.append(gw,wk);{const mb=btn('Ver todas mis estadísticas',()=>{if(window.KEx&&window.KEx.statsPage)window.KEx.statsPage()},'Estadísticas','ghost');mb.style.cssText='width:100%;margin-top:12px';sc.append(mb)}host.append(sc);
+  sc.append(gw,wk);{const mb=btn('Ver todas mis estadísticas',()=>{if(window.KEx&&window.KEx.statsPage)window.KEx.statsPage()},'Estadísticas','ghost');mb.style.cssText='grid-column:1/-1;margin:12px 8px 0;width:calc(100% - 16px)';sc.append(mb)}host.append(sc);
   if(!S0.week)host.append(el('p','hint2 kr-sn','Leé un minuto hoy en la app y empieza tu racha.'));
   const top=el('div','card');
   top.append(el('b','','Abrir un libro de tu celular'),el('p','hint2','Elegí un archivo .epub que ya tengas guardado (descargas, Drive, mail…). Queda en esta biblioteca y no sale de tu dispositivo.'));
@@ -801,12 +803,12 @@ function renderLib(){
   const sec=el('div','card');sec.style.marginTop='14px';sec.append(el('b','','Leídos recientemente'));
   if(!l.length){sec.append(el('p','hint2','Todavía no abriste ningún libro. Buscá uno y tocá “Leer en la app”, o abrí un archivo.'));const g=btn('Buscar mi primer libro',()=>window.showView&&window.showView('buscar'));g.classList.add('empty-cta');sec.append(g)};
   l.forEach(x=>{
-    const r=el('div','lib-item'),d=el('div');d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
+    const r=el('div','lib-item'),d=el('div'),cv=store.get('kr_cov_'+x.id,'')||x.img||'';if(cv){const im=el('img','lib-cov');im.src=cv;im.alt='';im.loading='lazy';im.onerror=()=>im.remove();r.append(im)}d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
     const bar=el('div','lib-bar'),i=el('i');i.style.width=Math.round((x.pct||0)*100)+'%';bar.append(i);d.append(bar);
     const open1=btn('Leer',()=>open({id:x.id,url:x.url,title:x.title,author:x.author,cached:true,local:x.local}));
     const rv=btn('Reseñas',()=>{if(window.KRev)window.KRev.open({title:x.title,author:x.author})},'Reseñas del libro','ghost');
     const del=btn('Quitar',async()=>{if(!confirm('¿Quitar “'+x.title+'” de tu biblioteca? Se borran también tus subrayados.'))return;saveLib(lib().filter(y=>y.id!==x.id));{const rm=store.get('kr_lib_rm',{});rm[x.id]=Date.now();store.set('kr_lib_rm',rm)} // para que no vuelva desde otro dispositivo
-    store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
+    store.del(hlKey(x.id));store.del(bmKey(x.id));store.del('kr_sum_'+x.id);store.del('kr_cov_'+x.id);await dbDel(x.id);renderLib();cont()},'Quitar','ghost');
     r.append(d,open1,rv,del);sec.append(r);
   });
   host.append(sec);
@@ -841,7 +843,7 @@ const aiSettingsRefresh=()=>window.aiSettingsRefresh&&window.aiSettingsRefresh()
 function decorate(b,actions){
   const o=b.opts.find(x=>x.sendable&&typeof x.url==='function');if(!o)return;
   const x=el('button','read','Leer en la app');x.type='button';
-  x.onclick=async()=>{x.disabled=true;try{const url=await o.url();await open({url,title:b.title,author:b.author})}catch(e){say(e&&e.message||'No se pudo abrir','err')}finally{x.disabled=false}};
+  x.onclick=async()=>{x.disabled=true;try{const url=await o.url();await open({url,title:b.title,author:b.author,img:b.img})}catch(e){say(e&&e.message||'No se pudo abrir','err')}finally{x.disabled=false}};
   actions.append(x);
 }
 
