@@ -141,6 +141,44 @@ async function removeFriend(f){
   try{await deleteDoc(doc(db,'friendRequests',f.id))}catch(e){}
 }
 
+// ---------- Mi biblioteca, visible para mis amigos ----------
+// Se publica en libraries/{uid} (solo la leen tus amigos): título, autor, % leído y el enlace legal. Nunca los archivos propios del celular.
+const shareLibOn=()=>{try{return localStorage.getItem('k_lib_share')!=='0'}catch(e){return true}};
+const libForFriends=()=>{let l=[];try{l=JSON.parse(localStorage.getItem('kr_lib')||'[]')}catch(e){}
+  return l.filter(x=>x&&x.title&&!x.local).slice(0,40).map(x=>({t:String(x.title).slice(0,200),a:String(x.author||'').slice(0,120),p:Math.round((x.pct||0)*100),u:hostOk(x.url)?x.url:''}))};
+let libT=0;
+async function syncLib(){
+  if(!S.user)return;const uid=S.user.uid,data=shareLibOn()?libForFriends():null,sig=JSON.stringify(data);
+  let last='';try{last=localStorage.getItem('k_lib_pub_'+uid)||''}catch(e){}
+  if(sig===last)return;
+  try{const ref=doc(db,'libraries',uid);if(data)await setDoc(ref,{items:data,updatedAt:serverTimestamp()});else await deleteDoc(ref);try{localStorage.setItem('k_lib_pub_'+uid,sig)}catch(e){}}
+  catch(e){console.warn('biblioteca',e)}
+}
+const syncLibSoon=()=>{clearTimeout(libT);libT=setTimeout(syncLib,1500)};
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')syncLib()});
+setInterval(syncLib,60000);
+function setShareLib(on){try{localStorage.setItem('k_lib_share',on?'1':'0')}catch(e){}syncLib();render();say(on?'Tus amigos ya pueden ver tu biblioteca':'Tu biblioteca dejó de estar visible para tus amigos','ok')}
+
+const reqText=x=>(x.t+(x.a?' — '+x.a:'')).slice(0,200);
+function friendLib(f){
+  modal('Biblioteca de '+f.name,(bx,close)=>{
+    const st=el('p','hint2','Cargando…'),l=el('div','ks-sec');bx.append(st,l);
+    const a=el('div','ks-acts');a.append(btn('Cerrar',close,true));
+    getDoc(doc(db,'libraries',f.uid)).then(s=>{
+      const lib=s.exists()&&Array.isArray(s.data().items)?s.data().items:[];
+      st.textContent=lib.length?(lib.length===1?'1 libro':lib.length+' libros')+'. Tocá “Pedir” y le llega tu pedido.':f.name+' todavía no compartió su biblioteca. Tiene que tener Kinderly actualizado y haber abierto algún libro en la app.';
+      lib.forEach(x=>{
+        const bs=[],asked=S.bookOut.some(r=>r.to===f.uid&&r.status!=='done'&&r.text===reqText(x));
+        if(x.u&&hostOk(x.u)&&window.KReader)bs.push(btn('Leer',()=>{close();window.KReader.open({title:x.t,author:x.a,url:x.u})},true));
+        const pb=el('button',asked?'ghost':'',asked?'Pedido ✓':'Pedir');pb.type='button';pb.disabled=asked;
+        pb.onclick=async()=>{pb.disabled=true;try{await addDoc(collection(db,'bookRequests'),{from:S.user.uid,to:f.uid,fromName:myName(),toName:f.name,text:reqText(x),status:'open',createdAt:serverTimestamp()});pb.textContent='Pedido ✓';pb.className='ghost';say('Le pediste “'+x.t+'” a '+f.name,'ok')}catch(e){pb.disabled=false;say(errMsg(e),'err')}};
+        bs.push(pb);l.append(row(x.t,[x.a,x.p?x.p+'% leído':''].filter(Boolean).join(' · '),bs));
+      });
+    }).catch(e=>{st.textContent='No se pudo cargar la biblioteca: '+errMsg(e)});
+    bx.append(a);
+  });
+}
+
 // ---------- UI ----------
 const css=document.createElement('style');
 css.textContent='.ks-ov{position:fixed;inset:0;background:rgba(10,20,30,.55);display:grid;place-items:center;z-index:20;padding:16px}'+
@@ -155,7 +193,7 @@ css.textContent='.ks-ov{position:fixed;inset:0;background:rgba(10,20,30,.55);dis
 '.kf-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 6px}.kf-t{margin:0;font:600 1.08rem var(--serif);color:var(--ink)}'+
 '.kf-b{min-width:22px;height:22px;border-radius:11px;background:var(--acc);color:#fff;font:600 .74rem var(--sans);display:grid;place-items:center;padding:0 7px}.kf-b0{background:var(--soft);color:var(--mute)}'+
 '.kf-me0{padding:18px 16px 8px}.kf-me{display:flex;align-items:center;gap:14px}.kf-me img,.kf-me .kf-av{width:52px;height:52px;border-radius:50%;flex:none;font-size:1.25rem}.kf-nm{font:600 1.15rem var(--serif);overflow-wrap:anywhere}.kf-tx small{display:block;color:var(--mute);font-size:.86rem;margin-top:2px;overflow-wrap:anywhere}'+
-'.kf-links{display:flex;gap:22px;margin-top:14px;padding-top:4px;border-top:1px solid var(--line)}'+
+'.kf-links{display:flex;flex-wrap:wrap;column-gap:18px;row-gap:0;margin-top:14px;padding-top:4px;border-top:1px solid var(--line)}.kf-me0>.kf-e{margin:2px 0 8px;font-size:.84rem}'+
 '.kf-l{background:none!important;border:0!important;box-shadow:none!important;color:var(--green)!important;font:500 .9rem var(--sans)!important;padding:12px 0!important;min-width:0!important;flex:0 0 auto!important;width:auto!important}'+
 '.kf-a .kf-l{color:var(--mute)!important}.kf-it .kf-s.kf-l{padding:10px 4px!important}'+
 '.kf-list{margin-top:2px}.kf-it{padding:13px 0;border-top:1px solid var(--line)}.kf-list>.kf-it:first-child{border-top:0}'+
@@ -211,8 +249,8 @@ function render(){
   const me=el('section','kf-c kf-me0'),mh=el('div','kf-me');
   if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;mh.append(im)}else mh.append(av(S.user.displayName||'?'));
   const who=el('div','kf-tx');who.append(el('b','kf-nm',S.user.displayName||S.user.email),el('small','',S.username?('@'+S.username):'Todavía no elegiste tu usuario'));mh.append(who);
-  const lk=el('div','kf-links');lk.append(link(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername()),link('Salir',logout));
-  me.append(mh,lk);body.append(me);
+  const lk=el('div','kf-links');lk.append(link(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername()),link(shareLibOn()?'Ocultar biblioteca':'Compartir biblioteca',()=>setShareLib(!shareLibOn())),link('Salir',logout));
+  me.append(mh,lk,el('p','kf-e',shareLibOn()?'Tus amigos ven los libros de tu biblioteca (no los archivos de tu celular) y te los pueden pedir.':'Tu biblioteca no se muestra a tus amigos.'));body.append(me);
 
   // Novedades (solo si hay algo que atender)
   const newShares=S.sharesIn.filter(s=>s.status!=='received'),openIn=S.bookIn.filter(r=>r.status==='open');
@@ -230,7 +268,7 @@ function render(){
     S.reqIn.forEach(r=>l.append(item({av:r.fromName,title:r.fromName||'Alguien',sub:'quiere ser tu amigo/a',acts:[btn('Aceptar',()=>guard(()=>acceptReq(r),'Ahora son amigos')),btn('Rechazar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id))),true)]})));
     newShares.forEach(s=>l.append(shareItem(s)));
     openIn.forEach(r=>l.append(item({av:r.fromName,title:(r.fromName||'Un amigo')+' busca',sub:'“'+r.text+'”',acts:[
-      btn('Buscar',()=>{window.showView('buscar');$('q').value=r.text;$('go').click()}),
+      btn('Buscar',()=>{window.showView('buscar');$('q').value=String(r.text||'').split(' — ')[0];$('go').click()}),
       btn('Listo',()=>guard(()=>updateDoc(doc(db,'bookRequests',r.id),{status:'done'})),true),
       link('Quitar',()=>guard(()=>deleteDoc(doc(db,'bookRequests',r.id))))]})));
     c.append(l);body.append(c);
@@ -243,7 +281,7 @@ function render(){
   const fl=list();
   S.reqOut.forEach(r=>fl.append(item({av:r.toName,title:r.toName||'Pendiente',sub:'Solicitud enviada, esperando respuesta',side:[small(link('Cancelar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id)))))]})));
   S.friends.forEach(f=>{const q=btn('×',()=>{if(confirm('¿Quitar a '+f.name+' de tus amigos?'))return guard(()=>removeFriend(f))},true);q.className='kf-x';q.setAttribute('aria-label','Quitar a '+f.name);q.title='Quitar';
-    fl.append(item({av:f.name,title:f.name,sub:'Amigo/a',side:[small(btn('Pedir libro',()=>askBook(f))),q]}))});
+    fl.append(item({av:f.name,title:f.name,sub:'Amigo/a',side:[q],acts:[btn('Ver biblioteca',()=>friendLib(f)),btn('Pedir otro libro',()=>askBook(f),true)]}))});
   if(fl.children.length)fc.append(fl);
   if(!S.friends.length&&!S.reqIn.length&&!S.reqOut.length)fc.append(el('p','kf-e','Todavía no agregaste a nadie. Escribí su nombre de usuario arriba. Tiene que haber entrado a Kinderly y elegido uno.'));
   body.append(fc);
@@ -299,6 +337,91 @@ function decorate(b,actions){
 }
 
 
+// ---------- Mi cuenta igual en todos los dispositivos ----------
+// Cada dato guardado en el navegador (biblioteca y progreso, subrayados, marcadores, listas, meta, estadísticas,
+// ajustes del lector, mail) se copia en userData/{uid}/k/{clave}, privado de cada usuario.
+// Gana el cambio más nuevo; la biblioteca y las estadísticas se combinan para no perder lo leído en otro lado.
+const SY={uid:'',ready:false,unsub:null,state:'off',at:0,ui:0};
+const NOSYNC=/^(kr_ai$|kr_sum_|kr_q_|kr_bio_|kr_air$|kr_au$|kr_mus$|k_gt|k_sync_|k_lib_pub_|k_pets_ph$|k_inst_x$|k_welcome$)/;
+const syncable=k=>k==='mail'||(/^(kr_|k_)/.test(k)&&!NOSYNC.test(k));
+const MERGE=new Set(['kr_lib','kr_lib_rm','kr_st','kr_tot']);
+const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}},obj:k=>{try{return JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(e){return {}}}};
+const hsh=s=>{if(s==null)return 'n';let h=5381;for(let i=0;i<s.length;i++)h=((h*33)^s.charCodeAt(i))>>>0;return h.toString(36)+'.'+s.length};
+const pj=s=>{try{return JSON.parse(s)}catch(e){return undefined}};
+const kid=k=>encodeURIComponent(k).slice(0,1400);
+function mergeVal(k,a,b,first){ // a: local, b: de la nube. Devuelve el texto combinado o undefined si esa clave no se combina
+  const A=pj(a),B=pj(b);if(A===undefined||B===undefined)return undefined;
+  const maxMap=(x,y)=>{const o=Object.assign({},x||{});for(const [i,v] of Object.entries(y||{}))o[i]=Math.max(+o[i]||0,+v||0);return o};
+  if(k==='kr_tot')return String(Math.max(+A||0,+B||0));
+  if(k==='kr_st'||k==='kr_lib_rm')return JSON.stringify(maxMap(A,B));
+  if(k==='kr_lib'){const m=new Map();[...(Array.isArray(A)?A:[]),...(Array.isArray(B)?B:[])].forEach(x=>{if(x&&x.id){const o=m.get(x.id);if(!o||(+x.t||0)>(+o.t||0))m.set(x.id,x)}});
+    const rm=maxMap(LS.obj('kr_lib_rm'),{});return JSON.stringify([...m.values()].filter(x=>!(rm[x.id]>=(+x.t||0))).sort((x,y)=>(+y.t||0)-(+x.t||0)).slice(0,40))}
+  if(!first)return undefined;
+  // primera vez en este dispositivo: se suman subrayados, marcadores y listas en vez de pisarlos
+  if(Array.isArray(A)&&Array.isArray(B)){const id=x=>x&&(x.cfi||x.id)||JSON.stringify(x),seen=new Set(B.map(id));return JSON.stringify([...B,...A.filter(x=>!seen.has(id(x)))])}
+  if(k==='kr_lists'&&A&&B&&typeof A==='object'&&typeof B==='object'){const o={};new Set([...Object.keys(A),...Object.keys(B)]).forEach(i=>{o[i]=Object.assign({},B[i]||{},A[i]||{})});return JSON.stringify(o)}
+  return undefined;
+}
+const syMeta=()=>LS.obj('k_sync_m'),syHash=()=>LS.obj('k_sync_h');
+const sySave=(m,h)=>{LS.set('k_sync_m',JSON.stringify(m));LS.set('k_sync_h',JSON.stringify(h))};
+function syErr(e){SY.state=(e&&(e.code==='permission-denied'||/permission/i.test(e.message||'')))?'denied':'error';console.warn('sync',e);syncCard()}
+// se marca como subido recién cuando la nube confirma: si la página se cierra a mitad, el cambio se reintenta la próxima vez
+const pending=new Set();
+async function pushKey(k){
+  if(!SY.uid||pending.has(k))return;const v=LS.get(k),m=Date.now(),meta=syMeta();meta[k]=m;sySave(meta,syHash());
+  if(v&&v.length>900000){console.warn('sync: muy grande',k);return}
+  pending.add(k);
+  try{await setDoc(doc(db,'userData',SY.uid,'k',kid(k)),{k,v:v==null?null:v,m});const hs=syHash();hs[k]=hsh(v);sySave(syMeta(),hs);if(SY.state!=='on'){SY.state='on';syncCard()}SY.at=Date.now()}
+  catch(e){SY.failAt=Date.now();syErr(e)}
+  finally{pending.delete(k)}
+}
+function scan(){
+  if(!SY.ready||!SY.uid)return;if(SY.failAt&&Date.now()-SY.failAt<60000)return; // si la nube rechazó, se espera un minuto antes de reintentar
+  const hs=syHash(),keys=new Set(Object.keys(hs));
+  try{for(let i=0;i<localStorage.length;i++)keys.add(localStorage.key(i))}catch(e){}
+  keys.forEach(k=>{if(syncable(k)&&hsh(LS.get(k))!==hs[k])pushKey(k)});
+}
+function applyRemote(docs){
+  const meta=syMeta(),hs=syHash(),push=[];let changed=false;
+  docs.forEach(d=>{const r=d.data()||{},k=r.k;if(!k||!syncable(k))return;
+    const rv=r.v==null?null:String(r.v),rm=+r.m||0,lv=LS.get(k),lm=meta[k]||0,first=!(k in meta);
+    if(lv!=null&&rv!=null&&(MERGE.has(k)||first)){const mv=mergeVal(k,lv,rv,first);
+      if(mv!==undefined){if(mv!==lv){LS.set(k,mv);changed=true}meta[k]=Math.max(lm,rm);hs[k]=hsh(mv);if(mv!==rv)push.push(k);return}}
+    if(rm>lm){if(lv!==rv){LS.set(k,rv);changed=true}meta[k]=rm;hs[k]=hsh(rv)}
+  });
+  sySave(meta,hs);push.forEach(pushKey);
+  if(changed){clearTimeout(SY.ui);SY.ui=setTimeout(refreshAll,250)}
+}
+function refreshAll(){ // lo que llegó de otro dispositivo se ve sin recargar
+  try{const m=$('mail');if(m&&document.activeElement!==m)m.value=LS.get('mail')||''}catch(e){}
+  try{if(window.KReader){window.KReader.renderLibrary();window.KReader.continueReading()}}catch(e){}
+  try{window.KPets&&window.KPets.refresh()}catch(e){}
+}
+function syncStart(u){
+  syncStop();SY.uid=u.uid;SY.ready=false;SY.state='connecting';syncCard();
+  if(LS.get('k_sync_uid')!==u.uid){LS.set('k_sync_m',null);LS.set('k_sync_h',null);LS.set('k_sync_uid',u.uid)} // otra cuenta en este dispositivo: se arranca de cero
+  SY.unsub=onSnapshot(collection(db,'userData',u.uid,'k'),s=>{applyRemote(s.docs);SY.state='on';SY.at=SY.at||Date.now();if(!SY.ready){SY.ready=true;scan()}syncCard()},syErr);
+}
+function syncStop(){try{SY.unsub&&SY.unsub()}catch(e){}SY.unsub=null;SY.uid='';SY.ready=false;SY.state='off'}
+setInterval(scan,15000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')scan()});
+window.addEventListener('pagehide',scan);
+window.KSync={now:scan};
+
+function syncCard(){
+  const host=document.querySelector('.view[data-view="ajustes"]');if(!host)return;
+  let c=$('sync-set');if(!c){c=el('div','card');c.id='sync-set';c.style.marginTop='14px';const cfg=$('cfg');cfg?cfg.before(c):host.append(c)}
+  c.textContent='';c.append(el('b','','Tu cuenta en todos tus dispositivos'));
+  const p=t=>el('p','hint2',t);
+  if(!S.user){c.append(p('Entrá con Google y tu biblioteca, lo que llevás leído, subrayados, marcadores, listas, meta y estadísticas se ven igual en el celular y en la compu.'));const b=btn('Entrar con Google',login);b.style.marginTop='10px';c.append(b);return}
+  const who=S.user.email||S.user.displayName||'tu cuenta';
+  if(SY.state==='denied')c.append(p('Entraste como '+who+', pero la nube todavía no acepta guardar tus datos (falta un permiso en Firebase). Mientras tanto todo queda en este dispositivo.'));
+  else if(SY.state==='error')c.append(p('No se pudo sincronizar ahora. Se vuelve a intentar solo cuando haya conexión.'));
+  else if(SY.state==='connecting')c.append(p('Conectando con '+who+'…'));
+  else{c.append(p('✓ Sincronizado con '+who+'. Lo que hagas acá aparece en tus otros dispositivos al abrir Kinderly con la misma cuenta.'),p('Los EPUB que abriste desde un archivo propio no viajan: en el otro dispositivo volvé a elegir el archivo y sigue desde donde quedaste.'));
+    const b=btn('Sincronizar ahora',()=>{scan();say('Sincronizado','ok')},true);b.style.marginTop='10px';c.append(b)}
+}
+
 // ---------- Sugerencias ----------
 const SG={list:[]};
 function renderSug(){
@@ -330,7 +453,8 @@ onSnapshot(query(collection(db,'suggestions'),limit(100)),s=>{SG.list=s.docs.map
 const normT=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 function bookKey(b){const a=normT(String(b.author||'').split(/[;,]/)[0]),t=normT(b.title).replace(/^(el|la|los|las|un|una) /,'');const s=t+'|'+a;let h1=0x811c9dc5,h2=5381;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);h1=Math.imul(h1^c,16777619)>>>0;h2=((h2*33)^c)>>>0}return 'b'+h1.toString(36)+h2.toString(36)}
 const RV={cache:{},badges:{}};
-async function loadReviews(key,force){if(!force&&RV.cache[key])return RV.cache[key];const s=await getDocs(query(collection(db,'reviews'),where('bookKey','==',key),limit(60)));const l=s.docs.map(d=>({id:d.id,...d.data()}));RV.cache[key]=l;return l}
+// se guarda la promesa: si varias tarjetas del mismo libro piden a la vez, va una sola consulta a Firestore
+function loadReviews(key,force){if(!force&&RV.cache[key])return RV.cache[key];const p=getDocs(query(collection(db,'reviews'),where('bookKey','==',key),limit(60))).then(s=>s.docs.map(d=>({id:d.id,...d.data()})));RV.cache[key]=p;p.catch(()=>{if(RV.cache[key]===p)delete RV.cache[key]});return p}
 const avgR=l=>l.length?l.reduce((a,r)=>a+r.stars,0)/l.length:0;
 const starsTxt=n=>'★'.repeat(n)+'☆'.repeat(5-n);
 const refreshBadges=key=>(RV.badges[key]||[]).forEach(f=>f());
@@ -363,15 +487,15 @@ function openReviews(b){
 function decorateRev(b,actions){
   const key=bookKey(b),x=el('button','ghost','☆ Reseñas');x.type='button';x.onclick=()=>openReviews(b);actions.append(x);
   const upd=async()=>{try{const l=await loadReviews(key);x.textContent=l.length?('★ '+avgR(l).toFixed(1)+' ('+l.length+')'):'☆ Reseñas'}catch(e){}};
-  (RV.badges[key]=RV.badges[key]||[]).push(upd);upd();
+  upd.alive=()=>x.isConnected;RV.badges[key]=(RV.badges[key]||[]).filter(f=>f.alive());RV.badges[key].push(upd);upd();
 }
 window.KRev={decorate:decorateRev,open:openReviews};
 
-window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,sendMail,decorate,openPanel};
+window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,sendMail,decorate,openPanel,syncLib:syncLibSoon};
 
 onAuthStateChanged(auth,async u=>{
   unsubscribe();S.user=u||null;S.username='';
-  if(u){await upsertProfile(u);subscribe();if(!S.username)setTimeout(()=>promptUsername(),600)}else clearToken();
-  render();renderSug();
+  if(u){syncStart(u);await upsertProfile(u);subscribe();syncLibSoon();if(!S.username)setTimeout(()=>promptUsername(),600)}else{clearToken();syncStop()}
+  render();renderSug();syncCard();
 });
-render();renderSug();
+render();renderSug();syncCard();

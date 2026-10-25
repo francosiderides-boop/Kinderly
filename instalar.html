@@ -25,7 +25,7 @@ a.sec{display:block;text-align:center;margin-top:14px;color:var(--mute);font-siz
 <main>
   <img src="k2-192.png" alt="">
   <h1>Kinderly</h1>
-  <p class="lead">Libros en español, gratis y legales. Instalala en tu celular para abrirla como cualquier app.</p>
+  <p class="lead" id="lead">Libros en español, gratis y legales. Instalala en tu celular para abrirla como cualquier app.</p>
   <button id="go" type="button">Instalar Kinderly</button>
   <a id="chrome" class="btn" style="display:none" href="#">Abrir en Chrome para instalar</a>
   <div class="box" id="how"></div>
@@ -42,7 +42,7 @@ a.sec{display:block;text-align:center;margin-top:14px;color:var(--mute);font-siz
   var samsung=/SamsungBrowser/.test(ua),android=/Android/.test(ua),inapp=/FBAN|FBAV|Instagram|Line\/|Snapchat|TikTok|MicroMessenger/.test(ua);
   function steps(h,items){how.style.display='block';how.textContent='';var b=document.createElement('b');b.textContent=h;how.append(b);var ol=document.createElement('ol');items.forEach(function(t){var l=document.createElement('li');l.textContent=t;ol.append(l)});how.append(ol)}
   window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();ev=e;go.disabled=false});
-  window.addEventListener('appinstalled',function(){go.style.display='none';how.style.display='block';how.innerHTML='<span class="ok">Listo, Kinderly quedó instalada.</span><br>Buscala en tu pantalla de inicio o en tus aplicaciones.'});
+  window.addEventListener('appinstalled',function(){go.style.display='none';how.style.display='block';how.innerHTML='<span class="ok">Listo, Kinderly quedó instalada.</span><br>Buscala en tu pantalla de inicio, en el escritorio o en tus aplicaciones.'});
   var path=location.host+location.pathname.replace(/[^/]*$/,'');
   if(android&&(samsung||inapp)){
     // Samsung Internet y navegadores incrustados solo crean accesos directos: abrimos Chrome, que instala la app de verdad
@@ -57,11 +57,21 @@ a.sec{display:block;text-align:center;margin-top:14px;color:var(--mute);font-siz
     else steps('Para instalarla en iPhone',['Tocá el botón Compartir, abajo en Safari.','Elegí “Agregar a inicio”.','Tocá “Agregar”.']);
     return;
   }
+  var manual=['Abrí el menú del navegador (los tres puntos).','Tocá “Instalar app” o “Agregar a la pantalla de inicio”.'];
+  // en la compu: Chrome y Edge instalan con un clic; Safari de Mac la agrega al Dock; Firefox no instala apps
+  if(!android&&!ios){
+    $('lead').textContent='Libros en español, gratis y legales. Instalala en tu compu: se abre en su propia ventana, sin el navegador, y te queda a mano en el escritorio.';
+    var edge=/Edg\//.test(ua),ff=/Firefox\//.test(ua),safari=/Safari\//.test(ua)&&!/Chrome|Chromium|Edg\//.test(ua);
+    if(ff){go.style.display='none';steps('Firefox no instala apps',['Copiá el link de esta página.','Abrilo en Chrome o en Edge.','Tocá “Instalar Kinderly”.']);return}
+    if(safari){go.style.display='none';steps('Para instalarla en tu Mac',['Arriba, en la barra de menú, tocá “Archivo”.','Elegí “Agregar al Dock”.','Tocá “Agregar”: queda en el Dock y en Aplicaciones.']);return}
+    manual=edge?['Arriba a la derecha, abrí el menú (los tres puntos).','Entrá a “Aplicaciones” y tocá “Instalar este sitio como una aplicación”.']
+               :['En la barra de direcciones, a la derecha, tocá el ícono de instalar (una pantallita con una flecha).','Si no aparece: menú (los tres puntos) → “Transmitir, guardar y compartir” → “Instalar página como app”.'];
+  }
   go.onclick=function(){
     if(ev){ev.prompt();ev.userChoice.finally(function(){ev=null})}
-    else steps('Para instalarla',['Abrí el menú del navegador (los tres puntos).','Tocá “Instalar app” o “Agregar a la pantalla de inicio”.'])
+    else steps('Para instalarla',manual)
   };
   // si el navegador no ofrece la instalación directa, mostramos los pasos manuales
-  setTimeout(function(){if(!ev&&how.style.display!=='block')steps('Si no aparece el botón',['Abrí el menú del navegador (los tres puntos).','Tocá “Instalar app” o “Agregar a la pantalla de inicio”.'])},4000);
+  setTimeout(function(){if(!ev&&how.style.display!=='block')steps('Si no aparece el botón',manual)},4000);
 })();
 </script></body></html>
