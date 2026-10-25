@@ -188,8 +188,8 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr button{background:transparent;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:10px;min-width:40px;height:40px;padding:0 10px;font:600 .9rem var(--sans);white-space:nowrap}'+
 '#kr button.sel{background:rgba(31,140,110,.25);border-color:rgba(31,140,110,.8)}'+
 '#kr .kr-title{flex:1;min-width:0;text-align:center;font:600 .92rem var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
-'#kr .kr-tz{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));width:24%;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent}#kr .kr-tz.l{left:0}#kr .kr-tz.r{right:0}#kr-view[data-mode=scrolled]~.kr-tz{display:none}'+
-'#kr-view{position:absolute;inset:0;z-index:0}#kr-view[data-mode=paginated] .epub-container{overflow:hidden!important}'+
+'#kr .kr-tz{position:absolute;top:var(--kr-t,64px);bottom:var(--kr-b,76px);width:24%;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}#kr .kr-tz.l{left:0}#kr .kr-tz.r{right:0}#kr .kr-tz.c{left:24%;width:52%}#kr-view[data-mode=scrolled]~.kr-tz{display:none}'+
+'#kr-view{position:absolute;inset:var(--kr-t,0px) 0 var(--kr-b,0px) 0;z-index:0}#kr-view[data-mode=paginated] .epub-container{overflow:hidden!important}'+
 '#kr .kr-msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;pointer-events:none;opacity:.8}'+
 '#kr .kr-prog{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}#kr .kr-prog input{width:100%}#kr .kr-prog span{font-size:.72rem;text-align:center;opacity:.75}'+
 '#kr .kr-panel{position:absolute;left:0;right:0;bottom:0;max-height:78%;display:flex;flex-direction:column;background:color-mix(in srgb,var(--krbg) 84%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5);color:var(--krfg);border-top:1px solid rgba(128,128,128,.3);box-shadow:0 -10px 30px rgba(0,0,0,.22);transform:translateY(105%);transition:transform .22s;z-index:5}'+
@@ -695,13 +695,27 @@ async function open(o){
     Object.keys(HL).forEach(c=>{const x=btn('',()=>{if(!curSel)return;const q0=curSel.text;addMark(curSel.cfi,curSel.text,c);try{curSel.contents.window.getSelection().removeAllRanges()}catch(e){}hideSel();if(q0.trim().length>=20&&store.get('kr_qs_off',false)!==true)setTimeout(()=>quoteCard(q0,title,o.author||entry().author||''),250)},'Subrayar '+c,'dot');x.style.background=HL[c];selbar.append(x)});
     selbar.append(btn('Nota',()=>{if(!curSel)return;const m=addMark(curSel.cfi,curSel.text,'amarillo');hideSel();editMark(m)}),btn('Definir',()=>{if(!curSel)return;const w=curSel.text,cx=curSel.ctx;hideSel();define(w,cx)}),btn('Copiar',()=>{if(curSel){try{navigator.clipboard.writeText(curSel.text);say('Copiado','ok')}catch(e){}}hideSel()}),btn('Imagen',()=>{if(!curSel)return;const q=curSel.text;hideSel();quoteCard(q,title,o.author||entry().author||'')},'Compartir como imagen'),btn('✕',hideSel,'Cancelar'));};
   selBtns();
-  // zonas de toque tipo Kindle (fuera del iframe, para que también anden en iOS)
-  {const mk=(cls,dir)=>{const z=el('div','kr-tz '+cls);let sx=0,sy=0;
-    z.addEventListener('touchstart',e=>{const t=e.touches[0];if(t){sx=t.clientX;sy=t.clientY}},{passive:true});
-    z.addEventListener('touchend',e=>{const t=e.changedTouches[0];if(!t||!rend)return;const dx=t.clientX-sx,dy=t.clientY-sy;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)){e.preventDefault();dx<0?rend.next():rend.prev()}},{passive:false});
-    z.onclick=()=>{if(!rend)return;closePanel();dir>0?rend.next():rend.prev()};return z};
-   root.append(mk('l',-1),mk('r',1))}
-  root.append(top,view,bot,selbar,pnl,foot);view.append(msg);root.append(warmEl,dimEl);comfort();document.body.append(root);document.body.style.overflow='hidden';cur=root;airTip(root,()=>closed);
+  root.append(top,view,bot,selbar,pnl,foot);view.append(msg);
+  // gestos del lector fuera del iframe: en iOS/iPad los toques dentro del iframe no siempre llegan
+  const fit=()=>{root.style.setProperty('--kr-t',top.offsetHeight+'px');root.style.setProperty('--kr-b',bot.offsetHeight+'px')};
+  const onResize=()=>{if(closed){removeEventListener('resize',onResize);return}fit()};addEventListener('resize',onResize);
+  if(matchMedia('(pointer:coarse)').matches){
+    const selectAt=(x,y)=>{try{const c=rend&&rend.getContents&&rend.getContents()[0];if(!c)return;const d=c.document,fe=(c.window||d.defaultView).frameElement,r=fe.getBoundingClientRect(),px=x-r.left,py=y-r.top;let rg=null;
+      if(d.caretRangeFromPoint)rg=d.caretRangeFromPoint(px,py);else if(d.caretPositionFromPoint){const q=d.caretPositionFromPoint(px,py);if(q){rg=d.createRange();rg.setStart(q.offsetNode,q.offset);rg.collapse(true)}}
+      if(!rg)return;d.body.classList.add('kr-sel');const sl=d.getSelection();sl.removeAllRanges();sl.addRange(rg);if(sl.modify){sl.modify('move','backward','word');sl.modify('extend','forward','word')}}catch(e){}};
+    const clearSel=()=>{try{const c=rend&&rend.getContents&&rend.getContents()[0];if(c){c.document.getSelection().removeAllRanges();c.document.body.classList.remove('kr-sel')}}catch(e){}hideSel()};
+    const linkAt=(x,y)=>{try{const c=rend.getContents()[0],d=c.document,r=(c.window||d.defaultView).frameElement.getBoundingClientRect(),n=d.elementFromPoint(x-r.left,y-r.top),a=n&&n.closest&&n.closest('a[href]');if(a){a.click();return true}}catch(e){}return false};
+    const tap=(dir,x,y)=>{if(!rend)return;if(selbar.classList.contains('on')||curSel){clearSel();return}if(linkAt(x,y))return;closePanel();if(dir===0)root.classList.toggle('hide');else dir>0?rend.next():rend.prev()};
+    const mk=(cls,dir)=>{const z=el('div','kr-tz '+cls);let sx=0,sy=0,tm=0,fired=false,t0=0,mv=false;
+      z.addEventListener('touchstart',e=>{const t=e.touches[0];if(!t||e.touches.length>1)return;sx=t.clientX;sy=t.clientY;fired=false;mv=false;t0=Date.now();clearTimeout(tm);tm=setTimeout(()=>{fired=true;try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}selectAt(sx,sy)},450)},{passive:true});
+      z.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10)){mv=true;clearTimeout(tm)}},{passive:true});
+      z.addEventListener('touchend',e=>{clearTimeout(tm);const t=e.changedTouches[0];if(!t||!rend)return;e.preventDefault();if(fired)return;const dx=t.clientX-sx,dy=t.clientY-sy;
+        if(mv){if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy))dx<0?rend.next():rend.prev();return}tap(dir,sx,sy)},{passive:false});
+      z.addEventListener('touchcancel',()=>clearTimeout(tm),{passive:true});
+      return z};
+    root.append(mk('l',-1),mk('c',0),mk('r',1));
+  }
+root.append(warmEl,dimEl);comfort();document.body.append(root);fit();document.body.style.overflow='hidden';cur=root;airTip(root,()=>closed);
   try{history.pushState({kr:1},'')}catch(e){}
   window.addEventListener('popstate',pop);document.addEventListener('keydown',key);
 
