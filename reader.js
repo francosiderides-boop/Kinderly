@@ -289,7 +289,7 @@ async function open(o){
   const ttl=el('div','kr-title',title);
   const range=el('input');range.type='range';range.min=0;range.max=1000;range.value=0;range.disabled=true;range.setAttribute('aria-label','Progreso del libro');
   const pt=el('span','','');const prog=el('div','kr-prog');prog.append(range,pt);const foot=el('div','kr-foot');
-  let remount=null,book=null,rend=null,ready=false,closed=false,pct=0,lastCfi='',marks=[],curSel=null,genP=null,mountP=null;
+  let remount=null,book=null,rend=null,ready=false,closed=false,pct=0,lastCfi='',marks=[],curSel=null,genP=null,mountP=null,onSelHook=null;
   const entry=()=>lib().find(x=>x.id===id)||{};
   const closePanel=()=>pnl.classList.remove('on');
   const panel=(name,build)=>{pnl.textContent='';const h=el('div','kr-ph');h.append(el('h4','',name),btn('✕',closePanel,'Cerrar panel'));const b=el('div','kr-pb');pnl.append(h,b);build(b);pnl.classList.add('on');selbar.classList.remove('on');const bp=root.querySelector('.kr-br');if(bp)bp.classList.remove('on')};
@@ -700,18 +700,24 @@ async function open(o){
   const fit=()=>{root.style.setProperty('--kr-t',top.offsetHeight+'px');root.style.setProperty('--kr-b',bot.offsetHeight+'px')};
   const onResize=()=>{if(closed){removeEventListener('resize',onResize);return}fit()};addEventListener('resize',onResize);
   if(matchMedia('(pointer:coarse)').matches){
-    const selectAt=(x,y)=>{try{const c=rend&&rend.getContents&&rend.getContents()[0];if(!c)return;const d=c.document,fe=(c.window||d.defaultView).frameElement,r=fe.getBoundingClientRect(),px=x-r.left,py=y-r.top;let rg=null;
-      if(d.caretRangeFromPoint)rg=d.caretRangeFromPoint(px,py);else if(d.caretPositionFromPoint){const q=d.caretPositionFromPoint(px,py);if(q){rg=d.createRange();rg.setStart(q.offsetNode,q.offset);rg.collapse(true)}}
-      if(!rg)return;d.body.classList.add('kr-sel');const sl=d.getSelection();sl.removeAllRanges();sl.addRange(rg);if(sl.modify){sl.modify('move','backward','word');sl.modify('extend','forward','word')}}catch(e){}};
+    let selCtx=null;
+    const rangeAt=(d,fe,x,y)=>{const r=fe.getBoundingClientRect(),px=x-r.left,py=y-r.top;if(d.caretRangeFromPoint)return d.caretRangeFromPoint(px,py);if(d.caretPositionFromPoint){const q=d.caretPositionFromPoint(px,py);if(q){const g=d.createRange();g.setStart(q.offsetNode,q.offset);g.collapse(true);return g}}return null};
+    // mantener apretado: selecciona la palabra; sin soltar y arrastrando, la extiende; al soltar se abre el menú de subrayado
+    const selectAt=(x,y)=>{selCtx=null;try{const c=rend&&rend.getContents&&rend.getContents()[0];if(!c)return;const d=c.document,fe=(c.window||d.defaultView).frameElement,rg=rangeAt(d,fe,x,y);
+      if(!rg){say('No encontré texto ahí','err');return}try{(c.window||d.defaultView).focus()}catch(e){}
+      d.body.classList.add('kr-sel');const sl=d.getSelection();sl.removeAllRanges();sl.addRange(rg);if(sl.modify){sl.modify('move','backward','word');sl.modify('extend','forward','word')}
+      if(!sl.rangeCount||sl.getRangeAt(0).collapsed){say('No se pudo seleccionar la palabra','err');return}selCtx={c,d,fe,sl}}catch(e){say('Selección: '+((e&&e.message)||e),'err')}};
+    const extendTo=(x,y)=>{if(!selCtx)return;try{const g=rangeAt(selCtx.d,selCtx.fe,x,y);if(g&&selCtx.sl.extend)selCtx.sl.extend(g.startContainer,g.startOffset)}catch(e){}};
+    const finishSel=()=>{const k=selCtx;selCtx=null;if(!k)return;try{if(k.sl.rangeCount&&!k.sl.getRangeAt(0).collapsed&&onSelHook)onSelHook(k.c.cfiFromRange(k.sl.getRangeAt(0)),k.c)}catch(e){say('Selección: '+((e&&e.message)||e),'err')}};
     const clearSel=()=>{try{const c=rend&&rend.getContents&&rend.getContents()[0];if(c){c.document.getSelection().removeAllRanges();c.document.body.classList.remove('kr-sel')}}catch(e){}hideSel()};
     const linkAt=(x,y)=>{try{const c=rend.getContents()[0],d=c.document,r=(c.window||d.defaultView).frameElement.getBoundingClientRect(),n=d.elementFromPoint(x-r.left,y-r.top),a=n&&n.closest&&n.closest('a[href]');if(a){a.click();return true}}catch(e){}return false};
     const tap=(dir,x,y)=>{if(!rend)return;if(selbar.classList.contains('on')||curSel){clearSel();return}if(linkAt(x,y))return;closePanel();if(dir===0)root.classList.toggle('hide');else dir>0?rend.next():rend.prev()};
     const mk=(cls,dir)=>{const z=el('div','kr-tz '+cls);let sx=0,sy=0,tm=0,fired=false,t0=0,mv=false;
       z.addEventListener('touchstart',e=>{const t=e.touches[0];if(!t||e.touches.length>1)return;sx=t.clientX;sy=t.clientY;fired=false;mv=false;t0=Date.now();clearTimeout(tm);tm=setTimeout(()=>{fired=true;try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}selectAt(sx,sy)},450)},{passive:true});
-      z.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10)){mv=true;clearTimeout(tm)}},{passive:true});
-      z.addEventListener('touchend',e=>{clearTimeout(tm);const t=e.changedTouches[0];if(!t||!rend)return;e.preventDefault();if(fired)return;const dx=t.clientX-sx,dy=t.clientY-sy;
+      z.addEventListener('touchmove',e=>{const t=e.touches[0];if(!t)return;if(fired&&selCtx){e.preventDefault();extendTo(t.clientX,t.clientY);return}if(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10){mv=true;clearTimeout(tm)}},{passive:false});
+      z.addEventListener('touchend',e=>{clearTimeout(tm);const t=e.changedTouches[0];if(!t||!rend)return;e.preventDefault();if(fired){finishSel();return}const dx=t.clientX-sx,dy=t.clientY-sy;
         if(mv){if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy))dx<0?rend.next():rend.prev();return}tap(dir,sx,sy)},{passive:false});
-      z.addEventListener('touchcancel',()=>clearTimeout(tm),{passive:true});
+      z.addEventListener('touchcancel',()=>{clearTimeout(tm);if(fired)finishSel()},{passive:true});
       return z};
     root.append(mk('l',-1),mk('c',0),mk('r',1));
   }
@@ -748,11 +754,12 @@ root.append(warmEl,dimEl);comfort();document.body.append(root);fit();document.bo
     rend.on('click',e=>{if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();if(!sc&&x<w*0.28)rend.prev();else if(!sc&&x>w*0.72)rend.next();else root.classList.toggle('hide')});
     let sx=0;rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX});rend.on('touchend',e=>{const dx=e.changedTouches[0].screenX-sx;if(!sc&&Math.abs(dx)>60){dx<0?rend.next():rend.prev()}});
     rend.on('keyup',e=>{if(e.key==='ArrowRight')rend.next();if(e.key==='ArrowLeft')rend.prev()});
-    rend.on('selected',(cfi,contents)=>{
+    onSelHook=(cfi,contents)=>{
       try{const r=rend.getRange(cfi),text=(r?r.toString():'').replace(/\s+/g,' ').trim();if(text.length<2)return;
         let ctx='';try{ctx=(r.startContainer.parentElement.textContent||'').replace(/\s+/g,' ').trim().slice(0,300)}catch(e){}
         curSel={cfi,text,contents,ctx};closePanel();if(text.length<=30&&!/\s/.test(text)){const n=Date.now();if(window.__krW&&window.__krW.w===text&&n-window.__krW.t<2500)return;window.__krW={w:text,t:n};hideSel();define(text,ctx);return}selbar.classList.add('on')}catch(e){}
-    });
+    };
+    rend.on('selected',onSelHook);
     };
     remount=async()=>{const c=lastCfi;try{rend.destroy()}catch(e){}rend=null;await (mountP=mount(c));marks.forEach(paint);closePanel()};
     // portada del propio EPUB, guardada chica para la biblioteca
