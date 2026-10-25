@@ -1,4 +1,4 @@
-const CACHE='kinderly-shell-v174';
+const CACHE='kinderly-shell-v175';
 const LIBS='kinderly-libs-1'; // jszip y epub.js (versión fija): sin esto, un libro guardado no abre sin conexión si el navegador vació su caché
 const CATALOG=['top','reir','emocion','aventura','intriga','pensar','sonar','susto','breve','historia','teatro','poesia','chicos'].map(c=>'./catalog/'+c+'.json');
 const SHELL=['./','./index.html','./manifest.webmanifest','./descubrir.html','./social.js','./reader.js','./discover.js','./instalar.html','./extras.js','./pets.js','./k2-icon.svg','./k2-180.png','./k2-192.png','./k2-512.png',...CATALOG];
