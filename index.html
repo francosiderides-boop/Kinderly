@@ -306,8 +306,8 @@ nav.tabs{max-width:640px!important;left:0!important;right:0!important}
 .kr-recent .lib-item{display:flex;flex-direction:column;align-items:stretch;border:0;padding:0;gap:8px}
 .kr-recent .lib-item>div{flex:none;order:2}
 .kr-recent .lib-cov{order:1;width:100%;height:auto;aspect-ratio:2/3;max-width:200px;border-radius:6px 12px 12px 6px;box-shadow:0 8px 18px rgba(0,0,0,.25)}
-.kr-recent .lib-item>.lib-btns{order:3;flex:none;gap:6px}
-.kr-recent .lib-btns button{padding:9px 12px;font-size:.82rem}
+.kr-recent .lib-item{align-self:stretch}.kr-recent .lib-item>.lib-btns{margin-top:auto;order:3;flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.kr-recent .lib-btns button{width:100%;min-width:0;padding:9px 2px;font-size:.8rem;text-align:center}
 .kr-recent .lib-item b{font-size:.95rem}.kr-recent .lib-item small{font-size:.76rem}
 .lead{font-size:1.9rem}
 }
@@ -375,7 +375,7 @@ nav.tabs{max-width:640px!important;left:0!important;right:0!important}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v168'; // subir junto con CACHE en sw.js en cada actualización
+const APP_VERSION='v169'; // subir junto con CACHE en sw.js en cada actualización
 $('app-version').textContent='Kinderly · Beta 0.11.55 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra

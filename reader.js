@@ -718,13 +718,18 @@ async function open(o){
             if(rg){const s=d.getSelection();s.removeAllRanges();s.addRange(rg);if(s.modify){s.modify('move','backward','word');s.modify('extend','forward','word')}}}catch(e){}},700)},{passive:true});
         d.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&(Math.abs(t.screenX-sx)>6||Math.abs(t.screenY-sy)>6))cancel()},{passive:true});d.addEventListener('scroll',()=>{lastScroll=Date.now();cancel()},true);
         d.addEventListener('touchend',()=>{lastT=Date.now();cancel()});d.addEventListener('touchcancel',cancel);
+        // toque tipo Kindle: borde izquierdo = página anterior, borde derecho = siguiente (no depende del evento click de iOS)
+        let tx=0,ty=0,tt=0,mv=false;
+        d.addEventListener('touchstart',e=>{const t=e.touches[0];if(!t||e.touches.length>1){tt=0;return}tx=t.clientX;ty=t.clientY;tt=Date.now();mv=false},{passive:true});
+        d.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&(Math.abs(t.clientX-tx)>10||Math.abs(t.clientY-ty)>10))mv=true},{passive:true});
+        d.addEventListener('touchend',()=>{if(!tt||mv||Date.now()-tt>350)return;tt=0;try{const s=d.getSelection();if(sc||selbar.classList.contains('on')||d.body.classList.contains('kr-sel')||(s&&!s.isCollapsed))return;const w=(d.defaultView&&d.defaultView.innerWidth)||innerWidth,x=tx%w;if(x<w*0.3){window.__krTap=Date.now();closePanel();rend.prev()}else if(x>w*0.7){window.__krTap=Date.now();closePanel();rend.next()}}catch(e){}},{passive:true});
         d.addEventListener('mousedown',()=>{if(Date.now()-lastT>900)d.body.classList.add('kr-sel')});
         d.addEventListener('selectionchange',()=>{try{const s=d.getSelection();if(!s||s.isCollapsed)d.body.classList.remove('kr-sel')}catch(e){}});
         const l=d.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600&family=Lora:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Bitter:ital,wght@0,400;0,700;1,400&family=Nunito:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;600&display=swap';d.head.append(l)}catch(e){}});
       style();
       await rend.display(cfi||undefined);
     rend.on('relocated',loc=>{if(closed)return;lastCfi=loc.start.cfi;if(book.locations&&book.locations.length()){pct=book.locations.percentageFromCfi(lastCfi)||0;range.value=Math.round(pct*1000)}upd();hideSel();trackSpeed();save();rlSoon()});
-    rend.on('click',e=>{if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();if(!sc&&x<w*0.28)rend.prev();else if(!sc&&x>w*0.72)rend.next();else root.classList.toggle('hide')});
+    rend.on('click',e=>{if(window.__krTap&&Date.now()-window.__krTap<700)return;if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();if(!sc&&x<w*0.28)rend.prev();else if(!sc&&x>w*0.72)rend.next();else root.classList.toggle('hide')});
     let sx=0;rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX});rend.on('touchend',e=>{const dx=e.changedTouches[0].screenX-sx;if(!sc&&Math.abs(dx)>60){dx<0?rend.next():rend.prev()}});
     rend.on('keyup',e=>{if(e.key==='ArrowRight')rend.next();if(e.key==='ArrowLeft')rend.prev()});
     rend.on('selected',(cfi,contents)=>{
