@@ -59,6 +59,33 @@ const b64u=s=>btoa(unescape(encodeURIComponent(s)));
 const wrap=s=>(s.match(/.{1,76}/g)||[]).join('\r\n');
 const ascii=s=>String(s||'libro.epub').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9._-]+/g,'_').slice(0,80)||'libro.epub';
 
+// arma el mail con el EPUB adjunto y lo manda desde el Gmail de la persona (data: EPUB en base64)
+async function sendData({to,title,fname,data}){
+  try{
+    const B='kinderly_'+Math.random().toString(36).slice(2);
+    const mime=['To: '+to,'Subject: =?UTF-8?B?'+b64u('Tu libro: '+title)+'?=','MIME-Version: 1.0','Content-Type: multipart/mixed; boundary="'+B+'"','',
+      '--'+B,'Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64','',wrap(b64u('Acá tenés “'+title+'”, enviado con Kinderly.')),
+      '--'+B,'Content-Type: application/epub+zip; name="'+fname+'"','Content-Disposition: attachment; filename="'+fname+'"','Content-Transfer-Encoding: base64','',wrap(data),
+      '--'+B+'--',''].join('\r\n');
+    // hasta ~3 MB va como JSON (lo de siempre); más grande, por la carga directa de Gmail (hasta 35 MB)
+    const big=data.length>4000000;
+    const g=big?await fetch('https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'message/rfc822'},body:mime})
+      :await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({raw:btoa(mime).replace(/\+/g,'-').replace(/\//g,'_')})});
+    if(g.ok)return{ok:true};
+    let msg='';try{msg=(await g.json()).error.message}catch(e){}
+    if(g.status===401){clearToken();return{ok:false,error:'Se venció el permiso de Gmail. Probá de nuevo.'}}
+    if(g.status===403){clearToken();needConsent=true}if(g.status===403)return{ok:false,error:'Google no dejó enviar'+(msg?' ('+msg+')':'')+'. Al entrar, tildá el permiso de enviar correo.'};
+    return{ok:false,error:'Gmail respondió '+g.status+(msg?': '+msg:'')};
+  }catch(e){return{ok:false,error:e.message||'Error al enviar'}}
+}
+// un libro que ya está guardado en el dispositivo (ArrayBuffer): se manda sin volver a descargarlo
+async function sendFile({to,title,filename,buf}){
+  if(!/^\S+@\S+\.\S+$/.test(to||''))return{ok:false,error:'Mail de destino inválido'};
+  if(!tokenOk()&&!(await ensureToken()))return{ok:false,error:'No se pudo autorizar el envío desde tu Gmail'};
+  let bin='';const u=new Uint8Array(buf);for(let i=0;i<u.length;i+=0x8000)bin+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));
+  return sendData({to,title,fname:ascii(filename),data:btoa(bin)});
+}
+
 async function sendMail({to,url,title,filename}){
   try{
     if(!/^\S+@\S+\.\S+$/.test(to||''))return{ok:false,error:'Mail de destino inválido'};
@@ -66,17 +93,7 @@ async function sendMail({to,url,title,filename}){
     const r=await fetch(DL_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'descargar',url}),signal:AbortSignal.timeout(90000)});
     const d=await r.json();
     if(!d.ok)return{ok:false,error:d.error||'No se pudo descargar el libro'};
-    const B='kinderly_'+Math.random().toString(36).slice(2),fname=ascii(filename);
-    const mime=['To: '+to,'Subject: =?UTF-8?B?'+b64u('Tu libro: '+title)+'?=','MIME-Version: 1.0','Content-Type: multipart/mixed; boundary="'+B+'"','',
-      '--'+B,'Content-Type: text/plain; charset=UTF-8','Content-Transfer-Encoding: base64','',wrap(b64u('Acá tenés “'+title+'”, enviado con Kinderly.')),
-      '--'+B,'Content-Type: application/epub+zip; name="'+fname+'"','Content-Disposition: attachment; filename="'+fname+'"','Content-Transfer-Encoding: base64','',wrap(d.data),
-      '--'+B+'--',''].join('\r\n');
-    const raw=btoa(mime).replace(/\+/g,'-').replace(/\//g,'_');const g=await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({raw})});
-    if(g.ok)return{ok:true};
-    let msg='';try{msg=(await g.json()).error.message}catch(e){}
-    if(g.status===401){clearToken();return{ok:false,error:'Se venció el permiso de Gmail. Probá de nuevo.'}}
-    if(g.status===403){clearToken();needConsent=true}if(g.status===403)return{ok:false,error:'Google no dejó enviar'+(msg?' ('+msg+')':'')+'. Al entrar, tildá el permiso de enviar correo.'};
-    return{ok:false,error:'Gmail respondió '+g.status+(msg?': '+msg:'')};
+    return await sendData({to,title,fname:ascii(filename),data:d.data});
   }catch(e){return{ok:false,error:e.message||'Error al enviar'}}
 }
 
@@ -498,7 +515,7 @@ function decorateRev(b,actions){
 }
 window.KRev={decorate:decorateRev,open:openReviews};
 
-window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,driveToken,sendMail,decorate,openPanel,syncLib:syncLibSoon};
+window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,driveToken,sendMail,sendFile,decorate,openPanel,syncLib:syncLibSoon};
 
 onAuthStateChanged(auth,async u=>{
   unsubscribe();S.user=u||null;S.username='';

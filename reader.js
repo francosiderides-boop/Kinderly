@@ -865,6 +865,19 @@ async function actDrive(x){
     driveDone(out.folder,nm);
   }catch(e){say((e&&e.message)||'No se pudo subir a Drive.','err')}
 }
+async function actKindle(x){
+  const to=(()=>{try{return(localStorage.getItem('mail')||'').trim()}catch(e){return ''}})();
+  if(!to){say('Primero cargá tu mail de Kindle en Ajustes (usuario@kindle.com).','err');return}
+  if(!/@(free\.)?kindle\.com$/i.test(to)){say('El mail de Ajustes no es de Kindle. Poné tu dirección usuario@kindle.com.','err');return}
+  if(!window.KSoc||!window.KSoc.ensureToken||!(await window.KSoc.ensureToken())){say('Entrá con Google desde la pestaña Amigos para enviar desde tu Gmail.','err');return} // primero el permiso: la ventana de Google tiene que abrirse directo desde el toque
+  try{
+    const buf=await dbGet(x.id);
+    if(!buf){say('Abrí el libro una vez en la app para poder enviarlo.','err');return}
+    const t=window.kTitle?window.kTitle(x.title):x.title;say('Enviando “'+t+'” a tu Kindle…');
+    const res=await window.KSoc.sendFile({to,title:t,filename:t+'.epub',buf});
+    say(res.ok?'Enviado a tu Kindle. Puede tardar unos minutos. Si no llega, aprobá tu Gmail en Amazon.':(res.error||'No se pudo enviar.'),res.ok?'ok':'err');
+  }catch(e){say((e&&e.message)||'No se pudo enviar a Kindle.','err')}
+}
 function driveDone(folder,name){
   const old=document.getElementById('kr-act');if(old)old.remove();
   const ov=el('div','kr-act');ov.id='kr-act';const sh=el('div','kr-act-sh');ov.append(sh);
@@ -881,7 +894,7 @@ function actionMenu(x){
   const close=()=>{ov.classList.remove('on');setTimeout(()=>ov.remove(),180)};
   ov.addEventListener('click',e=>{if(e.target===ov)close()});
   sh.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',x.author||''));
-  [['Reseñas',actReviews],['Lista',actList],['Subir al Drive',actDrive],['Quitar',actRemove]].forEach(([n,fn],i)=>{const b=btn(n,()=>{close();if(fn===actDrive)fn(x);else setTimeout(()=>fn(x),120)},n,i?'ghost':'');sh.append(b)});
+  [['Reseñas',actReviews],['Lista',actList],['Subir al Drive',actDrive],['Enviar a Kindle',actKindle],['Quitar',actRemove]].forEach(([n,fn],i)=>{const b=btn(n,()=>{close();if(fn===actDrive||fn===actKindle)fn(x);else setTimeout(()=>fn(x),120)},n,i?'ghost':'');sh.append(b)});
   const c=btn('Cancelar',close,'Cancelar','ghost');c.classList.add('kr-act-c');sh.append(c);
   document.body.append(ov);requestAnimationFrame(()=>ov.classList.add('on'));
 }
