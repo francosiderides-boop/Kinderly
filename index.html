@@ -298,9 +298,13 @@ button.ghost{background:var(--glass);border:1px solid var(--glass-b);-webkit-bac
 .kr-recent .lib-item,.kr-bk{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 @media(max-width:767.98px){
 .view.on[data-view="biblioteca"]{display:flex;flex-direction:column}
-.view.on[data-view="biblioteca"]>.vt{order:-3}.view.on[data-view="biblioteca"]>.vs{order:-2}.view.on[data-view="biblioteca"]>.kr-recent{order:-1;margin-top:0!important}
+#lib-greet{order:-4}.view.on[data-view="biblioteca"]>.vt{order:-3}.view.on[data-view="biblioteca"]>.vs{order:-2}.view.on[data-view="biblioteca"]>.kr-recent{order:-1;margin-top:0!important}
 .view.on[data-view="biblioteca"]>.ex-lists{order:1}.view.on[data-view="biblioteca"]>.ex-vocab{order:2}.view.on[data-view="biblioteca"]>.kr-open{order:3}.view.on[data-view="biblioteca"]>.ex-ach{order:4}
 .kr-lph{display:block}
+.view.on{animation:in .26s ease-out}@media(prefers-reduced-motion:reduce){.view.on{animation:none}}
+body.has-lib #empty{display:none!important}
+#q-x{flex:none;width:32px;min-width:32px;height:32px;padding:0;border:0;border-radius:50%;background:var(--soft);color:var(--mute);box-shadow:none;font-size:1.1rem;line-height:1}
+#recent{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:14px 0 4px}#recent:empty{display:none}#recent small{flex:0 0 100%;color:var(--mute)}#recent button{padding:7px 13px;font-size:.84rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#recent .rc-x{background:none;border:0;box-shadow:none;color:var(--mute);text-decoration:underline}
 .view.on[data-view="biblioteca"]>.card{margin-top:14px!important}.view.on[data-view="biblioteca"]>.kr-recent{margin-top:0!important}
 .kr-vt button{min-height:36px}.kr-gl{min-height:40px;padding-left:10px;padding-right:10px}
 .ex-agrid{grid-template-columns:repeat(4,minmax(0,1fr))!important}.ex-ab{min-width:0}.ex-ab small{display:block;white-space:normal;line-height:1.2;text-align:center}
@@ -421,8 +425,8 @@ nav.tabs{max-width:640px!important;left:0!important;right:0!important}
 
 <script>
 const $=id=>document.getElementById(id);
-const APP_VERSION='v190'; // subir junto con CACHE en sw.js en cada actualización
-$('app-version').textContent='Kinderly · Beta 0.11.63 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
+const APP_VERSION='v191'; // subir junto con CACHE en sw.js en cada actualización
+$('app-version').textContent='Kinderly · Beta 0.11.64 · versión '+APP_VERSION+' · tema '+(document.documentElement.dataset.theme==='dark'?'noche':'día');
 
 // liquid glass: refracción real solo donde el navegador la soporta (Chrome/Edge/Samsung), lente deslizante en la barra
 (function(){try{
@@ -632,7 +636,7 @@ function render(){
   l.slice(0,40).forEach(b=>card(b));return l.length;
 }
 async function search(author=''){
-  const raw=$('q').value.trim();if(!raw)return;const q=cleanQuery(raw);if(!q)return;
+  const raw=$('q').value.trim();if(!raw)return;const q=cleanQuery(raw);if(!q)return;if(window.kRecentAdd)window.kRecentAdd(raw);
   const run=++searchRun;all=[];qa=author?toks(author):[];qt=toks(q);qn=norm(q);$('res').textContent='';say('Buscando EPUB en español…');let done=0;const failed=[];
   await Promise.all(SOURCES.map(async s=>{
     try{
@@ -694,6 +698,12 @@ async function loadPopular(){
 document.querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>{$('q').value=b.dataset.query;search()});
 $('go').onclick=()=>search();
 $('q').addEventListener('keydown',e=>{if(e.key==='Enter')search()});
+// búsquedas recientes y botón para borrar lo escrito
+{const KEY='k_recent',get=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}};
+ const box=document.createElement('div');box.id='recent';const clr=document.createElement('button');clr.type='button';clr.id='q-x';clr.setAttribute('aria-label','Borrar búsqueda');clr.textContent='×';$('q').after(clr);
+ const draw=()=>{box.textContent='';const l=get();clr.style.display=$('q').value?'':'none';if(!l.length||$('q').value||$('res').childElementCount)return;const h=document.createElement('small');h.textContent='Buscaste hace poco';box.append(h);l.forEach(t=>{const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent=t;b.onclick=()=>{$('q').value=t;$('q').dispatchEvent(new Event('input'));search()};box.append(b)});const x=document.createElement('button');x.type='button';x.className='rc-x';x.textContent='Borrar';x.onclick=()=>{try{localStorage.removeItem(KEY)}catch(e){}draw()};box.append(x)};
+ clr.onclick=()=>{$('q').value='';$('res').textContent='';$('q').dispatchEvent(new Event('input'));$('q').focus()};
+ $('q').addEventListener('input',draw);$('empty').before(box);window.kRecentAdd=t=>{try{localStorage.setItem(KEY,JSON.stringify([t,...get().filter(x=>x.toLowerCase()!==t.toLowerCase())].slice(0,6)))}catch(e){}draw()};draw()}
 const catalogUrls={standard:q=>`https://standardebooks.org/ebooks?query=${encodeURIComponent(q)}`,gutenberg:q=>`https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(q)}&languages=es`,openlibrary:q=>`https://openlibrary.org/search?q=${encodeURIComponent(q+' language:spa')}`,archive:q=>`https://archive.org/search?query=${encodeURIComponent('language:spa AND '+q)}`};
 function updateCatalogLinks(){const q=cleanQuery($('q').value.trim());document.querySelectorAll('[data-catalog]').forEach(a=>{const make=catalogUrls[a.dataset.catalog];if(make)a.href=make(q)})}
 $('q').addEventListener('input',updateCatalogLinks);updateCatalogLinks();
@@ -750,11 +760,11 @@ $('file').onchange=e=>{
 };
 </script>
 
-<script src="reader.js?v=190"></script>
-<script src="discover.js?v=190"></script>
-<script src="extras.js?v=190"></script>
-<script src="pets.js?v=190"></script>
-<script type="module" src="social.js?v=190"></script>
+<script src="reader.js?v=191"></script>
+<script src="discover.js?v=191"></script>
+<script src="extras.js?v=191"></script>
+<script src="pets.js?v=191"></script>
+<script type="module" src="social.js?v=191"></script>
 <script>
 document.getElementById('share-app').onclick=async()=>{const u=location.origin+location.pathname.replace(/[^/]*$/,'')+'instalar.html',d={title:'Kinderly',text:'Kinderly: buscá y recibí libros en español, gratis. Instalala desde acá:',url:u};const copy=async()=>{try{await navigator.clipboard.writeText(u);say('Link copiado: '+u,'ok')}catch(_){say('Copiá este link: '+u)}};try{if(navigator.share)await navigator.share(d);else await copy()}catch(e){if(e.name!=='AbortError')await copy()}};
 let installPrompt;const installButton=document.getElementById('install-app');window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e});installButton.addEventListener('click',async()=>{if(!installPrompt){const ua=navigator.userAgent||'';const msg=/iPhone|iPad|iPod/.test(ua)?'En Safari, tocá Compartir y elegí “Agregar a pantalla de inicio”.':/Android/.test(ua)?'En el menú del navegador, tocá “Instalar aplicación” o “Agregar a pantalla principal”.':'En Chrome o Edge, abrí el menú del navegador y elegí “Instalar Kinderly” o “Instalar página como aplicación”.';alert('Para instalar Kinderly gratis: '+msg);return}installPrompt.prompt();await installPrompt.userChoice;installPrompt=null});window.addEventListener('appinstalled',()=>{installButton.hidden=true});if(('serviceWorker' in navigator)&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));if(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)installButton.hidden=true;

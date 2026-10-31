@@ -479,6 +479,53 @@ def t_narrador(b, base):
     ctx.close()
 
 
+def t_detalles(b, base):
+    lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "pct": .42, "t": 1700000000000}, {"id": "x1", "url": "https://www.gutenberg.org/x1.epub", "title": "Don Quijote de la Mancha", "author": "Cervantes", "pct": .1, "t": 1690000000000}]
+    errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true", "kr_fin_x": "false"})
+    ctx.add_init_script("Object.defineProperty(navigator,'wakeLock',{value:{request:async()=>{window.__wl=(window.__wl||0)+1;return {release(){window.__wlr=1},addEventListener(){}}}},configurable:true})")
+    pg = page(ctx, base + "index.html", errs); pg.set_viewport_size({"width": 360, "height": 740}); pg.wait_for_timeout(800)
+    check("Seguí leyendo está en la biblioteca", pg.locator(".view[data-view=biblioteca] #kr-cont b").first.inner_text() == "Marianela")
+    check("el saludo aparece en la biblioteca", pg.locator("#lib-greet").count() == 1)
+    check("cada libro sin imagen tiene portada propia", pg.locator(".kr-recent .kc").count() >= 2)
+    colors = pg.evaluate("[...document.querySelectorAll('.kr-recent .kc')].map(x=>x.style.getPropertyValue('--c1'))")
+    check("las portadas cambian según el título", len(set(colors)) >= 2 or len(colors) < 2, colors)
+    pg.evaluate("showView('buscar')"); pg.wait_for_timeout(200)
+    check("con libros no se muestra la guía de inicio", not pg.is_visible("#empty"))
+    pg.evaluate("window.kRecentAdd('Galdós')"); pg.wait_for_timeout(50)
+    check("se recuerdan las búsquedas", pg.locator("#recent button:has-text('Galdós')").count() == 1)
+    pg.fill("#q", "algo"); check("aparece el botón para borrar", pg.is_visible("#q-x")); pg.click("#q-x")
+    check("borrar limpia la búsqueda", pg.input_value("#q") == "" and pg.locator("#recent button:has-text('Galdós')").count() == 1)
+    pg.evaluate("showView('biblioteca')")
+    pg.click("#kr-cont .kc-info button")
+    check("la apertura muestra la portada", pg.locator("#kr .kr-mc .kc").count() == 1 or pg.locator("#kr .kr-mc img").count() == 1)
+    pg.wait_for_function(READY, timeout=120000); pg.wait_for_function("!document.querySelector('#kr .kr-prog input').disabled", timeout=120000); pg.wait_for_timeout(300)
+    check("la pantalla no se apaga al leer", pg.evaluate("window.__wl>=1"))
+    pg.evaluate("document.querySelector('#kr').classList.add('hide')"); pg.wait_for_timeout(500)
+    ft = pg.inner_text("#kr .kr-foot")
+    import re as _re
+    check("con barras escondidas se ve la hora y el porcentaje", bool(_re.match(r"^[0-9]{2}:[0-9]{2} · [0-9]+%$", ft)) and float(pg.evaluate("getComputedStyle(document.querySelector('#kr .kr-foot')).opacity")) > .3, ft)
+    pg.evaluate("document.querySelector('#kr').classList.remove('hide')")
+    v0 = pg.evaluate("+document.querySelector('#kr .kr-prog input').value")
+    SET = "(()=>{const r=document.querySelector('#kr .kr-prog input');r.value=%d;r.dispatchEvent(new Event('input'));r.dispatchEvent(new Event('change'))})()"
+    pg.evaluate(SET % 850); pg.wait_for_timeout(1500)
+    check("tras un salto aparece Volver", pg.locator("#kr .kr-jump.on button").count() == 1 and pg.evaluate("+document.querySelector('#kr .kr-prog input').value") > 800)
+    pg.click("#kr .kr-jump button"); pg.wait_for_timeout(1200)
+    check("Volver regresa a donde estaba", abs(pg.evaluate("+document.querySelector('#kr .kr-prog input').value") - v0) < 30, [v0])
+    pg.evaluate(SET % 975); pg.wait_for_timeout(1500)
+    check("saltar al final no festeja", pg.locator("#kr .kr-fin").count() == 0)
+    for _ in range(40):
+        pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(150)
+        if pg.locator("#kr .kr-fin").count(): break
+    check("al terminar leyendo aparece el festejo", pg.locator("#kr .kr-fin h3").count() == 1 and "Marianela" in pg.inner_text("#kr .kr-fin h3"))
+    pg.wait_for_timeout(900); check("el festejo no deja el botón Volver", pg.locator("#kr .kr-jump.on").count() == 0)
+    pg.screenshot(path=os.environ["KAU"] + "_fin.png") if os.environ.get("KAU") else None
+    pg.click("#kr .kr-fin .kr-fing"); check("Seguir acá cierra el festejo", pg.locator("#kr .kr-fin").count() == 0)
+    pg.evaluate("document.querySelector('#kr .kr-top button').click()"); pg.wait_for_timeout(300)
+    check("salir suelta la pantalla", pg.evaluate("window.__wlr===1"))
+    check("sin errores en los detalles", not errs, errs)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -535,7 +582,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]
