@@ -369,6 +369,24 @@ def t_club(b, base):
     ctx.close()
 
 
+def t_lector_diseno(b, base):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs); pg.set_viewport_size({"width": 360, "height": 740})
+    check("biblioteca vacía sin controles que no sirven", pg.locator(".kr-vt").count() == 0 and pg.locator(".kr-lph").count() == 0)
+    over = pg.evaluate("(()=>{const c=document.querySelector('.ex-ach');if(!c)return [];const R=c.getBoundingClientRect().right;return [...c.querySelectorAll('.ex-ab')].filter(x=>x.getBoundingClientRect().right>R).map(x=>x.textContent)})()")
+    check("los logros entran en su tarjeta", not over, over)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_function("!document.querySelector('#kr .kr-prog input').disabled", timeout=120000); pg.wait_for_timeout(300)
+    bar = pg.evaluate("(()=>{const r=document.querySelector('#kr .kr-prog input').getBoundingClientRect(),b=document.querySelector('#kr .kr-bot').getBoundingClientRect(),s=document.querySelector('#kr .kr-prog span');return [r.top-b.top,b.height,s.scrollHeight<=s.clientHeight+1]})()")
+    check("la barra inferior no tiene espacio de más", bar[0] < 12 and bar[1] < 110 and bar[2], bar)
+    pg.click("#kr button[aria-label='Apariencia']"); pg.wait_for_timeout(300)
+    pg.click("#kr .ap-more summary"); pg.click("#kr .ap-more .ap-seg button:has-text('2')"); pg.wait_for_timeout(200)
+    check("la regla se activa desde Más opciones", pg.evaluate("JSON.parse(localStorage.kr_cfg).ruler===true&&JSON.parse(localStorage.kr_cfg).rl===2"))
+    check("Atrás cierra primero el panel", pg.evaluate("document.querySelector('#kr .kr-panel').classList.contains('on')"))
+    pg.go_back(); pg.wait_for_timeout(300)
+    check("Atrás deja el libro abierto", pg.locator("#kr").count() == 1 and not pg.evaluate("document.querySelector('#kr .kr-panel').classList.contains('on')"))
+    check("sin errores en el diseño del lector", not errs, errs)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -425,7 +443,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]

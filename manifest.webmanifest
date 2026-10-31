@@ -5,7 +5,8 @@
   "description": "Instalá Kinderly gratis desde tu navegador y descubrí libros en español.",
   "start_url": "/Kinderly/",
   "scope": "/Kinderly/",
-  "display": "standalone",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
   "background_color": "#FFFFFF",
   "theme_color": "#3E5287",
   "icons": [
