@@ -14,7 +14,10 @@ const FONTS={clasica:{name:'Clásica',css:'Georgia,"Iowan Old Style",serif'},lit
 const HL={amarillo:'#f5d142',verde:'#7fd18b',azul:'#7db7f0',rosa:'#f29bb3'};
 const prefs=()=>Object.assign({mode:'paginated',size:110,theme:'auto',font:'clasica',lh:1.6,margin:18,just:false,dim:0,warm:0},store.get('kr_cfg',{}));
 const setPref=(k,v)=>{const q=prefs();q[k]=v;store.set('kr_cfg',q)};
-const resolveTheme=()=>{const t=prefs().theme;if(t!=='auto')return THEMES[t]||THEMES.claro;const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);return dark?THEMES.noche:THEMES.claro};
+// cuidar la vista: de día papel cálido con menos contraste; de noche fondo oscuro cálido y menos tonos azules
+const EYE={dia:{bg:'#F3E9D6',fg:'#3C3226',warm:12,dim:0},noche:{bg:'#1C1815',fg:'#C9BBA5',warm:35,dim:15}};
+const eyeNow=()=>{const h=new Date().getHours();return h>=7&&h<19?EYE.dia:EYE.noche};
+const resolveTheme=()=>{if(prefs().eye)return eyeNow();const t=prefs().theme;if(t!=='auto')return THEMES[t]||THEMES.claro;const dark=document.documentElement.dataset.theme==='dark'||(!document.documentElement.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);return dark?THEMES.noche:THEMES.claro};
 const lib=()=>store.get('kr_lib',[]);
 // la biblioteca guarda 40 libros; el EPUB de los que salen se borra del celular para no ocupar espacio de más
 const saveLib=l=>{const keep=l.slice(0,40);l.slice(40).forEach(x=>{if(x&&x.id&&!keep.some(y=>y.id===x.id))dbDel(x.id)});store.set('kr_lib',keep)};
@@ -220,7 +223,7 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr .ap-r{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:50px;border-top:1px solid rgba(128,128,128,.16)}#kr .ap-rl{flex:none;font-size:.88rem;opacity:.72}#kr .ap-rt{display:block;padding-top:14px;border-top:1px solid rgba(128,128,128,.16)}#kr .ap-r .ap-seg{flex:0 1 232px;min-width:0;padding:2px;border-radius:10px;background:rgba(128,128,128,.1)}#kr .ap-r .ap-seg button{height:34px;min-width:0;padding:0 4px;border:0;border-radius:8px;font:500 .8rem var(--sans)}#kr .ap-r .ap-seg button.sel{background:var(--krbg);font-weight:600;color:inherit}#kr .ap-r .ap-size{background:none;padding:0;gap:2px}#kr .ap-r .ap-size .ap-st{flex:none;width:44px;min-width:44px;height:36px;padding:0;border:0;background:transparent;font:600 .95rem var(--sans)}#kr .ap-r .ap-pct{min-width:48px;font:500 .86rem var(--sans);opacity:.8}#kr .ap-rg{flex:0 1 232px;min-width:0;accent-color:#5468A3}'+
 '#kr .ap-themes{display:flex;gap:12px;justify-content:space-between;margin:0;padding:6px 2px 14px;overflow:visible}#kr .ap-t{flex:none;min-width:0;width:38px;height:38px;padding:0;border-radius:50%!important}#kr .ap-tc{display:block;width:34px;height:34px;margin:2px;border:1px solid rgba(128,128,128,.35)}#kr .ap-t.sel .ap-tc{border-color:#5468A3;box-shadow:0 0 0 2px var(--krbg),0 0 0 4px #5468A3}'+
 '#kr .ap-fonts{gap:4px;margin:0 -16px;padding:2px 16px 12px}#kr .ap-f,#kr .ap-f.sel{flex:none;width:auto;height:36px;padding:0 12px;display:block;border:0;border-radius:18px;background:transparent;font-size:.95rem;font-weight:400;opacity:.65}#kr .ap-f.sel{opacity:1;background:rgba(128,128,128,.14)}'+
-'#kr .ap-more{border-top:1px solid rgba(128,128,128,.16)}#kr .ap-more summary{min-height:48px;display:flex;align-items:center;justify-content:space-between;font-size:.88rem;opacity:.72;cursor:pointer;list-style:none}#kr .ap-more summary::-webkit-details-marker{display:none}#kr .ap-more summary::after{content:"";width:7px;height:7px;margin-right:5px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg);transition:transform .15s}#kr .ap-more[open] summary::after{transform:rotate(-135deg)}#kr .ap-chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 6px}#kr .ap-chips button{height:34px;border-radius:17px;font:500 .8rem var(--sans);opacity:.75}#kr .ap-chips button.sel{opacity:1;color:#5468A3;background:rgba(84,104,163,.12);border-color:transparent}'+
+'#kr .ap-eye{margin:0 0 10px;font-size:.8rem;line-height:1.4;opacity:.7}#kr .ap-more{border-top:1px solid rgba(128,128,128,.16)}#kr .ap-more summary{min-height:48px;display:flex;align-items:center;justify-content:space-between;font-size:.88rem;opacity:.72;cursor:pointer;list-style:none}#kr .ap-more summary::-webkit-details-marker{display:none}#kr .ap-more summary::after{content:"";width:7px;height:7px;margin-right:5px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg);transition:transform .15s}#kr .ap-more[open] summary::after{transform:rotate(-135deg)}#kr .ap-chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 6px}#kr .ap-chips button{height:34px;border-radius:17px;font:500 .8rem var(--sans);opacity:.75}#kr .ap-chips button.sel{opacity:1;color:#5468A3;background:rgba(84,104,163,.12);border-color:transparent}'+
 '#kr .kr-hl{position:absolute;display:none;z-index:1;pointer-events:none;border-radius:5px;background:rgba(84,104,163,.3);transition:left .1s linear,top .1s linear,width .1s linear}'+
 '#kr .kr-aup{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:4;display:none;align-items:center;gap:4px;max-width:calc(100% - 24px);padding:4px;border-radius:26px;background:var(--krbg);border:1px solid rgba(128,128,128,.25);box-shadow:0 6px 22px rgba(0,0,0,.2);transition:bottom .3s}#kr .kr-aup.on{display:flex}#kr.hide .kr-aup.quiet{opacity:0;pointer-events:none}#kr:not(.hide) .kr-aup{bottom:calc(104px + env(safe-area-inset-bottom,0px))}#kr .kr-aup button{border:0;height:38px;border-radius:19px;padding:0 14px;font:600 .82rem var(--sans);box-shadow:none;background:transparent}'+
 '#kr .kr-aul{display:flex;align-items:center;gap:8px;padding-left:8px;font-size:.82rem;white-space:nowrap}#kr .kr-cat{width:86px;height:54px;flex:none;overflow:visible}#kr .kr-cat .cy{transform-box:fill-box;transform-origin:center;animation:krspin 1.4s linear infinite}#kr .kr-cat .cp{transform-box:view-box;transform-origin:60px 68px;animation:krpaw .7s ease-in-out infinite alternate}#kr .kr-cat .tail{transform-box:view-box;transform-origin:27px 93px;animation:krpaw 1.4s ease-in-out infinite alternate}@keyframes krspin{to{transform:rotate(360deg)}}@keyframes krpaw{from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}@media(prefers-reduced-motion:reduce){#kr .kr-cat *{animation:none!important}}'+
@@ -377,7 +380,8 @@ async function open(o){
     }catch(e){}
     const txt=a.join(' · ');pt.textContent=txt;pt.style.display=txt?'':'none';footNow();
   };
-  const tick=setInterval(()=>{footNow();if(ready&&document.visibilityState==='visible')addSec(15)},15000);
+  let eyeSec=0,eyeWas=eyeNow();const eyeTick=()=>{if(!prefs().eye||document.visibilityState!=='visible')return;if(eyeNow()!==eyeWas){eyeWas=eyeNow();restyle();comfort()}eyeSec+=15;if(eyeSec>=1200){eyeSec=0;say('Descansá la vista: mirá algo lejos unos 20 segundos','ok')}};
+  const tick=setInterval(()=>{footNow();eyeTick();if(ready&&document.visibilityState==='visible')addSec(15)},15000);
   // la pantalla no se apaga mientras leés
   let wake=null;const wakeOn=async()=>{try{if(!closed&&!wake&&document.visibilityState==='visible'&&navigator.wakeLock){wake=await navigator.wakeLock.request('screen');wake.addEventListener('release',()=>{wake=null})}}catch(e){}};const wakeVis=()=>{wakeOn()};document.addEventListener('visibilitychange',wakeVis);wakeOn();
   const save=()=>{if(!ready||!lastCfi)return;const l=lib().filter(x=>x.id!==id);l.unshift({id,url:o.url||'',title,img:o.img||entry().img||'',author:o.author||entry().author||'',cfi:lastCfi,pct:locN?pct:(entry().pct||0),t:Date.now(),local:!!o.local||!!entry().local});saveLib(l)};
@@ -410,7 +414,7 @@ async function open(o){
   };
   const cancelers=new Set();let lastScroll=0;
   const dimEl=el('div','kr-dim'),warmEl=el('div','kr-warm');
-  const comfort=()=>{const q=prefs();dimEl.style.background='rgba(0,0,0,'+(q.dim/100)+')';warmEl.style.background='rgba(255,140,30,'+(q.warm/100*.5)+')'};
+  const comfort=()=>{const q=prefs(),e=q.eye?eyeNow():{warm:0,dim:0};dimEl.style.background='rgba(0,0,0,'+(Math.max(q.dim,e.dim)/100)+')';warmEl.style.background='rgba(255,140,30,'+(Math.max(q.warm,e.warm)/100*.5)+')'};
   const restyle=()=>{apply();style()};
 
   // ----- marcas (subrayados y notas) -----
@@ -527,9 +531,11 @@ async function open(o){
   const looks=()=>panel('Apariencia',b=>{
     const row=(label,node,host)=>{const w=el('div','ap-r');w.append(el('span','ap-rl',label),node);(host||b).append(w);return w};
     const seg=(label,opts,get,set,host)=>{const s=el('div','ap-seg');const bs=[];opts.forEach(([txt,val])=>{const x=btn(txt,()=>{set(val);bs.forEach(y=>y[1].classList.toggle('sel',y[0]===val))});bs.push([val,x]);x.classList.toggle('sel',get()===val);s.append(x)});row(label,s,host)};
+    seg('Cuidar la vista',[['Sí',true],['No',false]],()=>!!prefs().eye,v=>{setPref('eye',v);restyle();comfort();looks()});
+    if(prefs().eye)b.append(el('p','ap-eye','Fondo cálido y menos contraste. De noche oscurece y baja los tonos azules. Cada 20 minutos te recuerda descansar la vista.'));
     // tema: círculos sin nombre, lo primero que se quiere cambiar
     const tr=el('div','ap-themes');const tb={};
-    Object.keys(THEMES).forEach(k=>{const T=THEMES[k];const x=btn('',()=>{setPref('theme',k);restyle();Object.keys(tb).forEach(j=>tb[j].classList.toggle('sel',j===k))},T.name,'ap-t');const c=el('span','ap-tc');if(k==='auto')c.style.background='linear-gradient(135deg,#F7F6F1 50%,#12151C 50%)';else c.style.background=T.bg;x.append(c);x.classList.toggle('sel',prefs().theme===k);tb[k]=x;tr.append(x)});
+    Object.keys(THEMES).forEach(k=>{const T=THEMES[k];const x=btn('',()=>{const was=prefs().eye;setPref('theme',k);setPref('eye',false);restyle();comfort();if(was)looks();else Object.keys(tb).forEach(j=>tb[j].classList.toggle('sel',j===k))},T.name,'ap-t');const c=el('span','ap-tc');if(k==='auto')c.style.background='linear-gradient(135deg,#F7F6F1 50%,#12151C 50%)';else c.style.background=T.bg;x.append(c);x.classList.toggle('sel',!prefs().eye&&prefs().theme===k);tb[k]=x;tr.append(x)});
     b.append(tr);
     // tamaño
     const pct=el('span','ap-pct',prefs().size+'%');

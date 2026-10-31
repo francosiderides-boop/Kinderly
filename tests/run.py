@@ -526,6 +526,28 @@ def t_detalles(b, base):
     ctx.close()
 
 
+def t_vista(b, base):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"})
+    ctx.add_init_script("window.__h=12;const gh=Date.prototype.getHours;Date.prototype.getHours=function(){return window.__h};const si=window.setInterval;window.setInterval=(f,d,...a)=>si(f,d===15000?40:d,...a)")
+    pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(300)
+    BG = "getComputedStyle(document.querySelector('#kr')).getPropertyValue('--krbg')"; BODY = "getComputedStyle(document.querySelector('#kr iframe').contentDocument.body).backgroundColor"; DIM = "document.querySelector('#kr .kr-dim').style.background"; WARM = "document.querySelector('#kr .kr-warm').style.background"
+    pg.click("#kr button[aria-label='Apariencia']"); pg.wait_for_timeout(200)
+    pg.click("#kr .ap-r:has-text('Cuidar la vista') button:has-text('Sí')"); pg.wait_for_timeout(500)
+    check("de día usa papel cálido", pg.evaluate(BG) == "#F3E9D6" and pg.evaluate(BODY) == "rgb(243, 233, 214)", pg.evaluate(BODY))
+    check("de día suma luz cálida", "0.06" in pg.evaluate(WARM), pg.evaluate(WARM))
+    check("ningún tema queda marcado", pg.locator("#kr .ap-t.sel").count() == 0)
+    pg.screenshot(path=os.environ["KAU"] + "_eye.png") if os.environ.get("KAU") else None
+    pg.evaluate("window.__h=22"); pg.wait_for_timeout(400)
+    check("de noche cambia solo y oscurece", pg.evaluate(BG) == "#1C1815" and pg.evaluate(BODY) == "rgb(28, 24, 21)" and "0.15" in pg.evaluate(DIM), [pg.evaluate(BODY), pg.evaluate(DIM)])
+    pg.wait_for_function("document.querySelector('#status').textContent.includes('Descansá la vista')", timeout=15000)
+    check("recuerda descansar la vista", True)
+    pg.click("#kr .ap-t[aria-label='Sepia']"); pg.wait_for_timeout(500)
+    check("elegir un tema apaga el modo", pg.evaluate(BG) == "#f1e6cf" and pg.evaluate("JSON.parse(localStorage.kr_cfg).eye") is False and "0)" in pg.evaluate(DIM).replace(" ", ""), pg.evaluate(DIM))
+    check("sin errores al cuidar la vista", not errs, errs)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -582,7 +604,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]
