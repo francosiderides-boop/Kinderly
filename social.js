@@ -531,7 +531,7 @@ function renderProfile(){
   const col=el('div','pf-col');col.append(el('b','pf-u',S.username?'@'+S.username:'Sin nombre de usuario'));
   const acts=el('div','pf-acts');acts.append(btn(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername(),true),btn('Cambiar foto',()=>fi.click(),true));if(S.pic)acts.append(btn('Quitar foto',()=>guardMsg(async()=>{await saveMe({pic:deleteField()});S.pic='';renderProfile()}),true));
   col.append(acts,fi);top.append(col);c.append(top);
-  const l=el('label','pf-l','Mini bio');l.htmlFor='pf-bio';const ta=el('textarea');ta.id='pf-bio';ta.rows=4;ta.maxLength=300;ta.placeholder='Contá qué tipo de lectura te gusta: novela histórica, poesía, terror…';ta.value=S.bio||'';
+  const l=el('label','pf-l','Qué clase de lector soy');l.htmlFor='pf-bio';const ta=el('textarea');ta.id='pf-bio';ta.rows=4;ta.maxLength=300;ta.placeholder='Contá qué tipo de lectura te gusta: novela histórica, poesía, terror…';ta.value=S.bio||'';
   const n=el('small','pf-n',ta.value.length+' / 300');ta.oninput=()=>{n.textContent=ta.value.length+' / 300'};
   const sv=btn('Guardar',()=>guardMsg(async()=>{const t=ta.value.trim();await saveMe({bio:t});S.bio=t},'Perfil guardado'));sv.style.marginTop='10px';
   c.append(l,ta,n,sv);body.append(c);
