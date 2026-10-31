@@ -211,6 +211,23 @@ const CAT_AWAKE=
  '<g class="wh">'+WH('M24 43 L9 39.500 M24 47 L8 49 M26 51 L13 57.500')+WH('M76 43 L91 39.500 M76 47 L92 49 M74 51 L87 57.500')+'</g>'+
  '</g></g>'+
  '<g class="arm">'+B('M58 62 C65 58 68 50 66 44 C65 39.500 71.500 38.500 72 43.500 C73 51 71 62 65 71 Z')+'</g>';
+// el mismo gatito jugando con un ovillo: se usa mientras se prepara la voz del lector
+const CAT_PLAY='<svg class="kr-cat" xmlns="'+NS+'" viewBox="0 -5 168 105" stroke-width="2.1" aria-hidden="true">'+
+ '<g class="tail"><path d="M27 93 C10 98 3 82 11 70 C15 64 22 66 20 72" fill="none" stroke="var(--pk-cat)" stroke-width="6" stroke-linecap="round"/></g>'+
+ B('M38 52 C32 64 26 78 25 90 C24 98 34 100 50 100 C66 100 76 98 75 90 C74 78 68 64 62 52 Z')+
+ '<path d="M50 80 C49 88 50 94 52 99 M40 88 C39 93 41 97 44 99.500" fill="none" stroke="var(--pk-rim)" stroke-width="1.2" stroke-linecap="round" opacity=".75"/>'+
+ '<g transform="rotate(9 50 40)">'+
+ B('M26 28 C24 18 24 8 28 1 C34 3 42 9 47 15 Z')+'<path d="M30 22 C29 15 29 10 31 6.500 C35 8.500 39 11.500 41.500 15 Z" fill="var(--pk-lav)"/>'+
+ B('M74 28 C76 18 76 8 72 1 C66 3 58 9 53 15 Z')+'<path d="M70 22 C71 15 71 10 69 6.500 C65 8.500 61 11.500 58.500 15 Z" fill="var(--pk-lav)"/>'+
+ B('M24 35 C24 21 36 13 50 13 C64 13 76 21 76 35 C76 48 65 56 50 56 C35 56 24 48 24 35 Z')+
+ eyeW(38.5,36)+eyeW(61.5,36)+eyeP(38.5,37.6,2.4)+eyeP(61.5,37.6,2.4)+
+ '<path d="M47.500 44.500 L52.500 44.500 L50 47.500 Z" fill="#C99AA6"/><path d="M45 51.800 Q50 48.200 55 51.800" fill="none" stroke="var(--pk-lav)" stroke-width="1" stroke-linecap="round" opacity=".85"/>'+
+ WH('M24 43 L9 39.500 M24 47 L8 49 M26 51 L13 57.500')+WH('M76 43 L91 39.500 M76 47 L92 49 M74 51 L87 57.500')+
+ '</g>'+
+ '<g class="cp">'+B('M58 62 C68 63 82 69 93 77 C99 82 93 90 86 86 C76 81 64 79 58 75 Z')+'</g>'+
+ '<path d="M132 99 C142 99 150 96 164 99" fill="none" stroke="#B96F7E" stroke-width="1.8" stroke-linecap="round"/>'+
+ '<g class="cy"><circle cx="118" cy="84" r="16" fill="var(--pk-pink)" stroke="#B96F7E" stroke-width="1.3"/><path d="M104 78 q14 -9 28 0 M102.500 85 q15 -8 31 1 M107 95 q9 -15 22 -23 M112 69 q13 9 15 29" fill="none" stroke="#B96F7E" stroke-width="1.5" stroke-linecap="round"/></g>'+
+ '</svg>';
 const CAT_SLEEP=
  '<g class="body">'+
  '<g class="tail"><path d="M88 90 C76 100 40 102 14 96" fill="none" stroke="var(--pk-cat)" stroke-width="6" stroke-linecap="round"/></g>'+
@@ -317,7 +334,7 @@ if(stEl){let lastT='',foundFor='';new MutationObserver(()=>{const t=stEl.textCon
   if(/^Buscando EPUB/.test(t)){foundFor='';react('busy');return}
   const m=/(\d+)\/(\d+) fuentes · (\d+) resultados/.exec(t);if(m&&+m[3]>0&&+m[1]===+m[2]&&foundFor!==t){foundFor=t;react('found');return}
   if(/Enviado a/.test(t))react('sent');else if(/Meta de hoy cumplida/.test(t))react('goal');else if(c==='err')react('err');else if(c==='ok'&&/guardad|copiad|Descargado/i.test(t))react('ok')}).observe(stEl,{childList:true,characterData:true,subtree:true,attributes:true,attributeFilter:['class']})}
-window.KPets={react,refresh:sync,set:v=>{try{localStorage.setItem(KEY,v?'0':'1')}catch(e){}sync();host.classList.toggle('off',off())},on:()=>!off()};
+window.KPets={playCat:()=>CAT_PLAY,react,refresh:sync,set:v=>{try{localStorage.setItem(KEY,v?'0':'1')}catch(e){}sync();host.classList.toggle('off',off())},on:()=>!off()};
 
 // interruptor en Ajustes
 (function(){const h=document.querySelector('.view[data-view="ajustes"]');if(!h||document.getElementById('ex-pets'))return;

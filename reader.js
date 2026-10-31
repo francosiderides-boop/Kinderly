@@ -223,8 +223,8 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr .ap-more{border-top:1px solid rgba(128,128,128,.16)}#kr .ap-more summary{min-height:48px;display:flex;align-items:center;justify-content:space-between;font-size:.88rem;opacity:.72;cursor:pointer;list-style:none}#kr .ap-more summary::-webkit-details-marker{display:none}#kr .ap-more summary::after{content:"";width:7px;height:7px;margin-right:5px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(45deg);transition:transform .15s}#kr .ap-more[open] summary::after{transform:rotate(-135deg)}#kr .ap-chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 0 6px}#kr .ap-chips button{height:34px;border-radius:17px;font:500 .8rem var(--sans);opacity:.75}#kr .ap-chips button.sel{opacity:1;color:#5468A3;background:rgba(84,104,163,.12);border-color:transparent}'+
 '#kr .kr-hl{position:absolute;display:none;z-index:1;pointer-events:none;border-radius:5px;background:rgba(84,104,163,.3);transition:left .1s linear,top .1s linear,width .1s linear}'+
 '#kr .kr-aup{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:4;display:none;align-items:center;gap:4px;max-width:calc(100% - 24px);padding:4px;border-radius:26px;background:var(--krbg);border:1px solid rgba(128,128,128,.25);box-shadow:0 6px 22px rgba(0,0,0,.2);transition:bottom .3s}#kr .kr-aup.on{display:flex}#kr.hide .kr-aup.quiet{opacity:0;pointer-events:none}#kr:not(.hide) .kr-aup{bottom:calc(104px + env(safe-area-inset-bottom,0px))}#kr .kr-aup button{border:0;height:38px;border-radius:19px;padding:0 14px;font:600 .82rem var(--sans);box-shadow:none;background:transparent}'+
-'#kr .kr-aul{display:flex;align-items:center;gap:8px;padding-left:8px;font-size:.82rem;white-space:nowrap}#kr .kr-cat{width:84px;height:56px;flex:none;overflow:visible}#kr .kr-cat .cb{fill:#2A2E40}#kr .kr-cat .ce{fill:#F1E9DB}#kr .kr-cat .ct,#kr .kr-cat .cp{fill:none;stroke:#2A2E40;stroke-width:5;stroke-linecap:round}#kr .kr-cat .cs{stroke:rgba(128,128,128,.4);stroke-width:2;stroke-linecap:round}#kr .kr-cat .cy circle{fill:#E8A9A9}#kr .kr-cat .cy path{fill:none;stroke:#B96F7E;stroke-width:1.6;stroke-linecap:round}#kr .kr-cat .cy{transform-box:fill-box;transform-origin:center;animation:krspin 1.4s linear infinite}#kr .kr-cat .cp{transform-box:view-box;transform-origin:41px 44px;animation:krpaw .7s ease-in-out infinite alternate}#kr .kr-cat .ct{transform-box:view-box;transform-origin:18px 52px;animation:krpaw 1.4s ease-in-out infinite alternate}@keyframes krspin{to{transform:rotate(360deg)}}@keyframes krpaw{from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}@media(prefers-reduced-motion:reduce){#kr .kr-cat *{animation:none!important}}'+
-'#kr .kr-aufrom{margin:2px 0 12px;font:italic 1rem/1.4 var(--serif)}#kr .kr-aufrom small{display:block;font:500 .78rem var(--sans);opacity:.65;margin-bottom:3px}#kr .kr-play{display:block;width:100%;height:48px;border:0;border-radius:24px;background:#5468A3!important;color:#fff!important;margin-bottom:8px}'+
+'#kr .kr-aul{display:flex;align-items:center;gap:8px;padding-left:8px;font-size:.82rem;white-space:nowrap}#kr .kr-cat{width:86px;height:54px;flex:none;overflow:visible}#kr .kr-cat .cy{transform-box:fill-box;transform-origin:center;animation:krspin 1.4s linear infinite}#kr .kr-cat .cp{transform-box:view-box;transform-origin:60px 68px;animation:krpaw .7s ease-in-out infinite alternate}#kr .kr-cat .tail{transform-box:view-box;transform-origin:27px 93px;animation:krpaw 1.4s ease-in-out infinite alternate}@keyframes krspin{to{transform:rotate(360deg)}}@keyframes krpaw{from{transform:rotate(-9deg)}to{transform:rotate(9deg)}}@media(prefers-reduced-motion:reduce){#kr .kr-cat *{animation:none!important}}'+
+'#kr .kr-pick{position:absolute;inset:0;z-index:3;display:none;touch-action:none;cursor:pointer}#kr .kr-aumsg{padding:0 4px 0 14px;font-size:.84rem;white-space:nowrap}#kr .kr-panel .row>b{flex:0 0 100%}#kr .kr-play{display:block;width:100%;height:48px;border:0;border-radius:24px;background:#5468A3!important;color:#fff!important;margin-bottom:8px}'+
 '#kr .li{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid rgba(128,128,128,.2);border-radius:0;height:auto;min-height:44px;padding:10px 4px;font-weight:500;white-space:normal}'+
 '#kr .li small{display:block;opacity:.65;font-weight:400;margin-top:2px}'+
 '#kr .row{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}#kr .row>b{min-width:78px;font-weight:600;font-size:.85rem}'+
@@ -570,7 +570,7 @@ async function open(o){
   const AU={on:false,paused:false,load:false,gen:0,audio:null,seg:null,at:0,rest:null,onState:null,word:null,flip:false,cps:+store.get('kr_au_cps',13)||13};
   const auNote=()=>{auPill();if(AU.onState)AU.onState()};
   let auModels=null;
-  const stopAudio=()=>{AU.gen++;AU.on=false;AU.paused=false;AU.load=false;AU.rest=null;AU.word=null;auHl.style.display='none';try{speechSynthesis.cancel()}catch(e){}if(AU.audio){try{AU.audio.pause()}catch(e){}AU.audio=null}auNote()};
+  const stopAudio=()=>{AU.gen++;AU.pick=false;auPicker.style.display='none';AU.on=false;AU.paused=false;AU.load=false;AU.rest=null;AU.word=null;auHl.style.display='none';try{speechSynthesis.cancel()}catch(e){}if(AU.audio){try{AU.audio.pause()}catch(e){}AU.audio=null}auNote()};
   window.__krStop=stopAudio;
   const devVoices=()=>{try{return speechSynthesis.getVoices().filter(v=>/^es/i.test(v.lang))}catch(e){return[]}};
   const chunks=(t,max,first)=>{const out=[],n=t.length;let p=0;while(p<n){while(p<n&&t[p]===' ')p++;if(p>=n)break;const m=out.length?max:(first||max);let e=n;if(p+m<n){const w=t.slice(p,p+m);let i=-1;for(const k of ['. ','? ','! ','; ',', ',' ']){const j=w.lastIndexOf(k);if(j>m*.4){i=j+k.length;break}}e=p+(i<0?m:i)}out.push({t:t.slice(p,e),at:p});p=e}return out};
@@ -621,7 +621,7 @@ async function open(o){
     const c=ai(),ms=await ttsModels(c.key);let last='';
     for(const m of ms.slice(0,3)){
       try{
-        const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':c.key},body:JSON.stringify({contents:[{parts:[{text:voice==='narrador'?'Narrá en español, como un señor mayor que cuenta un cuento junto al fuego, con voz grave, cálida y pausada: '+txt:txt}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:voice==='narrador'?'Algenib':voice}}}}}),signal:AbortSignal.timeout(70000)});
+        const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent',{method:'POST',headers:{'content-type':'application/json','x-goog-api-key':c.key},body:JSON.stringify({contents:[{parts:[{text:txt}]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:voice==='narrador'?'Algenib':voice}}}}}),signal:AbortSignal.timeout(70000)});
         const d=await r.json().catch(()=>({}));
         if(r.ok){const p=((((d.candidates||[])[0]||{}).content||{}).parts||[]).find(x=>x.inlineData);if(p)return wavUrl(p.inlineData.data,p.inlineData.mimeType);last='La IA no devolvió audio';continue}
         last=(d.error&&d.error.message)||('Error '+r.status);if([400,401,403,429].includes(r.status))break;
@@ -629,7 +629,7 @@ async function open(o){
     }
     throw new Error(last||'No se pudo generar el audio');
   }
-  const playUrl=(url,seg,ch)=>new Promise((res,rej)=>{const a=AU.audio;if(!a)return res();let iv=0;const done=f=>{clearInterval(iv);f()};a.onended=()=>done(res);a.onerror=()=>done(()=>rej(new Error('No se pudo reproducir el audio')));a.onplaying=()=>{auStarted();clearInterval(iv);iv=setInterval(()=>{if(a.duration)auMark(seg,ch.at+ch.t.length*a.currentTime/a.duration)},120)};a.src=url;a.playbackRate=aCfg().rate;a.play().catch(rej)});
+  const playUrl=(url,seg,ch)=>new Promise((res,rej)=>{const a=AU.audio;if(!a)return res();let iv=0;const done=f=>{clearInterval(iv);f()};a.onended=()=>done(res);a.onerror=()=>done(()=>rej(new Error('No se pudo reproducir el audio')));a.onplaying=()=>{auStarted();clearInterval(iv);iv=setInterval(()=>{if(a.duration)auMark(seg,ch.at+ch.t.length*a.currentTime/a.duration)},120)};a.src=url;a.playbackRate=aCfg().rate*(aCfg().voice==='narrador'?.94:1);a.play().catch(rej)});
   async function runAudio(seg0){
     const gen=++AU.gen,eng=aCfg().eng==='ai'?'ai':'device';
     if(eng==='ai'&&!(ai()&&ai().key&&ai().p!=='claude')){say('Cargá tu clave de Gemini para usar la voz con IA','err');return}
@@ -658,24 +658,31 @@ async function open(o){
   }
   const pauseAudio=()=>{if(!AU.on)return;AU.paused=true;if(aCfg().eng==='ai'&&AU.audio){AU.audio.pause()}else{AU.gen++;try{speechSynthesis.cancel()}catch(e){}AU.rest=AU.seg?{...AU.seg,from:AU.at}:null;AU.on=false}auNote()};
   const resumeAudio=()=>{if(!AU.paused)return;if(AU.on&&AU.audio){AU.paused=false;AU.audio.play().catch(()=>{});auNote()}else if(AU.rest){const q=AU.rest;AU.rest=null;runAudio(q)}};
-  const auHl=el('div','kr-hl'),aup=el('div','kr-aup');
-  const CAT='<svg class="kr-cat" viewBox="0 0 96 64" aria-hidden="true"><path class="ct" d="M18 52c-10 2-14-6-9-12"/><ellipse class="cb" cx="30" cy="44" rx="15" ry="15"/><path class="cb" d="M19 16l1 11h11zM41 16l-1 11H29z"/><circle class="cb" cx="30" cy="27" r="12"/><circle class="ce" cx="26" cy="26" r="1.8"/><circle class="ce" cx="34" cy="26" r="1.8"/><path class="cp" d="M41 44q7 1 13 5"/><path class="cs" d="M66 57H90"/><g class="cy"><circle cx="70" cy="46" r="11"/><path d="M61 42q9-6 18 0M60 47q10-5 20 1M63 54q6-10 15-15M66 36q8 6 10 19"/></g></svg>';
-  const auPill=()=>{aup.textContent='';aup.className='kr-aup'+(AU.on||AU.paused?' on':'')+(AU.quiet&&AU.on&&!AU.load&&!AU.paused?' quiet':'');if(!(AU.on||AU.paused))return;
-    if(AU.load){const w=el('span','kr-aul');w.innerHTML=CAT;w.append(el('span','','Preparando la voz…'));aup.append(w)}
+  const auHl=el('div','kr-hl'),aup=el('div','kr-aup'),auPicker=el('div','kr-pick');
+  // elegir la palabra: una capa encima del libro recibe el toque; deslizar sigue pasando de página
+  const auStartPick=()=>{stopAudio();AU.pick=true;closePanel();root.classList.add('hide');auPicker.style.display='block';auNote()};
+  const auNearest=(seg,x,y)=>{let best=null,bd=Infinity,seen=false;for(const w of seg.words){if(w.at<seg.from)continue;let q=null;try{q=auRect(seg,w)}catch(e){}if(!q||!auIn(q)){if(seen)break;continue}seen=true;const dx=Math.max(q.left-x,0,x-q.left-q.width),dy=Math.max(q.top-y,0,y-q.top-q.height),d=dx+dy*3;if(d<bd){bd=d;best=w}}return best};
+  {let sx=0,sy=0,ly=0,mv=false,dn=false;
+   auPicker.addEventListener('pointerdown',e=>{dn=true;sx=e.clientX;sy=ly=e.clientY;mv=false;try{auPicker.setPointerCapture(e.pointerId)}catch(x){}});
+   auPicker.addEventListener('pointermove',e=>{if(!dn)return;if(Math.abs(e.clientX-sx)>10||Math.abs(e.clientY-sy)>10)mv=true;if(prefs().mode==='scrolled'){const k=view.querySelector('.epub-container');if(k)k.scrollTop-=e.clientY-ly}ly=e.clientY});
+   auPicker.addEventListener('pointercancel',()=>{dn=false});
+   auPicker.addEventListener('pointerup',e=>{if(!dn)return;dn=false;const dx=e.clientX-sx;if(mv){if(prefs().mode!=='scrolled'&&Math.abs(dx)>50&&Math.abs(dx)>Math.abs(e.clientY-sy))turn(dx<0?1:-1);return}
+     const s=audioHere();if(!s||!s.words.length){say('En esta página no hay texto para leer','err');return}const rr=root.getBoundingClientRect(),w=auNearest(s,e.clientX-rr.left,e.clientY-rr.top);if(!w){say('Tocá una palabra de la página','err');return}s.from=w.at;AU.pick=false;auPicker.style.display='none';fsEnter();runAudio(s)})}
+  const auPill=()=>{aup.textContent='';aup.className='kr-aup'+(AU.on||AU.paused||AU.pick?' on':'')+(AU.quiet&&AU.on&&!AU.load&&!AU.paused?' quiet':'');if(AU.pick){aup.append(el('span','kr-aumsg','Tocá la palabra donde empezar'),btn('Cancelar',stopAudio,'Cancelar'));return}if(!(AU.on||AU.paused))return;
+    if(AU.load){const w=el('span','kr-aul');if(window.KPets)w.innerHTML=window.KPets.playCat();w.append(el('span','','Preparando la voz…'));aup.append(w)}
     else aup.append(AU.paused?btn('Seguir',resumeAudio,'Seguir leyendo'):btn('Pausa',pauseAudio,'Pausa'));
     aup.append(btn('Detener',stopAudio,'Detener lectura'))};
-  root.append(auHl,aup);
+  root.append(auHl,auPicker,aup);
   const musHost=el('div','kr-mus');root.append(musHost);
   const musOn=()=>!!musHost.firstChild&&!musHost.classList.contains('off');
   const setMus=(kind,id,name)=>{musHost.textContent='';const f=document.createElement('iframe');f.src='https://open.spotify.com/embed/'+kind+'/'+id+'?utm_source=generator&theme=0';f.allow='autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';f.loading='lazy';f.title='Spotify: '+name;f.style.cssText='width:100%;height:100%;border:0;border-radius:14px';musHost.append(f);musHost.classList.add('on');musHost.classList.remove('off');store.set('kr_mus',{k:kind,i:id,n:name});audioPanel()};
   const audioPanel=()=>panel('Audio y música',b=>{
     const c=aCfg(),gem=!!(ai()&&ai().key&&ai().p!=='claude');
     const chips=(label,opts,get,set)=>{const r=el('div','row');r.append(el('b','',label));const bs=[];opts.forEach(([t,v])=>{const x=btn(t,()=>{set(v);bs.forEach(y=>y[1].classList.toggle('sel',y[0]===v))},t);bs.push([v,x]);x.classList.toggle('sel',get()===v);r.append(x)});b.append(r)};
-    const start=el('p','kr-aufrom');{const s=audioHere();if(s){const t=s.text.slice(s.from,s.from+70).trim();if(t){start.append(el('small','','Empieza en la primera palabra de esta página'),el('span','','“'+t.replace(/\s+\S*$/,'')+'…”'))}}}
-    const go=btn('Leer esta página en voz alta',()=>{if(AU.paused)resumeAudio();else{stopAudio();runAudio()}},'Leer','kr-play'),ctl=el('div','row');
+    const go=btn('Leer en voz alta',()=>{if(AU.paused)resumeAudio();else auStartPick()},'Leer','kr-play'),ctl=el('div','row');
     const pb=btn('Pausa',pauseAudio,'Pausa'),sb=btn('Detener',stopAudio,'Detener');ctl.append(pb,sb);
-    const refresh=()=>{if(!go.isConnected)return;go.textContent=AU.paused?'Seguir leyendo':'Leer esta página en voz alta';go.style.display=AU.on&&!AU.paused?'none':'';ctl.style.display=AU.on||AU.paused?'':'none';pb.style.display=AU.on&&!AU.paused?'':'none'};
-    AU.onState=refresh;b.append(start,go,ctl);refresh();
+    const refresh=()=>{if(!go.isConnected)return;go.textContent=AU.paused?'Seguir leyendo':'Leer en voz alta';go.style.display=AU.on&&!AU.paused?'none':'';ctl.style.display=AU.on||AU.paused?'':'none';pb.style.display=AU.on&&!AU.paused?'':'none'};
+    AU.onState=refresh;b.append(go,ctl);refresh();
     chips('Voz',[['Del dispositivo (gratis)','device'],['Con IA (tu clave)','ai']],()=>aCfg().eng,v=>{stopAudio();setA('eng',v);audioPanel()});
     if(c.eng==='ai'){
       if(!gem){b.append(el('p','hint2',ai()&&ai().key?'Las voces con IA usan tu clave de Gemini; la que cargaste es de Claude.':'Las voces con IA usan tu propia clave de Gemini (gratis en Google AI Studio).'),btn('Cargar mi clave de Gemini',aiPanel))}
@@ -696,7 +703,7 @@ async function open(o){
     }
     chips('Resaltar',[['Sí',true],['No',false]],()=>aCfg().hl!==false,v=>{setA('hl',v);if(!v)auHl.style.display='none'});
     chips('Velocidad',[['Lenta',0.85],['Normal',1],['Rápida',1.25],['Muy rápida',1.5]],()=>aCfg().rate,v=>{setA('rate',v);if(AU.audio)AU.audio.playbackRate=v});
-    b.append(el('p','note','Sigue con las páginas y los capítulos siguientes. Al cerrar el libro se detiene.'));
+    b.append(el('p','note','Después de tocar Leer, tocá la palabra donde querés empezar. Sigue solo con las páginas y los capítulos siguientes.'));
     // música de Spotify mientras leés
     const mh=el('div','kr-mh');mh.append(el('b','','Música para leer · Spotify'));b.append(mh);
     const mrow=el('div','ap-fonts');MUS.forEach(([n,e,id])=>{const x=btn('',()=>{setMus('playlist',id,n)},n,'ap-f');x.append(el('span','ap-fa',e),el('span','ap-fn',n));mrow.append(x)});b.append(mrow);
