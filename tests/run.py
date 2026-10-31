@@ -231,12 +231,13 @@ def t_lector_sin_indice(b, base):
     toc = pg.evaluate("[...document.querySelectorAll('#kr .kr-pb .li')].map(x=>x.textContent)")
     check("arma el índice que el libro no trae", toc[:2] == ["Capítulo 1", "Capítulo II"] and len(toc) == 10, toc)
     pg.click("#kr .kr-pb .li >> nth=0"); pg.wait_for_timeout(1500)
-    vis = "(()=>{const f=document.querySelector('#kr iframe'),r=f.getBoundingClientRect(),d=f.contentDocument;for(const y of [130,160,200,260]){const c=d.caretRangeFromPoint(200-r.left,y-r.top);if(c&&c.startContainer&&c.startContainer.textContent.trim())return c.startContainer.textContent.replace(/\\s+/g,' ').trim()}return ''})()"
+    vis = "(()=>{const f=document.querySelector('#kr iframe'),r=f.getBoundingClientRect(),d=f.contentDocument;const o=[];for(const y of [130,160,200,260]){const c=d.caretRangeFromPoint(200-r.left,y-r.top);if(c&&c.startContainer&&c.startContainer.textContent.trim())o.push(c.startContainer.textContent.replace(/\\s+/g,' ').trim())}return o})()"
     starts = {3: "Sólo con enorme", 9: "Muchos serán", 1: "Supongo que"}
     for i in [3, 9, 3, 1]:
         pg.click("#kr button[aria-label='Contenido']"); pg.wait_for_timeout(400)
         pg.click(f"#kr .kr-pb .li >> nth={i}"); pg.wait_for_timeout(3500)
-        got = pg.evaluate(vis)
+        title = toc[i].split()[-1]  # el título del capítulo puede ocupar el principio de la pantalla
+        got = next((t for t in pg.evaluate(vis) if t != title), "")
         check(f"el salto al {toc[i]} cae en su comienzo", got.startswith(starts[i]), got[:50])
     pg.click("#kr button[aria-label='Contenido']"); pg.wait_for_timeout(400)
     pg.click("#kr .kr-tabs button:has-text('Buscar')"); pg.wait_for_timeout(300)
@@ -258,7 +259,7 @@ def t_sin_conexion(b, base):
     ctx.set_offline(True)
     p2 = page(ctx, base + "index.html#biblioteca", errs)
     check("sin conexión la app abre", p2.evaluate("!!document.querySelector('nav.tabs')"))
-    p2.click(".lib-item button:has-text('Leer')")
+    p2.click(".lib-item .lib-cov")
     try:
         p2.wait_for_function(READY, timeout=20000); ok = True
     except Exception:
@@ -266,7 +267,7 @@ def t_sin_conexion(b, base):
     check("sin conexión el libro guardado se abre", ok)
     p2.evaluate("document.querySelector('#kr .kr-top button')?.click()"); p2.wait_for_timeout(600)
     for _ in range(3):  # abrir y cerrar enseguida (antes de que termine de preparar el libro)
-        p2.click(".lib-item button:has-text('Leer')"); p2.wait_for_function("!!document.querySelector('#kr')", timeout=20000); p2.wait_for_timeout(150)
+        p2.click(".lib-item .lib-cov"); p2.wait_for_function("!!document.querySelector('#kr')", timeout=20000); p2.wait_for_timeout(150)
         p2.evaluate("document.querySelector('#kr .kr-top button')?.click()"); p2.wait_for_timeout(2500)
     p2.evaluate("Object.defineProperty(navigator,'onLine',{get:()=>false})")
     r = search(p2, "Galdós")
