@@ -188,14 +188,14 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr button{background:transparent;color:inherit;border:1px solid rgba(128,128,128,.35);border-radius:10px;min-width:40px;height:40px;padding:0 10px;font:600 .9rem var(--sans);white-space:nowrap}'+
 '#kr button.sel{background:rgba(31,140,110,.25);border-color:rgba(31,140,110,.8)}'+
 '#kr .kr-title{flex:1;min-width:0;text-align:center;font:600 .92rem var(--serif);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
-'#kr .kr-tz{position:absolute;top:var(--kr-t,64px);bottom:var(--kr-b,76px);width:24%;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}#kr .kr-tz.l{left:0}#kr .kr-tz.r{right:0}#kr .kr-tz.c{left:24%;width:52%}#kr-view[data-mode=scrolled]~.kr-tz{display:none}'+
-'#kr-view{position:absolute;inset:var(--kr-t,0px) 0 var(--kr-b,0px) 0;z-index:0}#kr-view[data-mode=paginated] .epub-container{overflow:hidden!important}'+
+'#kr .kr-tz{position:absolute;top:0;bottom:0;width:24%;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}#kr .kr-tz.l{left:0}#kr .kr-tz.r{right:0}#kr .kr-tz.c{left:24%;width:52%}#kr-view[data-mode=scrolled]~.kr-tz{display:none}'+
+'#kr-view{position:absolute;inset:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);z-index:0}#kr-view[data-mode=paginated] .epub-container{overflow:hidden!important}'+
 '#kr .kr-msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;pointer-events:none;opacity:.8}'+
 '#kr .kr-prog{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}#kr .kr-prog input{width:100%;touch-action:none}#kr .kr-prog span{font-size:.72rem;text-align:center;opacity:.75}'+
 '#kr .kr-panel{position:absolute;left:0;right:0;bottom:0;max-height:78%;display:flex;flex-direction:column;background:color-mix(in srgb,var(--krbg) 84%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5);color:var(--krfg);border-top:1px solid rgba(128,128,128,.3);box-shadow:0 -10px 30px rgba(0,0,0,.22);transform:translateY(105%);transition:transform .22s;z-index:5}'+
 '#kr .kr-panel.on{transform:none}#kr .kr-ph{display:flex;align-items:center;gap:8px;padding:12px 16px 4px}#kr .kr-ph h4{flex:1;margin:0;font:600 1rem var(--serif)}'+
 '#kr .kr-pb{overflow:auto;padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px))}'+
-'#kr .kr-tabs{display:flex;gap:6px;margin:4px 0 10px}#kr .kr-tabs button{flex:1;padding:0 4px;font-size:.82rem;min-width:0}'+
+'#kr .kr-tabs{display:flex;gap:6px;margin:4px 0 10px;overflow-x:auto;scrollbar-width:none}#kr .kr-tabs::-webkit-scrollbar{display:none}#kr .kr-tabs button{flex:1 0 auto;padding:0 8px;font-size:.8rem;white-space:nowrap}'+
 '#kr .kr-panel{border-radius:22px 22px 0 0;max-height:68%}#kr .kr-panel::before{content:"";display:block;width:38px;height:4px;border-radius:2px;background:rgba(128,128,128,.4);margin:8px auto 0;flex:none}'+
 '#kr .kr-dim,#kr .kr-warm{position:absolute;inset:0;pointer-events:none;z-index:2}#kr .kr-warm{mix-blend-mode:multiply}#kr .ap-sl{display:flex;align-items:center;gap:10px;margin:2px 0 8px}#kr .ap-sl input{flex:1;accent-color:#5468A3}'+
 '#kr .kr-q{padding:12px 0;border-bottom:1px solid rgba(128,128,128,.2)}#kr .kr-q p{margin:0 0 6px;font:italic 1rem/1.5 var(--serif)}#kr .kr-q .row{margin:4px 0 0}'+
@@ -282,7 +282,15 @@ async function open(o){
   const id=o.id||idOf(o.url||'');let title=(window.kTitle?window.kTitle(o.title):o.title)||'Libro';
   if(!o.buf&&!o.cached&&!hostOk(o.url)){say('El enlace no pertenece a una fuente permitida','err');return}
   const root=el('div');root.id='kr';root.setAttribute('role','dialog');root.setAttribute('aria-label','Lector de '+title);
-  const apply=()=>{const t=resolveTheme();root.style.setProperty('--krbg',t.bg);root.style.setProperty('--krfg',t.fg)};apply();
+  // pantalla completa de verdad: oculta las barras del sistema. Se pide con un toque; si el sistema la saca, vuelve con el siguiente
+  const fsMeta=document.querySelector('meta[name=theme-color]'),fsColor=fsMeta&&fsMeta.content;
+  const metaTheme=off=>{if(fsMeta)fsMeta.content=off?fsColor:resolveTheme().bg};
+  const fsNow=()=>document.fullscreenElement||document.webkitFullscreenElement;
+  const fsCan=()=>{const d=document.documentElement;return !!(d.requestFullscreen||d.webkitRequestFullscreen)};
+  const fsEnter=()=>{if(closed||prefs().fs===false||fsNow()||!fsCan())return;const d=document.documentElement;try{const p=(d.requestFullscreen||d.webkitRequestFullscreen).call(d,{navigationUI:'hide'});if(p&&p.catch)p.catch(()=>{})}catch(e){}};
+  const fsExit=()=>{if(!fsNow())return;try{const p=(document.exitFullscreen||document.webkitExitFullscreen).call(document);if(p&&p.catch)p.catch(()=>{})}catch(e){}};
+  const apply=()=>{const t=resolveTheme();root.style.setProperty('--krbg',t.bg);root.style.setProperty('--krfg',t.fg);metaTheme()};apply();
+  const turn=d=>{root.classList.add('hide');fsEnter();d>0?rend.next():rend.prev()};
   const top=el('div','kr-bar kr-top'),bot=el('div','kr-bar kr-bot'),view=el('div');view.id='kr-view';
   const msg=el('div','kr-msg','Preparando “'+title+'”…');
   const pnl=el('div','kr-panel');const selbar=el('div','selbar');
@@ -291,6 +299,8 @@ async function open(o){
   const pt=el('span','','');const prog=el('div','kr-prog');prog.append(range,pt);const foot=el('div','kr-foot');
   let remount=null,book=null,rend=null,ready=false,closed=false,pct=0,lastCfi='',marks=[],curSel=null,genP=null,mountP=null,onSelHook=null;
   const entry=()=>lib().find(x=>x.id===id)||{};
+  fsEnter();
+  pct=entry().pct||0;range.value=Math.round(pct*1000); // hasta terminar de contar las páginas vale lo último guardado
   const closePanel=()=>pnl.classList.remove('on');
   const panel=(name,build)=>{pnl.textContent='';const h=el('div','kr-ph');h.append(el('h4','',name),btn('✕',closePanel,'Cerrar panel'));const b=el('div','kr-pb');pnl.append(h,b);build(b);pnl.classList.add('on');selbar.classList.remove('on');const bp=root.querySelector('.kr-br');if(bp)bp.classList.remove('on')};
   const hideSel=()=>{selbar.classList.remove('on');curSel=null};
@@ -317,7 +327,7 @@ async function open(o){
   const chapterAt=(list,loc)=>{let at=-1;const cur=loc.start.index;let cc=null,vr=null,fr=null;try{cc=rend.getContents()[0];vr=view.getBoundingClientRect();fr=cc.window.frameElement.getBoundingClientRect()}catch(e){}
     list.forEach((c,i)=>{const [h,fg]=String(c.href).split('#');let s=null;try{s=book.spine.get(h)}catch(e){}if(!s)return;if(s.index<cur)at=i;else if(s.index===cur){let ok=true;if(fg&&cc&&cc.document){const e=cc.document.getElementById(fg);if(e){const q=e.getBoundingClientRect();ok=fr.left+q.left<vr.right&&fr.top+q.top<vr.bottom}}if(ok)at=i}});return at};
   let clubPrev=null;
-  const clubTick=loc=>{try{if(!o.url||!locN||!window.KClub||!window.KClub.has(o.url))return;const list=chapterList();if(list.length<2)return;const ch=chapterAt(list,loc),done=ch+(loc.atEnd?1:0);
+  const clubTick=loc=>{try{if(!o.url||!locN||!window.KClub||!window.KClub.has(o.url))return;const list=chapterList();if(list.length<2){window.KClub.flush(o.url,pct,false);return}const ch=chapterAt(list,loc),done=ch+(loc.atEnd?1:0);
       const cur={done,pos:pct*locN},near=clubPrev&&Math.abs(cur.pos-clubPrev.pos)<=4; // un salto largo (barra, índice) no cuenta como haber leído hasta ahí
       window.KClub.onProgress({url:o.url,labels:list.map(x=>x.label),done,pct,crossed:!!(near&&done>clubPrev.done)});clubPrev=cur}catch(e){console.warn('club',e)}};
   const buildCh=()=>{const L=(book.locations&&book.locations._locations)||[];chEnd=new Array(L.length);let end=L.length-1;for(let i=L.length-1;i>=0;i--){if(i===L.length-1||spineOf(L[i])!==spineOf(L[i+1]))end=i;chEnd[i]=end}};
@@ -340,10 +350,12 @@ async function open(o){
     const txt=a.join(' · ');pt.textContent=txt;foot.textContent=txt;pt.style.display=txt?'':'none';foot.style.display=txt?'':'none';
   };
   const tick=setInterval(()=>{if(ready&&document.visibilityState==='visible')addSec(15)},15000);
-  const save=()=>{if(!ready||!lastCfi)return;const l=lib().filter(x=>x.id!==id);l.unshift({id,url:o.url||'',title,img:o.img||entry().img||'',author:o.author||entry().author||'',cfi:lastCfi,pct:(book.locations&&book.locations.length())?pct:(entry().pct||0),t:Date.now(),local:!!o.local||!!entry().local});saveLib(l)};
+  const save=()=>{if(!ready||!lastCfi)return;const l=lib().filter(x=>x.id!==id);l.unshift({id,url:o.url||'',title,img:o.img||entry().img||'',author:o.author||entry().author||'',cfi:lastCfi,pct:locN?pct:(entry().pct||0),t:Date.now(),local:!!o.local||!!entry().local});saveLib(l)};
   const close=(fromPop)=>{
     if(closed)return;closed=true;clearInterval(tick);
     try{stopAudio()}catch(e){}save();
+    if(o.url&&locN&&window.KClub)try{window.KClub.flush(o.url,pct,true)}catch(e){}
+    fsExit();metaTheme(true);
     // si el libro todavía se está preparando (visor, páginas, índice), se descarta cuando termina: cortarlo a mitad deja errores de fondo.
     // genP se lee después de ready: recién ahí arrancó el cálculo de páginas
     {const rd=rend,bk=book,upTo=(p,ms)=>Promise.race([Promise.resolve(p),new Promise(r=>setTimeout(r,ms))]).catch(()=>{});
@@ -507,6 +519,7 @@ async function open(o){
     // segmentados
     const seg=(label,opts,get,set)=>{const r=el('div','ap-seg');const bs=[];opts.forEach(([txt,val])=>{const x=btn(txt,()=>{set(val);bs.forEach(y=>y[1].classList.toggle('sel',y[0]===val))});bs.push([val,x]);x.classList.toggle('sel',get()===val);r.append(x)});sec(label,r)};
     seg('Modo de lectura',[['Páginas','paginated'],['Scroll','scrolled']],()=>prefs().mode||'paginated',v=>{setPref('mode',v);if(remount)remount()});
+    if(fsCan())seg('Pantalla completa',[['Sí',true],['No',false]],()=>prefs().fs!==false,v=>{setPref('fs',v);v?fsEnter():fsExit()});
     seg('Interlineado',[['Compacto',1.35],['Normal',1.6],['Amplio',1.9]],()=>prefs().lh,v=>{setPref('lh',v);style()});
     seg('Alineación',[['Izquierda',false],['Justificado',true]],()=>!!prefs().just,v=>{setPref('just',v);style()});
     seg('Márgenes',[['Chicos',6],['Medios',18],['Grandes',34]],()=>prefs().margin,v=>{setPref('margin',v);style()});
@@ -696,8 +709,6 @@ async function open(o){
   selBtns();
   root.append(top,view,bot,selbar,pnl,foot);view.append(msg);
   // gestos del lector fuera del iframe: en iOS/iPad los toques dentro del iframe no siempre llegan
-  const fit=()=>{root.style.setProperty('--kr-t',top.offsetHeight+'px');root.style.setProperty('--kr-b',bot.offsetHeight+'px')};
-  const onResize=()=>{if(closed){removeEventListener('resize',onResize);return}fit()};addEventListener('resize',onResize);
   if(matchMedia('(pointer:coarse)').matches){
     let selCtx=null;
     const rangeAt=(d,fe,x,y)=>{const r=fe.getBoundingClientRect(),px=x-r.left,py=y-r.top;if(d.caretRangeFromPoint)return d.caretRangeFromPoint(px,py);if(d.caretPositionFromPoint){const q=d.caretPositionFromPoint(px,py);if(q){const g=d.createRange();g.setStart(q.offsetNode,q.offset);g.collapse(true);return g}}return null};
@@ -710,17 +721,17 @@ async function open(o){
     const finishSel=()=>{const k=selCtx;selCtx=null;if(!k)return;try{if(k.sl.rangeCount&&!k.sl.getRangeAt(0).collapsed&&onSelHook)onSelHook(k.c.cfiFromRange(k.sl.getRangeAt(0)),k.c)}catch(e){say('Selección: '+((e&&e.message)||e),'err')}};
     const clearSel=()=>{try{const c=rend&&rend.getContents&&rend.getContents()[0];if(c){c.document.getSelection().removeAllRanges();c.document.body.classList.remove('kr-sel')}}catch(e){}hideSel()};
     const linkAt=(x,y)=>{try{const c=rend.getContents()[0],d=c.document,r=(c.window||d.defaultView).frameElement.getBoundingClientRect(),n=d.elementFromPoint(x-r.left,y-r.top),a=n&&n.closest&&n.closest('a[href]');if(a){a.click();return true}}catch(e){}return false};
-    const tap=(dir,x,y)=>{if(!rend)return;if(selbar.classList.contains('on')||curSel){clearSel();return}if(linkAt(x,y))return;closePanel();if(dir===0)root.classList.toggle('hide');else dir>0?rend.next():rend.prev()};
+    const tap=(dir,x,y)=>{if(!rend)return;if(selbar.classList.contains('on')||curSel){clearSel();return}if(linkAt(x,y))return;closePanel();fsEnter();if(dir===0)root.classList.toggle('hide');else turn(dir)};
     const mk=(cls,dir)=>{const z=el('div','kr-tz '+cls);let sx=0,sy=0,tm=0,fired=false,t0=0,mv=false;
       z.addEventListener('touchstart',e=>{const t=e.touches[0];if(!t||e.touches.length>1)return;sx=t.clientX;sy=t.clientY;fired=false;mv=false;t0=Date.now();clearTimeout(tm);tm=setTimeout(()=>{fired=true;try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}selectAt(sx,sy)},450)},{passive:true});
       z.addEventListener('touchmove',e=>{const t=e.touches[0];if(!t)return;if(fired&&selCtx){e.preventDefault();extendTo(t.clientX,t.clientY);return}if(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10){mv=true;clearTimeout(tm)}},{passive:false});
       z.addEventListener('touchend',e=>{clearTimeout(tm);const t=e.changedTouches[0];if(!t||!rend)return;e.preventDefault();if(fired){finishSel();return}const dx=t.clientX-sx,dy=t.clientY-sy;
-        if(mv){if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy))dx<0?rend.next():rend.prev();return}tap(dir,sx,sy)},{passive:false});
+        if(mv){if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy))turn(dx<0?1:-1);return}tap(dir,sx,sy)},{passive:false});
       z.addEventListener('touchcancel',()=>{clearTimeout(tm);if(fired)finishSel()},{passive:true});
       return z};
     root.append(mk('l',-1),mk('c',0),mk('r',1));
   }
-root.append(warmEl,dimEl);comfort();document.body.append(root);fit();document.body.style.overflow='hidden';cur=root;airTip(root,()=>closed);
+root.append(warmEl,dimEl);comfort();document.body.append(root);document.body.style.overflow='hidden';cur=root;airTip(root,()=>closed);
   try{history.pushState({kr:1},'')}catch(e){}
   window.addEventListener('popstate',pop);document.addEventListener('keydown',key);
 
@@ -750,8 +761,8 @@ root.append(warmEl,dimEl);comfort();document.body.append(root);fit();document.bo
       style();
       await rend.display(cfi||undefined);
     rend.on('relocated',loc=>{if(closed)return;lastCfi=loc.start.cfi;lastLoc=loc;if(locN){pct=calcPct(loc);if(!sliding)range.value=Math.round(pct*1000)}if(!sliding)upd();hideSel();clubTick(loc);trackSpeed();save();rlSoon()});
-    rend.on('click',e=>{if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();if(!sc&&x<w*0.28)rend.prev();else if(!sc&&x>w*0.72)rend.next();else root.classList.toggle('hide')});
-    let sx=0;rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX});rend.on('touchend',e=>{const dx=e.changedTouches[0].screenX-sx;if(!sc&&Math.abs(dx)>60){dx<0?rend.next():rend.prev()}});
+    rend.on('click',e=>{if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();fsEnter();if(!sc&&x<w*0.28)turn(-1);else if(!sc&&x>w*0.72)turn(1);else root.classList.toggle('hide')});
+    let sx=0;rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX});rend.on('touchend',e=>{const dx=e.changedTouches[0].screenX-sx;if(!sc&&Math.abs(dx)>60)turn(dx<0?1:-1)});
     rend.on('keyup',e=>{if(e.key==='ArrowRight')rend.next();if(e.key==='ArrowLeft')rend.prev()});
     onSelHook=(cfi,contents)=>{
       try{const r=rend.getRange(cfi),text=(r?r.toString():'').replace(/\s+/g,' ').trim();if(text.length<2)return;

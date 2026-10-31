@@ -1,3 +1,4 @@
+import os
 """Pruebas de Kinderly en Chromium (Playwright).
 
 Uso (desde cualquier carpeta):
@@ -362,8 +363,44 @@ def t_club(b, base):
     pg.evaluate("showView('club')"); pg.click("#club-body button:has-text('Comentarios')"); pg.wait_for_timeout(300)
     locked = pg.evaluate("[...document.querySelectorAll('.cl-ch')].map(x=>x.disabled)")
     check("los capítulos sin leer quedan bloqueados", locked[0] is False and locked[-1] is True, locked)
+    own = pg.evaluate(f"window.__fdb['clubReads/{rid}/progress'].u1.pct")
+    check("al salir del libro el club conserva el progreso", own > .5 and pg.evaluate("document.querySelector('.cl-p small').textContent") != "0%", own)
     check("sin errores en el club", not errs, errs)
     ctx.close()
+
+
+def t_lector_completo(b, base):
+    lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
+    errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000)
+    disabled = pg.evaluate("document.querySelector('#kr .kr-prog input').disabled")
+    pg.evaluate("document.querySelector('#kr .kr-top button').click()"); pg.wait_for_timeout(400)
+    kept = pg.evaluate("JSON.parse(localStorage.kr_lib)[0].pct")
+    check("salir antes de contar las páginas no borra el progreso", disabled and kept == .42, [disabled, kept])
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(500)
+    h = pg.evaluate("innerHeight"); fr = pg.evaluate("(()=>{const r=document.querySelector('#kr iframe').getBoundingClientRect();return [r.top,r.bottom]})()")
+    check("el libro ocupa de arriba a abajo", fr[0] <= 1 and fr[1] >= h - 1, [fr, h])
+    vw = pg.viewport_size
+    pg.mouse.click(vw["width"] / 2, vw["height"] / 2); pg.wait_for_timeout(800)
+    check("un toque pone el lector en pantalla completa", pg.evaluate("!!document.fullscreenElement"))
+    fr = pg.evaluate("(()=>{const r=document.querySelector('#kr iframe').getBoundingClientRect();return [r.top,r.bottom,innerHeight]})()")
+    check("en pantalla completa el libro sigue de arriba a abajo", fr[0] <= 1 and fr[1] >= fr[2] - 1, fr)
+    pg.screenshot(path=os.environ.get("KSHOT", "/dev/null")) if os.environ.get("KSHOT") else None
+    pg.evaluate("document.querySelector('#kr .kr-top button').click()"); pg.wait_for_timeout(500)
+    check("al salir del libro se va de pantalla completa", not pg.evaluate("!!document.fullscreenElement"))
+    check("sin errores en pantalla completa", not errs, errs)
+    ctx.close()
+    for w in (320, 360):
+        errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs); pg.set_viewport_size({"width": w, "height": 720})
+        pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000)
+        pg.wait_for_function("!document.querySelector('#kr .kr-prog input').disabled", timeout=120000)
+        pg.evaluate("document.querySelector('#kr .kr-top button[aria-label=Contenido], #kr .kr-top button[title=Contenido]').click()"); pg.wait_for_timeout(300)
+        pg.evaluate("[...document.querySelectorAll('#kr .kr-tabs button')][1].click()"); pg.wait_for_timeout(100)
+        pg.click("#kr button:has-text('Marcar esta página')"); pg.wait_for_timeout(300)
+        over = pg.evaluate("[...document.querySelectorAll('#kr .kr-tabs button')].filter(x=>x.scrollWidth>x.clientWidth+1).map(x=>x.textContent)")
+        txt = pg.evaluate("document.querySelectorAll('#kr .kr-tabs button')[1].textContent")
+        check(f"{txt} entra en su recuadro a {w}px", txt == "Marcas (1)" and not over, over)
+        ctx.close()
 
 
 def t_instalar(b, base):
@@ -387,7 +424,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]
