@@ -101,7 +101,7 @@ async function sendMail({to,url,title,filename}){
 async function upsertProfile(u){
   try{
     await setDoc(doc(db,'users',u.uid),{name:u.displayName||'',photo:u.photoURL||'',updatedAt:serverTimestamp(),email:deleteField(),emailLower:deleteField()},{merge:true});
-    const s=await getDoc(doc(db,'users',u.uid));S.username=(s.exists()&&s.data().username)||'';
+    const s=await getDoc(doc(db,'users',u.uid));const ud=(s.exists()&&s.data())||{};S.username=ud.username||'';S.bio=ud.bio||'';S.pic=ud.pic||'';
   }catch(e){console.warn('perfil',e)}
 }
 const myName=()=>S.username||(S.user&&S.user.displayName)||'Alguien';
@@ -123,7 +123,7 @@ function promptUsername(){
     bx.append(el('p','hint2','Tus amigos te van a encontrar con este nombre, no con tu mail. Usá de 3 a 20 letras minúsculas, números, punto o guion bajo.'));
     const i=el('input');i.type='text';i.maxLength=20;i.placeholder='ej: maria_lee';i.autocapitalize='none';i.autocomplete='off';i.spellcheck=false;i.value=S.username||'';bx.append(i);
     const a=el('div','ks-acts');
-    a.append(btn(S.username?'Cancelar':'Después',close,true),btn('Guardar',()=>guard(async()=>{await claimUsername(i.value);close();render()},'¡Listo! Tu usuario quedó guardado')));
+    a.append(btn(S.username?'Cancelar':'Después',close,true),btn('Guardar',()=>guard(async()=>{await claimUsername(i.value);close();render();renderProfile()},'¡Listo! Tu usuario quedó guardado')));
     bx.append(a);setTimeout(()=>i.focus(),50);
   });
 }
@@ -134,10 +134,11 @@ function subscribe(){
     onSnapshot(query(collection(db,'friendships'),where('members','array-contains',uid)),s=>{S.friends=s.docs.map(d=>{const f=d.data(),o=(f.members||[]).find(x=>x!==uid),n=f.names||{},m=f.emails||{};return{id:d.id,uid:o,name:n[o]||m[o]||'Amigo',email:m[o]||''}});render()},warn),
     onSnapshot(query(collection(db,'shares'),where('to','==',uid)),s=>{S.sharesIn=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>secs(b)-secs(a));render()},warn),
     onSnapshot(query(collection(db,'bookRequests'),where('to','==',uid)),s=>{S.bookIn=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>secs(b)-secs(a));render()},warn),
-    onSnapshot(query(collection(db,'bookRequests'),where('from','==',uid)),s=>{S.bookOut=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>secs(b)-secs(a));render()},warn)
+    onSnapshot(query(collection(db,'bookRequests'),where('from','==',uid)),s=>{S.bookOut=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>secs(b)-secs(a));render()},warn),
+    onSnapshot(query(collection(db,'clubReads'),where('members','array-contains',uid)),s=>{CL.denied=false;CL.reads=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.deadline-b.deadline);refreshClub()},e=>{warn(e);CL.denied=true;renderClub()})
   ];
 }
-function unsubscribe(){S.unsubs.forEach(f=>{try{f()}catch(e){}});S.unsubs=[];S.friends=[];S.reqIn=[];S.reqOut=[];S.sharesIn=[];S.bookIn=[];S.bookOut=[]}
+function unsubscribe(){S.unsubs.forEach(f=>{try{f()}catch(e){}});S.unsubs=[];S.friends=[];S.reqIn=[];S.reqOut=[];S.sharesIn=[];S.bookIn=[];S.bookOut=[];CL.reads=[];CL.prog={};CL.denied=false}
 
 async function guard(fn,okMsg){try{await fn();if(okMsg)say(okMsg,'ok')}catch(e){say(errMsg(e),'err')}}
 async function addFriend(raw){
@@ -248,7 +249,7 @@ function render(){
   body.textContent='';
   const sum=$('soc-sum');
   if(!S.user){
-    if(sum)sum.textContent='Entrar con Google';const tb0=$('tab-bdg');if(tb0)tb0.style.display='none';
+    if(sum)sum.textContent='Entrar con Google';['tab-bdg','menu-bdg'].forEach(i=>{const x=$(i);if(x)x.style.display='none'});
     const w=el('div','kf-c');
     w.append(el('h4','kf-t','Entrá para compartir libros'));
     w.append(el('p','hint2','Con tu cuenta de Google podés enviarte libros desde tu propio Gmail (sin límite compartido) y pedirle libros a tus amigos o mandárselos.'));
@@ -259,7 +260,7 @@ function render(){
     return;
   }
   const n=S.reqIn.length+S.sharesIn.filter(s=>s.status==='new').length+S.bookIn.filter(r=>r.status==='open').length;
-  if(sum)sum.textContent='Mi cuenta y amigos'+(n?' ('+n+')':'');const tb=$('tab-bdg');if(tb){tb.textContent=n;tb.style.display=n?'grid':'none'}
+  if(sum)sum.textContent='Mi cuenta y amigos'+(n?' ('+n+')':'');['tab-bdg','menu-bdg'].forEach(i=>{const x=$(i);if(x){x.textContent=n;x.style.display=n?'grid':'none'}});
   const TONES=['#5468A3','#7A6A9B','#4F7F73','#A0645C','#7B7F4E'];
   const tone=t=>{let h=0;for(const c of String(t||'?'))h=(h*31+c.charCodeAt(0))%997;return TONES[h%TONES.length]};
   const av=t=>{const d=el('div','kf-av',(String(t||'?').replace(/^@/,'').trim()[0]||'?').toUpperCase());d.style.background=tone(t);return d};
@@ -271,9 +272,9 @@ function render(){
 
   // Perfil
   const me=el('section','kf-c kf-me0'),mh=el('div','kf-me');
-  if(S.user.photoURL){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=S.user.photoURL;mh.append(im)}else mh.append(av(S.user.displayName||'?'));
+  if(myPhoto()){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=myPhoto();mh.append(im)}else mh.append(av(S.user.displayName||'?'));
   const who=el('div','kf-tx');who.append(el('b','kf-nm',S.user.displayName||S.user.email),el('small','',S.username?('@'+S.username):'Todavía no elegiste tu usuario'));mh.append(who);
-  const lk=el('div','kf-links');lk.append(link(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername()),link(shareLibOn()?'Ocultar biblioteca':'Compartir biblioteca',()=>setShareLib(!shareLibOn())),link('Salir',logout));
+  const lk=el('div','kf-links');lk.append(link('Editar perfil',()=>window.showView('perfil')),link(shareLibOn()?'Ocultar biblioteca':'Compartir biblioteca',()=>setShareLib(!shareLibOn())),link('Salir',logout));
   me.append(mh,lk,el('p','kf-e',shareLibOn()?'Tus amigos ven los libros de tu biblioteca (no los archivos de tu celular) y te los pueden pedir.':'Tu biblioteca no se muestra a tus amigos.'));body.append(me);
 
   // Novedades (solo si hay algo que atender)
@@ -305,7 +306,7 @@ function render(){
   const fl=list();
   S.reqOut.forEach(r=>fl.append(item({av:r.toName,title:r.toName||'Pendiente',sub:'Solicitud enviada, esperando respuesta',side:[small(link('Cancelar',()=>guard(()=>deleteDoc(doc(db,'friendRequests',r.id)))))]})));
   S.friends.forEach(f=>{const q=btn('×',()=>{if(confirm('¿Quitar a '+f.name+' de tus amigos?'))return guard(()=>removeFriend(f))},true);q.className='kf-x';q.setAttribute('aria-label','Quitar a '+f.name);q.title='Quitar';
-    fl.append(item({av:f.name,title:f.name,sub:'Amigo/a',side:[q],acts:[btn('Ver biblioteca',()=>friendLib(f)),btn('Pedir otro libro',()=>askBook(f),true)]}))});
+    fl.append(item({av:f.name,title:f.name,sub:'Amigo/a',side:[q],acts:[btn('Ver biblioteca',()=>friendLib(f)),btn('Perfil',()=>friendProfile(f),true),btn('Pedir otro libro',()=>askBook(f),true)]}))});
   if(fl.children.length)fc.append(fl);
   if(!S.friends.length&&!S.reqIn.length&&!S.reqOut.length)fc.append(el('p','kf-e','Todavía no agregaste a nadie. Escribí su nombre de usuario arriba. Tiene que haber entrado a Kinderly y elegido uno.'));
   body.append(fc);
@@ -515,11 +516,103 @@ function decorateRev(b,actions){
 }
 window.KRev={decorate:decorateRev,open:openReviews};
 
+// ----- Perfil: foto, usuario y mini bio -----
+const myPhoto=()=>S.pic||(S.user&&S.user.photoURL)||'';
+function paintMenu(){const h=$('menu-av');if(!h)return;const ph=myPhoto();if(!h.dataset.icon)h.dataset.icon=h.innerHTML;if(ph){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=ph;h.textContent='';h.append(im)}else h.innerHTML=h.dataset.icon}
+const shrink=file=>new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{const m=Math.min(im.width,im.height),c=document.createElement('canvas');c.width=c.height=256;c.getContext('2d').drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,256,256);URL.revokeObjectURL(u);let d=c.toDataURL('image/jpeg',.8);if(d.length>100000)d=c.toDataURL('image/jpeg',.55);res(d)};im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('No se pudo leer esa imagen'))};im.src=u});
+const saveMe=data=>setDoc(doc(db,'users',S.user.uid),Object.assign({updatedAt:serverTimestamp()},data),{merge:true});
+const rulesHint=e=>(e&&(e.code==='permission-denied'||/permission/i.test(e.message||'')))?'Falta publicar las reglas nuevas de Firebase para guardar esto.':errMsg(e);
+function renderProfile(){
+  const body=$('pf-body');if(!body)return;body.textContent='';paintMenu();
+  if(!S.user){const w=el('div','kf-c');w.append(el('h4','kf-t','Entrá para armar tu perfil'),el('p','hint2','Tu nombre de usuario, tu foto y tu mini bio se guardan con tu cuenta de Google.'));const b=btn('Entrar con Google',login);b.style.width='100%';w.append(b);body.append(w);return}
+  const c=el('section','kf-c pf'),top=el('div','pf-top'),ph=myPhoto();
+  if(ph){const im=new Image();im.referrerPolicy='no-referrer';im.alt='Tu foto';im.src=ph;im.className='pf-pic';top.append(im)}else{const a=el('div','pf-pic pf-ph',String(S.username||S.user.displayName||'?').charAt(0).toUpperCase());top.append(a)}
+  const fi=el('input');fi.type='file';fi.accept='image/*';fi.hidden=true;fi.onchange=()=>{const f=fi.files&&fi.files[0];if(!f)return;guardMsg(async()=>{const d=await shrink(f);await saveMe({pic:d});S.pic=d;renderProfile()},'Foto actualizada')};
+  const col=el('div','pf-col');col.append(el('b','pf-u',S.username?'@'+S.username:'Sin nombre de usuario'));
+  const acts=el('div','pf-acts');acts.append(btn(S.username?'Cambiar usuario':'Elegir usuario',()=>promptUsername(),true),btn('Cambiar foto',()=>fi.click(),true));if(S.pic)acts.append(btn('Quitar foto',()=>guardMsg(async()=>{await saveMe({pic:deleteField()});S.pic='';renderProfile()}),true));
+  col.append(acts,fi);top.append(col);c.append(top);
+  const l=el('label','pf-l','Mini bio');l.htmlFor='pf-bio';const ta=el('textarea');ta.id='pf-bio';ta.rows=4;ta.maxLength=300;ta.placeholder='Contá qué tipo de lectura te gusta: novela histórica, poesía, terror…';ta.value=S.bio||'';
+  const n=el('small','pf-n',ta.value.length+' / 300');ta.oninput=()=>{n.textContent=ta.value.length+' / 300'};
+  const sv=btn('Guardar',()=>guardMsg(async()=>{const t=ta.value.trim();await saveMe({bio:t});S.bio=t},'Perfil guardado'));sv.style.marginTop='10px';
+  c.append(l,ta,n,sv);body.append(c);
+}
+async function guardMsg(fn,ok){try{await fn();if(ok)say(ok,'ok')}catch(e){say(rulesHint(e),'err')}}
+function friendProfile(f){modal(f.name,async(bx,close)=>{
+  const h=el('div');h.append(el('p','hint2','Cargando…'));bx.append(h);const a=el('div','kf-a');a.style.marginTop='12px';a.append(btn('Cerrar',close,true));bx.append(a);
+  try{const s=await getDoc(doc(db,'users',f.uid)),u=(s.exists()&&s.data())||{};h.textContent='';const top=el('div','pf-top'),ph=u.pic||u.photo;if(ph){const im=new Image();im.referrerPolicy='no-referrer';im.alt='';im.src=ph;im.className='pf-pic';top.append(im)}else top.append(el('div','pf-pic pf-ph',String(f.name).charAt(0).toUpperCase()));const cl=el('div','pf-col');cl.append(el('b','pf-u',u.username?'@'+u.username:f.name));top.append(cl);h.append(top,el('p','pf-bio',u.bio||'Todavía no escribió su bio.'))}catch(e){h.textContent='';h.append(el('p','hint2',errMsg(e)))}
+})}
+
+// ----- Club de Lectura: clubReads/{id}, con progress/{uid} y notes/{capítulo_uid} -----
+const CL={reads:[],prog:{},notes:{},denied:false,q:Promise.resolve(),pushT:{}};
+const isIn=r=>!!S.user&&(r.joined||[]).includes(S.user.uid);
+const lsDone=id=>{try{const v=localStorage.getItem('k_club_'+id);return v==null?null:+v}catch(e){return null}};
+const setLsDone=(id,v)=>{try{localStorage.setItem('k_club_'+id,String(v))}catch(e){}};
+const doneOf=r=>{const c=(CL.prog[r.id]||{})[S.user.uid];return Math.max(lsDone(r.id)||0,(c&&c.done)||0)};
+const pushProg=(r,done,pct)=>setDoc(doc(db,'clubReads',r.id,'progress',S.user.uid),{uid:S.user.uid,name:myName(),done,pct:Math.round((pct||0)*1000)/1000,updatedAt:serverTimestamp()});
+const whenLeft=ms=>{const d=Math.ceil((ms-Date.now())/864e5),f=new Date(ms).toLocaleDateString('es-AR',{day:'numeric',month:'long'});return d<0?'Venció el '+f:d===0?'Vence hoy':d===1?'Vence mañana':'Hasta el '+f+' · quedan '+d+' días'};
+async function refreshClub(){if(!S.user)return;await Promise.all(CL.reads.filter(isIn).map(async r=>{try{const s=await getDocs(collection(db,'clubReads',r.id,'progress')),m={};s.docs.forEach(d=>{m[d.id]=d.data()});CL.prog[r.id]=m}catch(e){console.warn('club',e)}}));renderClub()}
+const clubBadge=()=>{const b=$('club-bdg');if(!b)return;const n=S.user?CL.reads.filter(r=>!isIn(r)).length:0;b.textContent=n;b.style.display=n?'grid':'none'};
+function renderClub(){
+  clubBadge();const body=$('club-body');if(!body)return;body.textContent='';
+  if(!S.user){const w=el('div','kf-c');w.append(el('h4','kf-t','Entrá para sumarte a un club'),el('p','hint2','Con tu cuenta podés proponer libros a tus amigos y comentar cada capítulo.'));const b=btn('Entrar con Google',login);b.style.width='100%';w.append(b);body.append(w);return}
+  if(CL.denied){const w=el('div','kf-c');w.append(el('h4','kf-t','El Club todavía no está activado'),el('p','hint2','Faltan publicar las reglas nuevas de Firebase. Cuando estén, esta sección empieza a funcionar sola.'));body.append(w);return}
+  const add=btn('Proponer un libro',propose);add.style.width='100%';body.append(add);
+  const inv=CL.reads.filter(r=>!isIn(r)),act=CL.reads.filter(isIn);
+  inv.forEach(r=>{const c=el('section','kf-c cl');c.append(el('small','cl-k',(r.fromName||'Un amigo')+' te invita'),el('h4','kf-t',r.title),el('small','cl-s',(r.author?r.author+' · ':'')+whenLeft(r.deadline)));const a=el('div','kf-a');a.append(btn('Sumarme',()=>guardMsg(()=>updateDoc(doc(db,'clubReads',r.id),{joined:arrayUnion(S.user.uid)}),'¡Te sumaste!')),btn('Ahora no',()=>guardMsg(()=>leave(r)),true));c.append(a);body.append(c)});
+  act.forEach(r=>{const c=el('section','kf-c cl'),tot=(r.chapters||[]).length,done=doneOf(r);
+    c.append(el('h4','kf-t',r.title),el('small','cl-s',(r.author?r.author+' · ':'')+whenLeft(r.deadline)));
+    const ppl=el('div','cl-ppl'),pg=CL.prog[r.id]||{};(r.joined||[]).forEach(u=>{const p=pg[u]||{},row=el('div','cl-p'),bar=el('i','cl-bar'),fill=el('i');fill.style.width=Math.round((p.pct||0)*100)+'%';bar.append(fill);row.append(el('span','',u===S.user.uid?'Vos':((r.names||{})[u]||'Amigo')),bar,el('small','',Math.round((p.pct||0)*100)+'%'));ppl.append(row)});c.append(ppl);
+    const a=el('div','kf-a');a.append(btn('Leer',()=>{if(window.KReader)window.KReader.open({title:r.title,author:r.author||'',url:r.url})}),btn('Comentarios'+(tot?' ('+Math.min(done,tot)+'/'+tot+')':''),()=>chapters(r),true),btn(r.from===S.user.uid?'Quitar':'Salir',()=>{if(confirm(r.from===S.user.uid?'¿Quitar esta lectura del club para todos?':'¿Salir de esta lectura?'))return guardMsg(()=>r.from===S.user.uid?deleteDoc(doc(db,'clubReads',r.id)):leave(r))},true));c.append(a);body.append(c)});
+  if(!inv.length&&!act.length)body.append(el('p','hint2 cl-e','Todavía no hay lecturas. Proponé un libro de tu biblioteca y elegí con qué amigos leerlo.'));
+}
+const leave=r=>{const me=S.user.uid;return updateDoc(doc(db,'clubReads',r.id),{members:(r.members||[]).filter(x=>x!==me),joined:(r.joined||[]).filter(x=>x!==me)})};
+function propose(){
+  if(!S.friends.length){say('Primero agregá amigos: el club se arma con ellos','err');window.showView('amigos');return}
+  let lib=[];try{lib=JSON.parse(localStorage.getItem('kr_lib')||'[]')}catch(e){}lib=lib.filter(x=>x.url&&hostOk(x.url)).slice(0,30);
+  if(!lib.length){say('Abrí un libro desde Buscar: los que estén en tu biblioteca se pueden proponer','err');window.showView('buscar');return}
+  modal('Proponer un libro',(bx,close)=>{
+    bx.append(el('b','cl-l','Libro'));let sel=lib[0];lib.forEach((x,i)=>{const l=el('label','ks-radio'),r=el('input');r.type='radio';r.name='cl-b';r.checked=i===0;r.onchange=()=>{sel=x};l.append(r,el('span','',x.title));bx.append(l)});
+    bx.append(el('small','cl-s','Solo aparecen libros con enlace: tus amigos no pueden abrir archivos de tu celular.'),el('b','cl-l','Con quién'));const who=new Set();S.friends.forEach(f=>{const l=el('label','ks-radio'),r=el('input');r.type='checkbox';r.onchange=()=>{r.checked?who.add(f):who.delete(f)};l.append(r,el('span','',f.name));bx.append(l)});
+    const dl=el('label','cl-l','Plazo para terminarlo');dl.htmlFor='cl-d';const d=el('input');d.type='date';d.id='cl-d';const day=n=>new Date(Date.now()+n*864e5-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);d.min=day(1);d.value=day(30);bx.append(dl,d);
+    const a=el('div','kf-a');a.style.marginTop='14px';a.append(btn('Cancelar',close,true),btn('Proponer',()=>guardMsg(async()=>{if(!who.size){say('Elegí al menos un amigo','err');return}const ms=new Date(d.value+'T23:59:59').getTime();if(!ms||ms<Date.now()){say('Elegí una fecha futura','err');return}
+      const me=S.user.uid,names={[me]:myName()},mem=[me];who.forEach(f=>{mem.push(f.uid);names[f.uid]=f.name});
+      await addDoc(collection(db,'clubReads'),{title:String(sel.title).slice(0,300),author:String(sel.author||'').slice(0,200),url:sel.url,from:me,fromName:myName(),members:mem,joined:[me],names,deadline:ms,chapters:[],createdAt:serverTimestamp()});close();say('Propuesta enviada','ok')})));bx.append(a);
+  });
+}
+function chapters(r){modal('Comentarios: '+r.title,(bx,close)=>{const done=doneOf(r),L=r.chapters||[];
+  if(!L.length)bx.append(el('p','hint2','Los capítulos aparecen cuando alguien abre el libro en Kinderly.'));
+  else{bx.append(el('p','hint2','Cada capítulo se abre cuando lo terminás de leer, así nadie se adelanta.'));L.forEach((t,i)=>{const open=i<done,b=btn((open?'':'🔒 ')+t,()=>{close();chapterNote(r,i)},true);b.classList.add('cl-ch');b.disabled=!open;bx.append(b)})}
+  const a=el('div','kf-a');a.style.marginTop='12px';a.append(btn('Cerrar',close,true));bx.append(a)})}
+async function chapterNote(r,ch,fresh){
+  const me=S.user.uid,ref=doc(db,'clubReads',r.id,'notes',ch+'_'+me),label=(r.chapters||[])[ch]||('Capítulo '+(ch+1));
+  const stop=modal(fresh?'Terminaste “'+label+'”':label,async(bx,close)=>{
+    const ta=el('textarea');ta.rows=4;ta.maxLength=600;ta.placeholder='¿Qué te pareció hasta acá?';ta.setAttribute('aria-label','Qué te pareció hasta acá');const others=el('div','cl-notes');
+    const a=el('div','kf-a');a.append(btn(fresh?'Después':'Cerrar',close,true),btn('Guardar',()=>guardMsg(async()=>{const t=ta.value.trim();if(!t){say('Escribí algo o tocá “'+(fresh?'Después':'Cerrar')+'”','err');return}await setDoc(ref,{uid:me,name:myName(),ch,text:t,updatedAt:serverTimestamp()});close();say('Comentario guardado','ok')})));
+    bx.append(ta,a,others);
+    try{const s=await getDocs(collection(db,'clubReads',r.id,'notes'));s.docs.map(d=>d.data()).filter(n=>n.ch===ch).forEach(n=>{if(n.uid===me){if(!ta.value)ta.value=n.text;return}const it=el('div','cl-note');it.append(el('b','',n.name||'Amigo'),el('p','',n.text));others.append(it)})}catch(e){console.warn('club',e)}
+  });
+  const ovs=document.querySelectorAll('.ks-ov');if(ovs.length)ovs[ovs.length-1].style.zIndex=40; // por encima del lector
+  return stop;
+}
+window.KClub={
+  has:url=>!!S.user&&CL.reads.some(r=>r.url===url&&isIn(r)),
+  onProgress:p=>{CL.q=CL.q.then(async()=>{const r=CL.reads.find(x=>x.url===p.url&&isIn(x));if(!r)return;
+    if(!(r.chapters||[]).length){r.chapters=p.labels.slice(0,200).map(x=>String(x).slice(0,80));await updateDoc(doc(db,'clubReads',r.id),{chapters:r.chapters})}
+    let known=lsDone(r.id);
+    if(known==null){const s=await getDoc(doc(db,'clubReads',r.id,'progress',S.user.uid));if(s.exists())known=s.data().done||0;else{known=p.done;await pushProg(r,known,p.pct)}setLsDone(r.id,known)} // el punto de partida es donde ya venía leyendo
+    if(p.crossed&&p.done>known){setLsDone(r.id,p.done);await pushProg(r,p.done,p.pct);chapterNote(r,p.done-1,true);return}
+    if(Date.now()-(CL.pushT[r.id]||0)>30000){CL.pushT[r.id]=Date.now();await pushProg(r,Math.max(known,0),p.pct)}
+  }).catch(e=>console.warn('club',e))}
+};
+{const st=document.createElement('style');st.textContent='.pf-top{display:flex;align-items:center;gap:16px}.pf-pic{width:84px;height:84px;border-radius:50%;object-fit:cover;flex:none}.pf-ph{display:grid;place-items:center;background:var(--soft);color:var(--green);font:600 2rem var(--serif)}.pf-col{min-width:0;flex:1}.pf-u{display:block;font:600 1.15rem var(--serif);overflow-wrap:anywhere;margin-bottom:8px}.pf-acts{display:flex;flex-wrap:wrap;gap:6px}.pf-acts button{padding:7px 12px;font-size:.8rem}.pf-l{display:block;font-weight:600;margin:16px 0 6px}.pf textarea,.ks-box textarea,.ks-box input[type=date]{box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);padding:10px 12px;font:inherit}.pf-n{display:block;text-align:right;color:var(--mute);margin-top:4px}.pf-bio{white-space:pre-wrap;overflow-wrap:anywhere;margin:14px 0 0}'+
+'.cl .kf-t{margin:0 0 2px}.cl-k{display:block;color:var(--green);font-weight:600;margin-bottom:2px}.cl-s{display:block;color:var(--mute);font-size:.84rem}.cl-l{display:block;font-weight:600;margin:14px 0 6px}.cl-ppl{margin:12px 0;display:grid;gap:7px}.cl-p{display:grid;grid-template-columns:minmax(0,88px) 1fr 38px;gap:8px;align-items:center;font-size:.86rem}.cl-p span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cl-p small{text-align:right;color:var(--mute)}.cl-bar{display:block;height:6px;border-radius:3px;background:var(--line);overflow:hidden}.cl-bar i{display:block;height:100%;background:var(--green)}.kf-c.cl .kf-a{display:flex!important;flex-wrap:wrap;gap:8px}.kf-c.cl .kf-a button{flex:1 1 auto;width:auto;min-width:0;white-space:nowrap}.cl-ch{display:block;width:100%;text-align:left;margin-top:6px}.cl-ch:disabled{opacity:.55}.cl-note{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}.cl-note p{margin:3px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}.cl-e{margin-top:14px}.ks-box{background:var(--card)!important}.ks-box .kf-a{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:12px}';document.head.append(st)}
+{const tb=document.querySelector('nav.tabs button[data-go="club"]');if(tb)tb.addEventListener('click',()=>refreshClub())}
+
 window.KSoc={loggedIn:()=>!!auth.currentUser,canSend:()=>!!auth.currentUser,email:()=>(auth.currentUser&&auth.currentUser.email)||'',ensureToken,driveToken,sendMail,sendFile,decorate,openPanel,syncLib:syncLibSoon};
 
 onAuthStateChanged(auth,async u=>{
   unsubscribe();S.user=u||null;S.username='';
   if(u){syncStart(u);await upsertProfile(u);subscribe();syncLibSoon();if(!S.username)setTimeout(()=>promptUsername(),600)}else{clearToken();syncStop()}
-  render();renderSug();syncCard();
+  render();renderSug();syncCard();renderProfile();renderClub();
 });
-render();renderSug();syncCard();
+render();renderSug();syncCard();renderProfile();renderClub();

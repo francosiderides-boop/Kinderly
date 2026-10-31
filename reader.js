@@ -191,7 +191,7 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr .kr-tz{position:absolute;top:var(--kr-t,64px);bottom:var(--kr-b,76px);width:24%;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}#kr .kr-tz.l{left:0}#kr .kr-tz.r{right:0}#kr .kr-tz.c{left:24%;width:52%}#kr-view[data-mode=scrolled]~.kr-tz{display:none}'+
 '#kr-view{position:absolute;inset:var(--kr-t,0px) 0 var(--kr-b,0px) 0;z-index:0}#kr-view[data-mode=paginated] .epub-container{overflow:hidden!important}'+
 '#kr .kr-msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;pointer-events:none;opacity:.8}'+
-'#kr .kr-prog{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}#kr .kr-prog input{width:100%}#kr .kr-prog span{font-size:.72rem;text-align:center;opacity:.75}'+
+'#kr .kr-prog{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}#kr .kr-prog input{width:100%;touch-action:none}#kr .kr-prog span{font-size:.72rem;text-align:center;opacity:.75}'+
 '#kr .kr-panel{position:absolute;left:0;right:0;bottom:0;max-height:78%;display:flex;flex-direction:column;background:color-mix(in srgb,var(--krbg) 84%,transparent);-webkit-backdrop-filter:blur(24px) saturate(1.5);backdrop-filter:blur(24px) saturate(1.5);color:var(--krfg);border-top:1px solid rgba(128,128,128,.3);box-shadow:0 -10px 30px rgba(0,0,0,.22);transform:translateY(105%);transition:transform .22s;z-index:5}'+
 '#kr .kr-panel.on{transform:none}#kr .kr-ph{display:flex;align-items:center;gap:8px;padding:12px 16px 4px}#kr .kr-ph h4{flex:1;margin:0;font:600 1rem var(--serif)}'+
 '#kr .kr-pb{overflow:auto;padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px))}'+
@@ -297,8 +297,29 @@ async function open(o){
 
   // ----- progreso: porcentaje, páginas y tiempo restante -----
   const CPL=1500,CPM0=1100;let chEnd=[];const cpm=()=>{const v=wpm();return v?v*6:CPM0};let sp={i:null,t:0};
-  const trackSpeed=()=>{try{const L=book.locations;if(!L||!L.length()||!lastCfi)return;const i=L.locationFromCfi(lastCfi);if(i==null||i<0)return;const now=Date.now();if(sp.i===null){sp={i,t:now};return}if(i===sp.i)return;const di=i-sp.i,dt=(now-sp.t)/1000;if(di>0&&di<=2&&dt>=6&&dt<=300&&document.visibilityState==='visible')addSpeed(di*CPL/6,dt/60);sp={i,t:now}}catch(e){}};
+  const trackSpeed=()=>{try{const L=book.locations;if(!L||!L.length()||!lastCfi)return;const i=curLoc();const now=Date.now();if(sp.i===null){sp={i,t:now};return}if(i===sp.i)return;const di=i-sp.i,dt=(now-sp.t)/1000;if(di>0&&di<=2&&dt>=6&&dt<=300&&document.visibilityState==='visible')addSpeed(di*CPL/6,dt/60);sp={i,t:now}}catch(e){}};
+  // progreso: se calcula por capítulo y página, porque las coordenadas de book.locations salen del libro sin arreglar y no coinciden con lo que se ve
+  let secCount={},secCum={},locN=0,lastLoc=null,sliding=false,seekGoal=null,seekBusy=false;
+  const buildProg=()=>{const L=(book.locations&&book.locations._locations)||[],base={},cnt={};book.spine.spineItems.forEach(s=>{base[s.cfiBase]=s.index});
+    L.forEach(c=>{const m=/epubcfi\(([^!]+)!/.exec(c),i=m?base[m[1]]:undefined;if(i!=null)cnt[i]=(cnt[i]||0)+1});
+    let acc=0;secCum={};book.spine.spineItems.forEach(s=>{secCum[s.index]=acc;acc+=cnt[s.index]||0});secCount=cnt;locN=acc};
+  const calcPct=loc=>{if(!locN||!loc||!loc.start)return pct;if(loc.atEnd)return 1;const i=loc.start.index,d=loc.start.displayed||{};if(secCum[i]==null)return pct;const f=d.total>0?(d.page-1)/d.total:0;return Math.min(1,(secCum[i]+(secCount[i]||0)*f)/locN)};
+  const curLoc=()=>Math.max(0,Math.min(locN-1,Math.floor(pct*locN)));
+  const goFrac=async f=>{const items=book.spine.spineItems.filter(x=>secCount[x.index]);if(!items.length)return;const pos=f*locN;let sec=items[items.length-1];for(const x of items)if(pos<secCum[x.index]+secCount[x.index]){sec=x;break}
+    const inSec=Math.max(0,Math.min(1,(pos-secCum[sec.index])/secCount[sec.index]));await rend.display(sec.href);if(closed||inSec<.005)return;
+    const c=rend.getContents()[0];if(!c)return;const d=c.document,w=d.createTreeWalker(d.body,4),nodes=[];let n,tot=0;while((n=w.nextNode()))if(n.textContent.trim()){nodes.push(n);tot+=n.textContent.length}if(!tot)return; // los nodos vacíos no ocupan lugar en pantalla y mandarían al principio del capítulo
+    let left=Math.floor(tot*inSec);n=nodes[nodes.length-1];for(const x of nodes){if(left<x.textContent.length){n=x;break}left-=x.textContent.length}left=Math.min(left,n.textContent.trimEnd().length-1);
+    const r=d.createRange();r.setStart(n,left);r.setEnd(n,Math.min(n.textContent.length,left+1));const cf=c.cfiFromRange(r);await rend.display(cf);await settle();if(!closed)await rend.display(cf)};
+  const seekTo=async f=>{seekGoal=f;if(seekBusy)return;seekBusy=true;try{while(seekGoal!=null&&!closed){const g=seekGoal;seekGoal=null;try{await goFrac(g)}catch(e){console.warn('barra',e)}}}finally{seekBusy=false}};
   const spineOf=c=>{const m=/\/6\/(\d+)/.exec(c||'');return m?(+m[1]/2-1):-1};
+  // Club de Lectura: qué capítulo está en pantalla, para abrir el comentario al terminarlo
+  const chapterList=()=>tocItems.filter(x=>!x.d&&x.label&&!/^(iniciar|inicio|portada|cover|start|title ?page|cubierta)$/i.test(x.label));
+  const chapterAt=(list,loc)=>{let at=-1;const cur=loc.start.index;let cc=null,vr=null,fr=null;try{cc=rend.getContents()[0];vr=view.getBoundingClientRect();fr=cc.window.frameElement.getBoundingClientRect()}catch(e){}
+    list.forEach((c,i)=>{const [h,fg]=String(c.href).split('#');let s=null;try{s=book.spine.get(h)}catch(e){}if(!s)return;if(s.index<cur)at=i;else if(s.index===cur){let ok=true;if(fg&&cc&&cc.document){const e=cc.document.getElementById(fg);if(e){const q=e.getBoundingClientRect();ok=fr.left+q.left<vr.right&&fr.top+q.top<vr.bottom}}if(ok)at=i}});return at};
+  let clubPrev=null;
+  const clubTick=loc=>{try{if(!o.url||!locN||!window.KClub||!window.KClub.has(o.url))return;const list=chapterList();if(list.length<2)return;const ch=chapterAt(list,loc),done=ch+(loc.atEnd?1:0);
+      const cur={done,pos:pct*locN},near=clubPrev&&Math.abs(cur.pos-clubPrev.pos)<=4; // un salto largo (barra, índice) no cuenta como haber leído hasta ahí
+      window.KClub.onProgress({url:o.url,labels:list.map(x=>x.label),done,pct,crossed:!!(near&&done>clubPrev.done)});clubPrev=cur}catch(e){console.warn('club',e)}};
   const buildCh=()=>{const L=(book.locations&&book.locations._locations)||[];chEnd=new Array(L.length);let end=L.length-1;for(let i=L.length-1;i>=0;i--){if(i===L.length-1||spineOf(L[i])!==spineOf(L[i+1]))end=i;chEnd[i]=end}};
   const fmtT=m=>m<1?'menos de 1 min':m<60?Math.round(m)+' min':Math.floor(m/60)+' h '+String(Math.round(m%60)).padStart(2,'0')+' min';
   const piOn=()=>Object.assign({pct:1,pg:1,ch:1,bk:1,wpm:0},prefs().pi||{});
@@ -309,7 +330,7 @@ async function open(o){
       if(!(n&&lastCfi)){if(Object.values(o).some(Boolean))a.push('calculando páginas…')}
       if(n&&lastCfi){
         if(o.pct)a.push(Math.round(pct*100)+'%');
-        const i=Math.max(0,Math.min(n-1,L.locationFromCfi(lastCfi)||0)),ch=Math.max(0,(chEnd[i]!=null?chEnd[i]:n-1)-i);
+        const i=curLoc(),ch=Math.max(0,(chEnd[i]!=null?chEnd[i]:n-1)-i);
         if(o.pg)a.push('pág. '+(i+1)+' de '+n);
         if(o.ch)a.push(fmtT(ch*CPL/cpm())+' para el fin del capítulo');
         if(o.bk)a.push(fmtT((n-1-i)*CPL/cpm())+' para terminar el libro');
@@ -644,29 +665,23 @@ async function open(o){
   rB.append(rH);ruleBox.append(rB);root.append(ruleBox);
   const rBtn=btn('',()=>{setPref('ruler',!prefs().ruler);ruleLay(true)},'Regla de lectura');
   rBtn.innerHTML='<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16M4 18.5h16" opacity=".45"/><rect x="3" y="9.5" width="18" height="5" rx="1.2"/></svg>';
-  let lineTops=[],geo={H:0,bh:40,top:0},tNow=0,dragging=false;
-  const scanLines=()=>{try{const c=rend&&rend.getContents&&rend.getContents()[0];if(!c){lineTops=[];return}const d=c.document,w=d.createTreeWalker(d.body,4,null),r=d.createRange(),tops=[];let nd,k=0;
-    const fe=c.window.frameElement,fr=fe?fe.getBoundingClientRect():{left:0,top:0},vr0=view.getBoundingClientRect();
-    while((nd=w.nextNode())&&k<2500){k++;if(!nd.textContent.trim())continue;r.selectNodeContents(nd);for(const q of r.getClientRects()){if(q.height<6||q.height>90)continue;const L=fr.left+q.left,R=fr.left+q.right;if(L<vr0.left-4||R>vr0.right+4)continue;const T=fr.top-vr0.top+q.top;if(T<-4||T>vr0.height)continue;tops.push(T)}}
-    tops.sort((a,b)=>a-b);const out=[];tops.forEach(t=>{if(!out.length||t-out[out.length-1]>=5)out.push(t)});lineTops=out}catch(e){lineTops=[]}};
+  let geo={H:0,bh:40,top:0},tNow=0,dragging=false;
   const measure=()=>{const q=prefs(),vr=view.getBoundingClientRect(),rr=root.getBoundingClientRect();let lineH=q.size/100*16*(q.lh||1.6);
     try{const c=rend&&rend.getContents&&rend.getContents()[0];if(c){const pe=c.document.querySelector('p')||c.document.body,cs=c.window.getComputedStyle(pe);let l=parseFloat(cs.lineHeight);if(!l||isNaN(l))l=parseFloat(cs.fontSize)*(q.lh||1.6);if(l>8&&l<120)lineH=l}}catch(e){}
     const n=Math.max(1,Math.min(3,q.rl||2));geo={H:vr.height,bh:Math.round(lineH*n+2),top:vr.top-rr.top,vt:vr.top,lineH,n}};
-  const snap=t=>{if(lineTops.length>2){let bi=0,bd=1e9;lineTops.forEach((lt,i)=>{const dd=Math.abs(lt-1-t);if(dd<bd){bd=dd;bi=i}});return Math.round(lineTops[bi]-1)}return t};
-  const place=(t,anim)=>{tNow=Math.max(0,Math.min(geo.H-geo.bh,t));rB.style.transition=anim?'transform .16s ease-out':'none';rB.style.transform='translate3d(0,'+tNow+'px,0)'};
+  const place=t=>{tNow=Math.max(0,Math.min(geo.H-geo.bh,t));rB.style.transform='translate3d(0,'+tNow+'px,0)'};
   const ruleLay=force=>{const q=prefs();ruleBox.style.display=q.ruler?'block':'none';rBtn.classList.toggle('sel',!!q.ruler);if(!q.ruler||dragging)return;
     if(force||!geo.H||true){measure();ruleBox.style.top=geo.top+'px';ruleBox.style.height=geo.H+'px';rB.style.height=geo.bh+'px'}
-    if(!lineTops.length)scanLines();
-    const ry=q.ry==null?.3:q.ry;place(snap(Math.round(ry*(geo.H-geo.bh))),true)};
+    const ry=q.ry==null?.3:q.ry;place(ry*(geo.H-geo.bh))};
   rH.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{rH.setPointerCapture(e.pointerId)}catch(x){}dragging=true;rH.style.cursor='grabbing';
     const y0=e.clientY,t0=tNow;
-    const mv=ev=>{place(t0+(ev.clientY-y0),false)};
+    const mv=ev=>{place(t0+(ev.clientY-y0))};
     const up=()=>{dragging=false;rH.removeEventListener('pointermove',mv);rH.removeEventListener('pointerup',up);rH.removeEventListener('pointercancel',up);rH.style.cursor='';
-      const t=snap(tNow);place(t,true);setPref('ry',Math.max(0,Math.min(1,t/Math.max(1,geo.H-geo.bh))))};
+      setPref('ry',Math.max(0,Math.min(1,tNow/Math.max(1,geo.H-geo.bh))))};
     rH.addEventListener('pointermove',mv);rH.addEventListener('pointerup',up);rH.addEventListener('pointercancel',up)});
-  let rlT=0;const rlSoon=()=>{clearTimeout(rlT);rlT=setTimeout(()=>{if(dragging)return;scanLines();ruleLay(true)},250)};
+  let rlT=0;const rlSoon=()=>{clearTimeout(rlT);rlT=setTimeout(()=>{if(!dragging)ruleLay(true)},250)};
   try{new ResizeObserver(()=>ruleLay(true)).observe(view)}catch(e){window.addEventListener('resize',()=>ruleLay(true))}
-  setTimeout(()=>{scanLines();ruleLay(true)},500);
+  setTimeout(()=>ruleLay(true),500);
   view.addEventListener('scroll',()=>{lastScroll=Date.now();cancelers.forEach(f=>f())},true);
   const brPop=el('div','kr-br');
   const brRow=(ic,key,max,lab)=>{const r=el('div','ap-sl');const i=el('input');i.type='range';i.min=0;i.max=max;i.value=prefs()[key]||0;i.setAttribute('aria-label',lab);i.oninput=()=>{setPref(key,+i.value);comfort()};r.append(el('span','',ic),i);return r};
@@ -734,7 +749,7 @@ root.append(warmEl,dimEl);comfort();document.body.append(root);fit();document.bo
         const l=d.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600&family=Lora:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Bitter:ital,wght@0,400;0,700;1,400&family=Nunito:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;600&display=swap';d.head.append(l)}catch(e){}});
       style();
       await rend.display(cfi||undefined);
-    rend.on('relocated',loc=>{if(closed)return;lastCfi=loc.start.cfi;if(book.locations&&book.locations.length()){pct=book.locations.percentageFromCfi(lastCfi)||0;range.value=Math.round(pct*1000)}upd();hideSel();trackSpeed();save();rlSoon()});
+    rend.on('relocated',loc=>{if(closed)return;lastCfi=loc.start.cfi;lastLoc=loc;if(locN){pct=calcPct(loc);if(!sliding)range.value=Math.round(pct*1000)}if(!sliding)upd();hideSel();clubTick(loc);trackSpeed();save();rlSoon()});
     rend.on('click',e=>{if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();if(!sc&&x<w*0.28)rend.prev();else if(!sc&&x>w*0.72)rend.next();else root.classList.toggle('hide')});
     let sx=0;rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX});rend.on('touchend',e=>{const dx=e.changedTouches[0].screenX-sx;if(!sc&&Math.abs(dx)>60){dx<0?rend.next():rend.prev()}});
     rend.on('keyup',e=>{if(e.key==='ArrowRight')rend.next();if(e.key==='ArrowLeft')rend.prev()});
@@ -769,8 +784,10 @@ root.append(warmEl,dimEl);comfort();document.body.append(root);fit();document.bo
       const found=nums.length>=2?nums:hd.length>=2?hd:[];
       if(found.length&&!closed){tocItems.length=0;found.slice(0,300).forEach(x=>tocItems.push(x))}
     }catch(e){}}
-    book.ready.then(()=>(genP=book.locations.generate(CPL))).then(()=>{if(closed)return;buildCh();range.disabled=false;if(lastCfi){pct=book.locations.percentageFromCfi(lastCfi)||0;range.value=Math.round(pct*1000);upd();save()}}).catch(()=>{});
-    range.onchange=()=>{if(book.locations.length())rend.display(book.locations.cfiFromPercentage(range.value/1000))};
+    book.ready.then(()=>(genP=book.locations.generate(CPL))).then(()=>{if(closed)return;buildProg();buildCh();range.disabled=false;const lc=lastLoc||rend.currentLocation();if(lc&&lc.start){lastCfi=lc.start.cfi;pct=calcPct(lc);range.value=Math.round(pct*1000);upd();save();clubTick(lc)}}).catch(()=>{});
+    range.oninput=()=>{if(!locN)return;sliding=true;const f=range.value/1000,t=Math.round(f*100)+'% · pág. '+Math.max(1,Math.min(locN,Math.ceil(f*locN)))+' de '+locN;pt.textContent=t;foot.textContent=t};
+    range.onchange=()=>{sliding=false;if(locN)seekTo(range.value/1000)};
+    range.addEventListener('pointercancel',()=>{sliding=false;range.value=Math.round(pct*1000);upd()});
     save();
   }catch(e){
     msg.textContent='No se pudo abrir el libro: '+(e&&e.message||'error');msg.style.pointerEvents='auto';
@@ -951,7 +968,7 @@ function renderLib(){
    hd.append(tg);sec.append(hd)}
   if(showMode==='grid')sec.append(el('p','hint2 kr-lph','Mantené apretada una portada para ver Reseñas, Lista y Quitar.'));
   const grid=el('div','kr-rgrid');sec.append(grid);
-  if(!l.length){(showMode==='grid'?grid:sec).append(el('p','hint2','Todavía no abriste ningún libro. Buscá uno y tocá “Leer en la app”, o abrí un archivo.'));const g=btn('Buscar mi primer libro',()=>window.showView&&window.showView('buscar'));g.classList.add('empty-cta');(showMode==='grid'?grid:sec).append(g)};
+  if(!l.length){sec.append(el('p','hint2','Todavía no abriste ningún libro. Buscá uno y tocá “Leer en la app”, o abrí un archivo.'));const g=btn('Buscar mi primer libro',()=>window.showView&&window.showView('buscar'));g.classList.add('empty-cta');sec.append(g)};
   if(showMode==='shelves')libShelves(sec,l);
   else l.forEach(x=>{
     const r=el('div','lib-item'),d=el('div'),cv=store.get('kr_cov_'+x.id,'')||x.img||'';{const ph=()=>{const p=el('button','lib-cov ph',(window.kTitle?window.kTitle(x.title):x.title).trim().charAt(0).toUpperCase());p.type='button';p.setAttribute('aria-label','Leer '+x.title);p.onclick=()=>{if(Date.now()-lpT>700)go()};return p};

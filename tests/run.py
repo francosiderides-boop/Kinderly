@@ -83,7 +83,7 @@ def t_versiones(b, base):
 
 def t_inicio(b, base):
     errs = []; ctx = ctx_for(b); pg = page(ctx, base + "index.html#buscar", errs)
-    for v in ["buscar", "descubrir", "biblioteca", "amigos", "ajustes", "sugerencias"]:
+    for v in ["biblioteca", "descubrir", "buscar", "club", "perfil", "amigos", "ajustes", "sugerencias"]:
         pg.evaluate(f"showView('{v}')"); pg.wait_for_timeout(500)
         over = pg.evaluate("document.documentElement.scrollWidth>document.documentElement.clientWidth")
         check(f"pestaña {v} sin desborde horizontal", not over)
@@ -277,6 +277,95 @@ def t_sin_conexion(b, base):
     ctx.close()
 
 
+def t_navegacion(b, base):
+    errs = []; ctx = ctx_for(b); pg = page(ctx, base + "index.html", errs); pg.wait_for_timeout(800)
+    check("la pantalla principal es la biblioteca", pg.evaluate("document.querySelector('.view.on').dataset.view") == "biblioteca")
+    tabs = pg.evaluate("[...document.querySelectorAll('nav.tabs button')].map(x=>x.dataset.go)")
+    check("pestañas en orden", tabs == ["biblioteca", "descubrir", "buscar", "club"], tabs)
+    pg.click("#menu-btn"); pg.wait_for_timeout(200)
+    check("el menú de arriba trae perfil, amigos y ajustes", pg.evaluate("[...document.querySelectorAll('#hd-menu button')].map(x=>x.dataset.go).slice(0,3)") == ["perfil", "amigos", "ajustes"])
+    pg.click("#hd-menu button[data-go='perfil']"); pg.wait_for_timeout(200)
+    check("el menú abre Perfil y se cierra", pg.evaluate("document.querySelector('.view.on').dataset.view") == "perfil" and not pg.is_visible("#hd-menu"))
+    check("sin errores en la navegación", not errs, errs)
+    ctx.close()
+
+
+def t_perfil(b, base):
+    seed = {"users": {"u1": {"username": "franco", "usernameLower": "franco"}, "u2": {"name": "Ana", "username": "ana", "usernameLower": "ana", "bio": "Amo la novela rusa"}},
+            "friendships": {"u1_u2": {"members": ["u1", "u2"], "names": {"u1": "franco", "u2": "Ana"}}}}
+    errs = []; ctx = ctx_for(b, {}, seed); pg = page(ctx, base + "index.html#perfil", errs); pg.wait_for_timeout(1500)
+    pg.fill("#pf-bio", "Me gusta la poesía"); pg.click("#pf-body button:has-text('Guardar')"); pg.wait_for_timeout(400)
+    check("la bio se guarda en la cuenta", pg.evaluate("window.__fdb.users.u1.bio") == "Me gusta la poesía")
+    png = __import__("base64").b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAEBgIApD5fRAAAAABJRU5ErkJggg==")
+    pg.set_input_files("#pf-body input[type=file]", {"name": "a.png", "mimeType": "image/png", "buffer": png}); pg.wait_for_timeout(800)
+    check("la foto se achica y se guarda", (pg.evaluate("window.__fdb.users.u1.pic") or "").startswith("data:image/jpeg"))
+    check("la foto aparece en el menú", pg.evaluate("!!document.querySelector('#menu-av img')"))
+    pg.evaluate("showView('amigos')"); pg.click(".kf-it:has-text('Ana') button:has-text('Perfil')"); pg.wait_for_timeout(500)
+    check("veo la bio de mi amiga", "novela rusa" in pg.inner_text(".ks-box"))
+    check("sin errores en Perfil", not errs, errs)
+    ctx.close()
+
+
+def t_regla_y_barra(b, base):
+    for name, url in [("Marianela", MARIANELA), ("Lovecraft", LOVECRAFT)]:
+        errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
+        pg.evaluate(f"window.KReader.open({{url:'{url}',title:'{name}',author:'x'}})"); pg.wait_for_function(READY, timeout=120000)
+        pg.wait_for_function("!document.querySelector('#kr .kr-prog input').disabled", timeout=120000); pg.wait_for_timeout(800)
+        for f in [500, 900, 200]:
+            pg.evaluate(f"(()=>{{const r=document.querySelector('#kr .kr-prog input');r.value={f};r.dispatchEvent(new Event('input'));r.dispatchEvent(new Event('change'))}})()"); pg.wait_for_timeout(3000)
+            got = pg.evaluate("+document.querySelector('#kr .kr-prog input').value")
+            check(f"{name}: la barra lleva al {f/10:.0f}%", abs(got - f) <= 25, got)
+        pg.evaluate("(()=>{const r=document.querySelector('#kr .kr-prog input');r.value=1000;r.dispatchEvent(new Event('input'));r.dispatchEvent(new Event('change'))})()"); pg.wait_for_timeout(3000)
+        check(f"{name}: al final marca 100%", pg.evaluate("document.querySelector('#kr .kr-prog span').textContent.startsWith('100%')"), pg.evaluate("document.querySelector('#kr .kr-prog span').textContent"))
+        check(f"{name}: sin errores al usar la barra", not errs, errs)
+        ctx.close()
+    ctx = ctx_for(b, {"kr_cfg": json.dumps({"ruler": True})}); pg = page(ctx, base + "index.html#biblioteca")
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'M',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(1200)
+    h = pg.eval_on_selector("#kr .rl-h", "e=>{const r=e.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]}")
+    pg.mouse.move(*h); pg.mouse.down(); pg.mouse.move(h[0], h[1] + 77, steps=6); pg.mouse.up()
+    tr = "document.querySelector('#kr .rl-b').style.transform"
+    t1 = pg.evaluate(tr); pg.wait_for_timeout(600); t2 = pg.evaluate(tr)
+    pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(900); t3 = pg.evaluate(tr)
+    check("la regla no se corrige sola al soltarla", t1 == t2, [t1, t2])
+    check("la regla no se mueve al pasar de página", t1 == t3, [t1, t3])
+    ctx.close()
+
+
+def t_club(b, base):
+    lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "pct": 0, "t": 1}]
+    seed = {"users": {"u1": {"username": "franco", "usernameLower": "franco"}, "u2": {"name": "Ana", "username": "ana", "usernameLower": "ana"}},
+            "friendships": {"u1_u2": {"members": ["u1", "u2"], "names": {"u1": "franco", "u2": "Ana"}}}}
+    errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}, seed); pg = page(ctx, base + "index.html#club", errs); pg.wait_for_timeout(1500)
+    pg.click("#club-body button:has-text('Proponer un libro')"); pg.wait_for_timeout(300)
+    pg.check(".ks-box label:has-text('Ana') input"); pg.click(".ks-box button:has-text('Proponer')"); pg.wait_for_timeout(500)
+    reads = pg.evaluate("Object.values(window.__fdb.clubReads||{})")
+    check("la propuesta queda con plazo y amiga invitada", len(reads) == 1 and reads[0]["members"] == ["u1", "u2"] and reads[0]["joined"] == ["u1"] and reads[0]["deadline"] > 0, reads)
+    pg.click("#club-body button:has-text('Leer')"); pg.wait_for_function(READY, timeout=120000)
+    pg.wait_for_function("!document.querySelector('#kr .kr-prog input').disabled", timeout=120000); pg.wait_for_timeout(1500)
+    chs = pg.evaluate("Object.values(window.__fdb.clubReads)[0].chapters")
+    check("el club guarda los capítulos", len(chs) >= 2, chs)
+    rid = pg.evaluate("Object.keys(window.__fdb.clubReads)[0]")
+    check("sin llegar, no hay diálogo abierto", pg.locator(".ks-ov").count() == 0)
+    for _ in range(120):  # pasar páginas hasta terminar un capítulo
+        pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(120)
+        if pg.locator(".ks-ov").count(): break
+    pg.wait_for_timeout(500)
+    check("al terminar un capítulo se abre el diálogo", pg.locator(".ks-ov textarea").count() == 1)
+    check("el diálogo se ve arriba del lector", pg.evaluate("getComputedStyle(document.querySelector('.ks-ov')).zIndex") == "40")
+    pg.fill(".ks-ov textarea", "Muy lindo"); pg.click(".ks-ov button:has-text('Guardar')"); pg.wait_for_timeout(500)
+    notes = pg.evaluate(f"Object.values(window.__fdb['clubReads/{rid}/notes']||{{}})")
+    done = pg.evaluate(f"(window.__fdb['clubReads/{rid}/progress']||{{}}).u1.done")
+    check("el comentario se guarda en un capítulo ya leído", len(notes) == 1 and notes[0]["ch"] < done, [notes, done])
+    pg.evaluate("(()=>{const r=document.querySelector('#kr .kr-prog input');r.value=950;r.dispatchEvent(new Event('input'));r.dispatchEvent(new Event('change'))})()"); pg.wait_for_timeout(3000)
+    check("saltar con la barra no abre capítulos", pg.locator(".ks-ov").count() == 0 and pg.evaluate(f"window.__fdb['clubReads/{rid}/progress'].u1.done") == done)
+    pg.evaluate("document.querySelector('#kr .kr-top button').click()"); pg.wait_for_timeout(600)
+    pg.evaluate("showView('club')"); pg.click("#club-body button:has-text('Comentarios')"); pg.wait_for_timeout(300)
+    locked = pg.evaluate("[...document.querySelectorAll('.cl-ch')].map(x=>x.disabled)")
+    check("los capítulos sin leer quedan bloqueados", locked[0] is False and locked[-1] is True, locked)
+    check("sin errores en el club", not errs, errs)
+    ctx.close()
+
+
 def t_instalar(b, base):
     uas = {"Chrome": ("Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36", True, "pantallita"),
            "Edge": ("Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0", True, "Aplicaciones"),
@@ -298,7 +387,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]

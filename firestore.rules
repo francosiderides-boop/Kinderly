@@ -20,7 +20,9 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if signedIn();
       allow create, update: if signedIn() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['name', 'photo', 'updatedAt', 'username', 'usernameLower'])
+        && request.resource.data.keys().hasOnly(['name', 'photo', 'updatedAt', 'username', 'usernameLower', 'bio', 'pic'])
+        && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 300))
+        && (!('pic' in request.resource.data) || (request.resource.data.pic is string && request.resource.data.pic.size() <= 120000 && request.resource.data.pic.matches('data:image/jpeg;base64,.*')))
         && (!('usernameLower' in request.resource.data)
             || (request.resource.data.usernameLower.matches('^[a-z0-9_.]{3,20}$')
                 && request.resource.data.username.lower() == request.resource.data.usernameLower
@@ -124,6 +126,51 @@ service cloud.firestore {
         && request.resource.data.k is string
         && (request.resource.data.v == null || request.resource.data.v is string)
         && request.resource.data.m is int;
+    }
+
+    // v183 · Club de Lectura: solo lo ven quienes fueron invitados.
+    function clubDoc(id) {
+      return get(/databases/$(database)/documents/clubReads/$(id)).data;
+    }
+    match /clubReads/{id} {
+      allow read: if signedIn() && request.auth.uid in resource.data.members;
+      allow create: if signedIn() && request.resource.data.from == request.auth.uid
+        && request.resource.data.keys().hasOnly(['title', 'author', 'url', 'from', 'fromName', 'members', 'joined', 'names', 'deadline', 'chapters', 'createdAt'])
+        && request.resource.data.title is string && request.resource.data.title.size() <= 300
+        && legalUrl(request.resource.data.url)
+        && request.resource.data.deadline is int
+        && request.resource.data.members is list && request.resource.data.members.size() >= 2 && request.resource.data.members.size() <= 20
+        && request.auth.uid in request.resource.data.members
+        && request.resource.data.joined == [request.auth.uid]
+        && request.resource.data.chapters == [];
+      // cada integrante puede sumarse, irse o completar la lista de capítulos; nada más
+      allow update: if signedIn() && request.auth.uid in resource.data.members
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'joined', 'chapters'])
+        && (request.resource.data.members == resource.data.members
+            || request.resource.data.members == resource.data.members.removeAll([request.auth.uid]))
+        && request.resource.data.joined.removeAll([request.auth.uid]) == resource.data.joined.removeAll([request.auth.uid])
+        && request.resource.data.chapters.size() <= 200;
+      allow delete: if signedIn() && resource.data.from == request.auth.uid;
+
+      match /progress/{uid} {
+        allow read: if signedIn() && request.auth.uid in clubDoc(id).members;
+        allow create, update: if signedIn() && request.auth.uid == uid && request.auth.uid in clubDoc(id).joined
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'done', 'pct', 'updatedAt'])
+          && request.resource.data.uid == uid
+          && request.resource.data.done is int;
+      }
+      // solo se comenta un capítulo ya terminado
+      match /notes/{noteId} {
+        allow read: if signedIn() && request.auth.uid in clubDoc(id).joined;
+        allow create, update: if signedIn() && request.auth.uid in clubDoc(id).joined
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'ch', 'text', 'updatedAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.ch is int
+          && noteId == string(request.resource.data.ch) + '_' + request.auth.uid
+          && request.resource.data.text is string && request.resource.data.text.size() <= 600
+          && request.resource.data.ch < get(/databases/$(database)/documents/clubReads/$(id)/progress/$(request.auth.uid)).data.done;
+        allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      }
     }
   }
 }
