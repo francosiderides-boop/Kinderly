@@ -385,6 +385,7 @@ def t_lector_completo(b, base):
     check("un toque pone el lector en pantalla completa", pg.evaluate("!!document.fullscreenElement"))
     fr = pg.evaluate("(()=>{const r=document.querySelector('#kr iframe').getBoundingClientRect();return [r.top,r.bottom,innerHeight]})()")
     check("en pantalla completa el libro sigue de arriba a abajo", fr[0] <= 1 and fr[1] >= fr[2] - 1, fr)
+    check("nada asoma en los bordes con las barras escondidas", pg.evaluate("getComputedStyle(document.querySelector('#kr .kr-panel')).boxShadow") == "none" and pg.evaluate("getComputedStyle(document.querySelector('#kr .kr-bot')).visibility") == "hidden")
     pg.screenshot(path=os.environ.get("KSHOT", "/dev/null")) if os.environ.get("KSHOT") else None
     pg.evaluate("document.querySelector('#kr .kr-top button').click()"); pg.wait_for_timeout(500)
     check("al salir del libro se va de pantalla completa", not pg.evaluate("!!document.fullscreenElement"))
