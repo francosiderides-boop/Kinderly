@@ -387,6 +387,68 @@ def t_lector_diseno(b, base):
     ctx.close()
 
 
+TTS_STUB = """
+(()=>{const S={q:null,said:[],delay:500,bound:true,gen:0,pitch:[]};window.__tts=S;
+class U{constructor(t){this.text=t;this.rate=1;this.pitch=1}}window.SpeechSynthesisUtterance=U;
+const syn={getVoices:()=>[],speaking:false,pending:false,addEventListener(){},removeEventListener(){},cancel(){S.gen++;const u=S.q;S.q=null;if(u&&u.onerror)u.onerror({error:'canceled'})},
+speak(u){S.said.push(u.text);S.pitch.push(u.pitch);S.q=u;const g=S.gen;setTimeout(()=>{if(S.gen!==g)return;u.onstart&&u.onstart({});const re=/\\S+/g;const ws=[];let m;while((m=re.exec(u.text)))ws.push(m.index);let i=0;const iv=setInterval(()=>{if(S.gen!==g){clearInterval(iv);return}if(i<ws.length){if(S.bound&&u.onboundary)u.onboundary({name:'word',charIndex:ws[i]});i++}else{clearInterval(iv);S.q=null;u.onend&&u.onend({})}},S.step||15)},S.delay)}};
+Object.defineProperty(window,'speechSynthesis',{value:syn,configurable:true})})()
+"""
+
+
+def t_audio(b, base):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); ctx.add_init_script(TTS_STUB); pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000)
+    pg.wait_for_function("!document.querySelector('#kr .kr-prog input').disabled", timeout=120000); pg.wait_for_timeout(300)
+    for _ in range(12):
+        pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(120)
+    pg.wait_for_timeout(400)
+    FIRST = """(()=>{const f=document.querySelector('#kr iframe'),d=f.contentDocument,fr=f.getBoundingClientRect(),v=document.querySelector('#kr-view').getBoundingClientRect(),w=d.createTreeWalker(d.body,4);let n;while((n=w.nextNode())){if(!n.textContent.trim()||n.parentElement.closest('sup'))continue;const re=/\\S+/g;let m;while((m=re.exec(n.textContent))){const r=d.createRange();r.setStart(n,m.index);r.setEnd(n,m.index+m[0].length);const q=r.getClientRects()[0];if(q&&fr.left+q.left>=v.left-1&&fr.left+q.left<v.right&&fr.top+q.top>=v.top-1)return m[0]}}return ''})()"""
+    first = pg.evaluate(FIRST)
+    pg.click("#kr button[aria-label='Audiolectura']"); pg.wait_for_timeout(300)
+    preview = pg.inner_text("#kr .kr-aufrom span")
+    check("el panel muestra desde qué palabra empieza", preview.replace("“", "").startswith(first.replace("\u00ad", "")), [first, preview])
+    t0 = pg.evaluate("Date.now()"); pg.click("#kr .kr-play"); pg.wait_for_timeout(100)
+    check("el gatito aparece mientras carga", pg.locator("#kr .kr-aup .kr-cat").count() == 1 and pg.evaluate("getComputedStyle(document.querySelector('#kr .kr-cat .cy')).animationName") == "krspin")
+    check("pidió la voz enseguida", pg.evaluate("window.__tts.said.length") == 1)
+    said = pg.evaluate("window.__tts.said[0]")
+    check("lee desde la primera palabra de la página", said.startswith(first.replace("\u00ad", "")), [first, said[:40]])
+    check("el panel se cierra para ver el texto", not pg.evaluate("document.querySelector('#kr .kr-panel').classList.contains('on')"))
+    pg.screenshot(path=os.environ["KAU"] + "_load.png") if os.environ.get("KAU") else None
+    pg.wait_for_timeout(700)
+    check("el gatito se va cuando empieza a leer", pg.locator("#kr .kr-cat").count() == 0)
+    pos = []
+    for _ in range(4):
+        pos.append(pg.evaluate("(()=>{const h=document.querySelector('#kr .kr-hl'),r=h.getBoundingClientRect();return getComputedStyle(h).display==='none'?null:[Math.round(r.left),Math.round(r.top),Math.round(r.width)]})()")); pg.wait_for_timeout(60)
+    seen = [p for p in pos if p]
+    check("se resalta la palabra y va avanzando", len(seen) >= 2 and len({tuple(p) for p in seen}) >= 2 and all(p[2] > 0 for p in seen), pos)
+    pg.screenshot(path=os.environ["KAU"] + "_hl.png") if os.environ.get("KAU") else None
+    pg.click("#kr .kr-aup button:has-text('Pausa')"); pg.wait_for_timeout(100)
+    n = pg.evaluate("window.__tts.said.length")
+    pg.click("#kr .kr-aup button:has-text('Seguir')"); pg.wait_for_timeout(100)
+    again = pg.evaluate("window.__tts.said[window.__tts.said.length-1]")
+    check("seguir continúa desde la palabra donde iba", pg.evaluate("window.__tts.said.length") == n + 1 and not again.startswith(first), again[:40])
+    pg.evaluate("window.__tts.delay=0;window.__tts.step=2"); v0 = pg.evaluate("+document.querySelector('#kr .kr-prog input').value")
+    pg.wait_for_timeout(6000)
+    v1 = pg.evaluate("+document.querySelector('#kr .kr-prog input').value")
+    check("las páginas pasan solas al leer", v1 > v0, [v0, v1])
+    check("la pastilla se esconde para no tapar el texto", pg.evaluate("getComputedStyle(document.querySelector('#kr .kr-aup')).opacity") == "0")
+    pg.evaluate("document.querySelector('#kr').classList.remove('hide')"); pg.wait_for_timeout(100)
+    pg.click("#kr .kr-aup button:has-text('Detener')"); pg.wait_for_timeout(100)
+    check("detener saca el resaltado y los controles", pg.evaluate("getComputedStyle(document.querySelector('#kr .kr-hl')).display") == "none" and pg.locator("#kr .kr-aup.on").count() == 0)
+    # celular que no avisa las palabras: se estima
+    pg.evaluate("window.__tts.bound=false;window.__tts.step=120"); pg.evaluate("document.querySelector('#kr').classList.remove('hide')"); pg.click("#kr button[aria-label='Audiolectura']"); pg.wait_for_timeout(200)
+    pg.click("#kr .row button:has-text('Narrador')"); pg.wait_for_timeout(100)
+    pg.click("#kr .kr-play"); pg.wait_for_timeout(300)
+    a = pg.evaluate("document.querySelector('#kr .kr-hl').getBoundingClientRect().left+','+document.querySelector('#kr .kr-hl').getBoundingClientRect().top"); pg.wait_for_timeout(2500)
+    c = pg.evaluate("document.querySelector('#kr .kr-hl').getBoundingClientRect().left+','+document.querySelector('#kr .kr-hl').getBoundingClientRect().top")
+    check("sin aviso del celular, el resaltado avanza igual", a != c, [a, c])
+    check("el narrador usa voz más grave", pg.evaluate("window.__tts.pitch[window.__tts.pitch.length-1]") < 1)
+    pg.evaluate("document.querySelector('#kr .kr-aup button:last-child').click()")
+    check("sin errores en la audiolectura", not errs, errs)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -443,7 +505,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]
