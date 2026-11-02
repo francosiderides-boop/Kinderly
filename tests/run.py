@@ -596,6 +596,36 @@ def t_apariencia_ida_y_vuelta(b, base):
     ctx.close()
 
 
+def t_ancho(b, base):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}, viewport={"width": 1440, "height": 900}, device_scale_factor=1); pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(400)
+    pg.wait_for_function("!document.querySelector('#kr .kr-prog input').disabled", timeout=120000)
+    for _ in range(5):
+        pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(120)
+    W = "(()=>{const r=document.querySelector('#kr iframe').getBoundingClientRect(),v=document.querySelector('#kr-view').getBoundingClientRect();return [Math.round(v.width),Math.round(v.left),Math.round(innerWidth-v.right)]})()"
+    w = pg.evaluate(W)
+    check("en la compu el texto queda en una columna centrada", w[0] == 720 and abs(w[1] - w[2]) <= 1, w)
+    p0 = pg.evaluate("+document.querySelector('#kr .kr-prog input').value")
+    pg.click("#kr button[aria-label='Apariencia']"); pg.wait_for_timeout(200)
+    got = []
+    for lab in ["Angosto", "Completo", "Medio", "Angosto"]:
+        pg.click(f"#kr .ap-r:has-text('Ancho del texto') button:has-text('{lab}')"); pg.wait_for_timeout(1200); got.append(pg.evaluate(W)[0])
+    check("el ancho del texto cambia todas las veces", got == [560, 1440, 720, 560], got)
+    page_w = pg.evaluate("document.querySelector('#kr iframe').contentDocument.body.getBoundingClientRect().width")
+    check("las páginas se rearman al ancho nuevo", page_w <= 600 or page_w >= 1000, page_w)
+    check("cambiar el ancho no te lleva a otra parte", abs(pg.evaluate("+document.querySelector('#kr .kr-prog input').value") - p0) < 40, p0)
+    pw = pg.evaluate("document.querySelector('#kr .kr-panel').getBoundingClientRect().width")
+    check("en la compu el panel queda centrado y angosto", pw <= 562, pw)
+    pg.screenshot(path=os.environ["KAU"] + "_ancho.png") if os.environ.get("KAU") else None
+    check("sin errores al cambiar el ancho", not errs, errs)
+    ctx.close()
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(300)
+    pg.click("#kr button[aria-label='Apariencia']"); pg.wait_for_timeout(200)
+    check("en el celular el texto usa todo el ancho y no aparece la opción", pg.evaluate("document.querySelector('#kr-view').getBoundingClientRect().width") == 390 and pg.locator("#kr .ap-r:has-text('Ancho del texto')").count() == 0)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -652,7 +682,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]
