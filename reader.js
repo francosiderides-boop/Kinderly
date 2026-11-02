@@ -398,11 +398,12 @@ async function open(o){
     // genP se lee después de ready: recién ahí arrancó el cálculo de páginas
     {const rd=rend,bk=book,upTo=(p,ms)=>Promise.race([Promise.resolve(p),new Promise(r=>setTimeout(r,ms))]).catch(()=>{});
      upTo(rd&&rd.started,10000).then(()=>upTo(mountP,15000)).then(()=>new Promise(r=>setTimeout(r,300))).then(()=>{try{rd&&rd.destroy()}catch(e){}}).then(()=>upTo(bk&&bk.ready,10000)).then(()=>upTo(genP,60000)).then(()=>{try{bk&&bk.destroy()}catch(e){}})}
-    document.removeEventListener('keydown',key);window.removeEventListener('popstate',pop);
+    document.removeEventListener('keydown',key);window.removeEventListener('popstate',pop);document.removeEventListener('fullscreenchange',fsRepaint);
     root.remove();document.body.style.overflow='';cur=null;
     if(!fromPop&&history.state&&history.state.kr){try{history.back()}catch(e){}}
     cont();renderLib();
   };
+  const fsRepaint=()=>{setTimeout(()=>{if(!closed&&rend&&ready)marks.forEach(paint)},600)};document.addEventListener('fullscreenchange',fsRepaint);
   const pop=()=>{if(pnl.classList.contains('on')){closePanel();try{history.pushState({kr:1},'')}catch(e){}return}close(true)};
   const key=e=>{if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==='ArrowRight')rend&&rend.next();else if(e.key==='ArrowLeft')rend&&rend.prev();else if(e.key==='Escape'){pnl.classList.contains('on')?closePanel():close()}};
 
@@ -414,6 +415,7 @@ async function open(o){
       'body':{'background':t.bg+im,'color':t.fg+im,'font-family':f.css+im,'line-height':q.lh+im,'padding':'24px '+q.margin+'px 28px'+im},
       'p,div,span,li,td,th,h1,h2,h3,h4,h5,h6,blockquote,em,i,b,strong,small':{'color':t.fg+im},
       'a,a:link,a:visited':{'color':t.fg+im},'::selection':{'background':'rgba(245,200,60,.45)'}};
+    Object.keys(HL).forEach(k=>{rules['::highlight(kr-'+k+')']={'background-color':HL[k]+'70'}});
     if(q.just){rules['p,li,blockquote']={'text-align':'justify'+im,'text-justify':'inter-word'+im,'hyphens':'auto'+im,'-webkit-hyphens':'auto'+im}}
     else rules['p:not([align=center]):not([style*=center]):not([class*=center]):not([class*=centr]),li,blockquote']={'text-align':'left'+im}; // muchos libros vienen justificados de fábrica: Izquierda también tiene que verse
     // un solo estilo propio que se reemplaza entero: con los temas de epub.js cada cambio sumaba una hoja nueva y al volver a una opción ya usada no pasaba nada
@@ -429,8 +431,18 @@ async function open(o){
 
   // ----- marcas (subrayados y notas) -----
   const loadMarks=()=>{marks=store.get(hlKey(id),[])};
-  const saveMarks=()=>store.set(hlKey(id),marks);
-  const paint=m=>{try{rend.annotations.remove(m.cfi,'highlight')}catch(e){}try{rend.annotations.highlight(m.cfi,{},()=>editMark(m),'kr-hl',{'fill':HL[m.color]||HL.amarillo,'fill-opacity':'0.38'})}catch(e){}};
+  const saveMarks=()=>{store.set(hlKey(id),marks);hlSync()};
+  // los subrayados se pintan dentro del texto con la API de resaltado del navegador: siguen pegados a las palabras aunque la página se rearme (pantalla completa, girar, márgenes)
+  const hlApi=!!(window.CSS&&CSS.highlights&&window.Highlight);
+  const markRanges=c=>{const out=[];marks.forEach(m=>{try{if(new ePub.CFI(m.cfi).spinePos!==c.sectionIndex)return;const g=c.range(m.cfi);if(g&&!g.collapsed)out.push([m,g])}catch(e){}});return out};
+  const hlDoc=c=>{const w=c&&c.window;if(!w||!w.CSS||!w.CSS.highlights||!w.Highlight)return;Object.keys(HL).forEach(k=>w.CSS.highlights.delete('kr-'+k));const by={};markRanges(c).forEach(([m,g])=>{const k=HL[m.color]?m.color:'amarillo';(by[k]=by[k]||[]).push(g)});Object.keys(by).forEach(k=>w.CSS.highlights.set('kr-'+k,new w.Highlight(...by[k])))};
+  const hlSync=()=>{if(hlApi&&rend)(rend.getContents()||[]).forEach(hlDoc)};
+  // tocar un subrayado abre sus opciones (x, y en coordenadas del documento del libro)
+  const markAt=(c,x,y)=>{if(!c)return null;for(const [m,g] of markRanges(c))for(const q of g.getClientRects())if(x>=q.left-2&&x<=q.right+2&&y>=q.top-2&&y<=q.bottom+2)return m;return null};
+  const paint=m=>{if(hlApi){hlSync();return}try{rend.annotations.remove(m.cfi,'highlight')}catch(e){}try{rend.annotations.highlight(m.cfi,{},()=>editMark(m),'kr-mark',{'fill':HL[m.color]||HL.amarillo,'fill-opacity':'0.38'})}catch(e){}};
+  // solo para las pruebas automáticas: subraya los primeros párrafos que se ven
+  window.__krTestHl=()=>{const c=rend.getContents()[0],w=c.window,out=[];Object.keys(HL).forEach(k=>{const h=w.CSS&&w.CSS.highlights&&w.CSS.highlights.get('kr-'+k);if(h)h.forEach(g=>{const q=g.getBoundingClientRect(),f=w.frameElement.getBoundingClientRect();out.push([Math.round(f.left+q.left+q.width/2),Math.round(f.top+q.top+q.height/2),Math.round(q.width),Math.round(q.height)])})});return out};
+  window.__krTestMarks=n=>{const c=rend.getContents()[0],d=c.document,v=view.getBoundingClientRect(),fr=c.window.frameElement.getBoundingClientRect();return [...d.querySelectorAll('p')].filter(p=>{const r=p.getBoundingClientRect();return p.textContent.trim().length>40&&fr.left+r.left>=v.left-1&&fr.left+r.left<v.right}).slice(0,n).map(p=>{const t=d.createTreeWalker(p,4).nextNode(),g=d.createRange();g.setStart(t,0);g.setEnd(t,Math.min(25,t.textContent.length));const cfi=c.cfiFromRange(g);addMark(cfi,g.toString(),'amarillo');return cfi})};
   const addMark=(cfi,text,color)=>{const m={cfi,text,color,note:'',t:Date.now()};marks.push(m);saveMarks();paint(m);return m};
   const editMark=m=>panel('Subrayado',b=>{
     b.append(el('p','',m.text));
@@ -801,7 +813,7 @@ async function open(o){
     const finishSel=()=>{const k=selCtx;selCtx=null;if(!k)return;try{if(k.sl.rangeCount&&!k.sl.getRangeAt(0).collapsed&&onSelHook)onSelHook(k.c.cfiFromRange(k.sl.getRangeAt(0)),k.c)}catch(e){say('Selección: '+((e&&e.message)||e),'err')}};
     const clearSel=()=>{try{const c=rend&&rend.getContents&&rend.getContents()[0];if(c){c.document.getSelection().removeAllRanges();c.document.body.classList.remove('kr-sel')}}catch(e){}hideSel()};
     const linkAt=(x,y)=>{try{const c=rend.getContents()[0],d=c.document,r=(c.window||d.defaultView).frameElement.getBoundingClientRect(),n=d.elementFromPoint(x-r.left,y-r.top),a=n&&n.closest&&n.closest('a[href]');if(a){a.click();return true}}catch(e){}return false};
-    const tap=(dir,x,y)=>{if(!rend)return;if(selbar.classList.contains('on')||curSel){clearSel();return}if(linkAt(x,y))return;closePanel();fsEnter();if(dir===0)root.classList.toggle('hide');else turn(dir)};
+    const tap=(dir,x,y)=>{if(!rend)return;if(selbar.classList.contains('on')||curSel){clearSel();return}if(linkAt(x,y))return;try{const c=rend.getContents()[0],f=c.window.frameElement.getBoundingClientRect(),m=markAt(c,x-f.left,y-f.top);if(m){editMark(m);return}}catch(e){}closePanel();fsEnter();if(dir===0)root.classList.toggle('hide');else turn(dir)};
     const mk=(cls,dir)=>{const z=el('div','kr-tz '+cls);let sx=0,sy=0,tm=0,fired=false,t0=0,mv=false;
       z.addEventListener('touchstart',e=>{const t=e.touches[0];if(!t||e.touches.length>1)return;sx=t.clientX;sy=t.clientY;fired=false;mv=false;t0=Date.now();clearTimeout(tm);tm=setTimeout(()=>{fired=true;try{navigator.vibrate&&navigator.vibrate(10)}catch(e){}selectAt(sx,sy)},450)},{passive:true});
       z.addEventListener('touchmove',e=>{const t=e.touches[0];if(!t)return;if(fired&&selCtx){e.preventDefault();extendTo(t.clientX,t.clientY);return}if(Math.abs(t.clientX-sx)>10||Math.abs(t.clientY-sy)>10){mv=true;clearTimeout(tm)}},{passive:false});
@@ -826,7 +838,7 @@ applyWidth();root.append(warmEl,dimEl);comfort();document.body.append(root);docu
     const mount=async(cfi)=>{
       const sc=prefs().mode==='scrolled';view.dataset.mode=sc?'scrolled':'paginated';view.textContent='';
       rend=book.renderTo(view,sc?{width:'100%',height:'100%',flow:'scrolled',manager:'continuous',allowScriptedContent:false}:{width:'100%',height:'100%',flow:'paginated',spread:'none',gap:prefs().margin*2,allowScriptedContent:false});
-      rend.hooks.content.register(c=>{try{krCss(c.document)}catch(e){}});
+      rend.hooks.content.register(c=>{try{krCss(c.document)}catch(e){}try{hlDoc(c)}catch(e){}});
       rend.hooks.content.register(c=>{try{const d=c.document;
         // seleccionar solo manteniendo apretado (un toque suelto ya no marca palabras)
         fixOrphans(d);fixText(d);markHeads(d);const ss=d.createElement('style');ss.textContent='p{margin-top:0!important;margin-bottom:.85em!important;padding-top:0!important;padding-bottom:0!important}p:empty{display:none!important}br+br{display:none!important}body{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}body.kr-sel,body.kr-sel *{-webkit-user-select:text!important;user-select:text!important}.kr-head{text-align:center!important;font-weight:600!important;font-size:1.35em!important;margin:2.2em 0 1.1em!important;break-before:column;-webkit-column-break-before:always}';d.head.append(ss);
@@ -841,8 +853,10 @@ applyWidth();root.append(warmEl,dimEl);comfort();document.body.append(root);docu
         const l=d.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,400;0,700;1,400&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600&family=Lora:ital,wght@0,400;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Bitter:ital,wght@0,400;0,700;1,400&family=Nunito:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;600&display=swap';d.head.append(l)}catch(e){}});
       style();
       await rend.display(cfi||undefined);
+    // al cambiar el tamaño (salir de pantalla completa, girar el celular) epub.js rearma las páginas y deja los subrayados en tamaño cero: se vuelven a dibujar
+    let hlT=0;const repaint=()=>{clearTimeout(hlT);hlT=setTimeout(()=>{if(!closed&&rend)marks.forEach(paint)},250)};rend.on('resized',repaint);rend.on('rendered',repaint);
     rend.on('relocated',loc=>{if(closed)return;lastCfi=loc.start.cfi;lastLoc=loc;if(locN){const was=pct;pct=calcPct(loc);if((loc.atEnd||pct>=.985)&&Math.abs(pct-was)<.03&&!seekBusy&&!sliding&&ready&&!store.get('kr_fin_'+id,false))finished();if(!sliding)range.value=Math.round(pct*1000)}if(!sliding)upd();hideSel();clubTick(loc);trackSpeed();save();rlSoon()});
-    rend.on('click',e=>{if(selbar.classList.contains('on')){return}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();fsEnter();if(!sc&&x<w*0.28)turn(-1);else if(!sc&&x>w*0.72)turn(1);else root.classList.toggle('hide')});
+    rend.on('click',e=>{if(selbar.classList.contains('on')){return}try{const d=e.view&&e.view.document,c=(rend.getContents()||[]).find(x=>x.document===d),m=c&&markAt(c,e.clientX,e.clientY);if(m){editMark(m);return}}catch(x){}const w=(e.view||window).innerWidth||innerWidth,x=e.clientX%w;closePanel();fsEnter();if(!sc&&x<w*0.28)turn(-1);else if(!sc&&x>w*0.72)turn(1);else root.classList.toggle('hide')});
     let sx=0;rend.on('touchstart',e=>{sx=e.changedTouches[0].screenX;view.dataset.t=Date.now()});rend.on('touchend',e=>{const dx=e.changedTouches[0].screenX-sx;if(!sc&&Math.abs(dx)>60)turn(dx<0?1:-1)});
     rend.on('keyup',e=>{if(e.key==='ArrowRight')rend.next();if(e.key==='ArrowLeft')rend.prev()});
     onSelHook=(cfi,contents)=>{

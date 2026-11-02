@@ -626,6 +626,37 @@ def t_ancho(b, base):
     ctx.close()
 
 
+def t_subrayados(b, base):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(400)
+    for _ in range(6):
+        pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(120)
+    v = pg.viewport_size; pg.mouse.click(v["width"] / 2, v["height"] / 2); pg.wait_for_timeout(800)
+    check("el lector está en pantalla completa", pg.evaluate("!!document.fullscreenElement"))
+    cfis = pg.evaluate("window.__krTestMarks(3)"); pg.wait_for_timeout(300)
+    def vis():
+        h = pg.evaluate("window.__krTestHl()"); W = pg.evaluate("innerWidth"); H = pg.evaluate("innerHeight")
+        return [x for x in h if x[2] > 0 and x[3] > 0 and 0 <= x[0] <= W and 0 <= x[1] <= H]
+    n = len(cfis)
+    check("los subrayados se ven sobre el texto", n >= 2 and len(vis()) == n, [cfis, pg.evaluate("window.__krTestHl()")])
+    h = vis()
+    pg.evaluate("document.querySelector('#kr').classList.add('hide')"); pg.mouse.click(h[0][0], h[0][1]); pg.wait_for_timeout(400)
+    check("tocar un subrayado abre sus opciones", pg.locator("#kr .kr-panel.on button:has-text('Borrar subrayado')").count() == 1)
+    pg.click("#kr .kr-panel.on button:has-text('Borrar subrayado')"); pg.wait_for_timeout(300); n -= 1
+    check("borrar un subrayado lo saca de la página", len(vis()) == n, pg.evaluate("window.__krTestHl()"))
+    pg.evaluate("document.exitFullscreen()"); pg.wait_for_timeout(1200)
+    check("al salir de pantalla completa siguen los subrayados", len(vis()) == n, pg.evaluate("window.__krTestHl()"))
+    pg.set_viewport_size({"width": 390, "height": 700}); pg.wait_for_timeout(2000)
+    check("si la página se rearma con otro tamaño siguen los subrayados", len(pg.evaluate("window.__krTestHl()")) == n, pg.evaluate("window.__krTestHl()"))
+    pg.set_viewport_size({"width": 390, "height": 844}); pg.wait_for_timeout(2000)
+    pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(400); pg.keyboard.press("ArrowLeft"); pg.wait_for_timeout(800)
+    check("al pasar de página y volver siguen los subrayados", len(pg.evaluate("window.__krTestHl()")) == n, pg.evaluate("window.__krTestHl()"))
+    saved = pg.evaluate("Object.keys(localStorage).filter(k=>k.startsWith('kr_hl_')).map(k=>JSON.parse(localStorage[k]).length)")
+    check("los subrayados siguen guardados", saved and saved[0] == n, saved)
+    check("sin errores con subrayados", not errs, errs)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -682,7 +713,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho), ("subrayados", t_subrayados)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]
