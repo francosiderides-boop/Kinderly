@@ -626,8 +626,10 @@ def t_ancho(b, base):
     ctx.close()
 
 
-def t_subrayados(b, base):
-    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
+def t_subrayados(b, base, sin_api=False):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"})
+    if sin_api: ctx.add_init_script("window.Highlight=undefined")
+    pg = page(ctx, base + "index.html#biblioteca", errs)
     pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(400)
     for _ in range(6):
         pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(120)
@@ -654,6 +656,40 @@ def t_subrayados(b, base):
     saved = pg.evaluate("Object.keys(localStorage).filter(k=>k.startsWith('kr_hl_')).map(k=>JSON.parse(localStorage[k]).length)")
     check("los subrayados siguen guardados", saved and saved[0] == n, saved)
     check("sin errores con subrayados", not errs, errs)
+    ctx.close()
+
+
+def t_subrayar_con_dedo(b, base, sin_api=False):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}, has_touch=True, is_mobile=True)
+    if sin_api: ctx.add_init_script("window.Highlight=undefined")
+    pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(400)
+    check("el lector se maneja como celular", pg.evaluate("matchMedia('(pointer:coarse)').matches"))
+    cdp = ctx.new_cdp_session(pg)
+    def touch(x, y, hold):
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": x, "y": y}]}); pg.wait_for_timeout(hold)
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []}); pg.wait_for_timeout(400)
+    v = pg.viewport_size
+    for _ in range(5):
+        touch(v["width"] - 30, v["height"] / 2, 60)
+    pg.wait_for_timeout(400)
+    w = pg.evaluate("""(()=>{const f=document.querySelector('#kr iframe'),d=f.contentDocument,fr=f.getBoundingClientRect(),V=document.querySelector('#kr-view').getBoundingClientRect(),t=d.createTreeWalker(d.body,4);let n,out=[];while((n=t.nextNode())){const m=/[a-záéíóúñ]{6,}/i.exec(n.textContent);if(!m)continue;const r=d.createRange();r.setStart(n,m.index);r.setEnd(n,m.index+m[0].length);const q=r.getClientRects()[0];if(q&&fr.left+q.left>=V.left+30&&fr.left+q.right<V.right-30&&fr.top+q.top>V.top+120&&fr.top+q.bottom<V.bottom-160){out.push([m[0],fr.left+q.left+q.width/2,fr.top+q.top+q.height/2]);if(out.length>2)break}}return out[1]||out[0]})()""")
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": [{"x": w[1], "y": w[2]}]}); pg.wait_for_timeout(700)
+    for k in range(1, 6):
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchMove", "touchPoints": [{"x": w[1] + 25 * k, "y": w[2] + 9 * k}]}); pg.wait_for_timeout(60)
+    cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []}); pg.wait_for_timeout(500)
+    check("mantener apretado muestra el menú de subrayar", pg.locator("#kr .selbar.on").count() == 1)
+    pg.evaluate("document.querySelector('#kr .selbar.on .dot').click()"); pg.wait_for_timeout(400)
+    hl = lambda: len([x for x in pg.evaluate("window.__krTestHl()") if x[2] > 0 and x[3] > 0])
+    n1 = hl()
+    check("el subrayado se ve", n1 >= 1, pg.evaluate("window.__krTestHl()"))
+    touch(v["width"] / 2, v["height"] / 2 + 60, 60); pg.wait_for_timeout(1200)
+    check("después de tocar la pantalla el subrayado sigue", hl() == n1, pg.evaluate("window.__krTestHl()"))
+    touch(v["width"] / 2, v["height"] / 2 + 60, 60); pg.wait_for_timeout(1200)
+    check("al tocar otra vez sigue", hl() == n1, pg.evaluate("window.__krTestHl()"))
+    touch(v["width"] - 30, v["height"] / 2, 60); pg.wait_for_timeout(500); touch(30, v["height"] / 2, 60); pg.wait_for_timeout(800)
+    check("al pasar de página y volver sigue", hl() == n1, pg.evaluate("window.__krTestHl()"))
+    check("sin errores al subrayar con el dedo", not errs, errs)
     ctx.close()
 
 
@@ -713,7 +749,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho), ("subrayados", t_subrayados)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho), ("subrayados", t_subrayados), ("subrayar_dedo", t_subrayar_con_dedo), ("subrayados_viejo", lambda b, base: t_subrayados(b, base, True)), ("subrayar_dedo_viejo", lambda b, base: t_subrayar_con_dedo(b, base, True))]
 
 if __name__ == "__main__":
     only = sys.argv[1:]

@@ -420,7 +420,7 @@ async function open(o){
     else rules['p:not([align=center]):not([style*=center]):not([class*=center]):not([class*=centr]),li,blockquote']={'text-align':'left'+im}; // muchos libros vienen justificados de fábrica: Izquierda también tiene que verse
     // un solo estilo propio que se reemplaza entero: con los temas de epub.js cada cambio sumaba una hoja nueva y al volver a una opción ya usada no pasaba nada
     krCssText=Object.keys(rules).map(s=>s+'{'+Object.keys(rules[s]).map(p=>p+':'+rules[s][p]).join(';')+'}').join('\n');
-    (rend.getContents()||[]).forEach(c=>krCss(c.document));rend.themes.fontSize(q.size+'%');
+    (rend.getContents()||[]).forEach(c=>krCss(c.document));rend.themes.fontSize(q.size+'%');setTimeout(hlSync,300);
     // en modo páginas el margen lateral lo pone epub.js con el espacio entre columnas: se le pasa ahí y se rearma la página
     if(prefs().mode!=='scrolled'&&rend.manager&&rend.settings.gap!==q.margin*2){rend.settings.gap=q.margin*2;rend.manager.settings.gap=q.margin*2;rend.manager._stageSize=undefined;try{rend.resize()}catch(e){}}
   };
@@ -435,13 +435,20 @@ async function open(o){
   // los subrayados se pintan dentro del texto con la API de resaltado del navegador: siguen pegados a las palabras aunque la página se rearme (pantalla completa, girar, márgenes)
   const hlApi=!!(window.CSS&&CSS.highlights&&window.Highlight);
   const markRanges=c=>{const out=[];marks.forEach(m=>{try{if(new ePub.CFI(m.cfi).spinePos!==c.sectionIndex)return;const g=c.range(m.cfi);if(g&&!g.collapsed)out.push([m,g])}catch(e){}});return out};
-  const hlDoc=c=>{const w=c&&c.window;if(!w||!w.CSS||!w.CSS.highlights||!w.Highlight)return;Object.keys(HL).forEach(k=>w.CSS.highlights.delete('kr-'+k));const by={};markRanges(c).forEach(([m,g])=>{const k=HL[m.color]?m.color:'amarillo';(by[k]=by[k]||[]).push(g)});Object.keys(by).forEach(k=>w.CSS.highlights.set('kr-'+k,new w.Highlight(...by[k])))};
-  const hlSync=()=>{if(hlApi&&rend)(rend.getContents()||[]).forEach(hlDoc)};
+  // sin la API (navegadores más viejos) se dibujan bloques propios dentro de la página, que se rearman cada vez que el texto se reacomoda
+  const hlRgba=k=>{const h=HL[k]||HL.amarillo;return 'rgba('+parseInt(h.slice(1,3),16)+','+parseInt(h.slice(3,5),16)+','+parseInt(h.slice(5,7),16)+',.42)'};
+  const hlLayer=c=>{const d=c.document,w=c.window;let L=d.getElementById('kr-hlayer');if(!L){L=d.createElement('div');L.id='kr-hlayer';L.style.cssText='position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2147483647';d.documentElement.append(L);
+      try{new w.ResizeObserver(()=>{clearTimeout(L._t);L._t=setTimeout(()=>hlDoc(c),60)}).observe(d.body)}catch(e){}try{d.fonts&&d.fonts.ready.then(()=>hlDoc(c))}catch(e){}}return L};
+  const hlDoc=c=>{const w=c&&c.window;if(!w)return;
+    if(hlApi&&w.CSS&&w.CSS.highlights&&w.Highlight){Object.keys(HL).forEach(k=>w.CSS.highlights.delete('kr-'+k));const by={};markRanges(c).forEach(([m,g])=>{const k=HL[m.color]?m.color:'amarillo';(by[k]=by[k]||[]).push(g)});Object.keys(by).forEach(k=>w.CSS.highlights.set('kr-'+k,new w.Highlight(...by[k])));return}
+    const L=hlLayer(c),d=c.document,sx=w.scrollX||0,sy=w.scrollY||0;L.textContent='';
+    const seen=new Set();markRanges(c).forEach(([m,g])=>{for(const q of g.getClientRects()){if(q.width<1||q.height<1)continue;const key=Math.round(q.left)+','+Math.round(q.top)+','+Math.round(q.width);if(seen.has(key))continue;seen.add(key);const b=d.createElement('div');b.className='kr-hb';b.style.cssText='position:absolute;left:'+(q.left+sx)+'px;top:'+(q.top+sy)+'px;width:'+q.width+'px;height:'+q.height+'px;background:'+hlRgba(m.color)+';border-radius:2px';L.append(b)}})};
+  const hlSync=()=>{if(rend)(rend.getContents()||[]).forEach(c=>{try{hlDoc(c)}catch(e){}})};
   // tocar un subrayado abre sus opciones (x, y en coordenadas del documento del libro)
   const markAt=(c,x,y)=>{if(!c)return null;for(const [m,g] of markRanges(c))for(const q of g.getClientRects())if(x>=q.left-2&&x<=q.right+2&&y>=q.top-2&&y<=q.bottom+2)return m;return null};
-  const paint=m=>{if(hlApi){hlSync();return}try{rend.annotations.remove(m.cfi,'highlight')}catch(e){}try{rend.annotations.highlight(m.cfi,{},()=>editMark(m),'kr-mark',{'fill':HL[m.color]||HL.amarillo,'fill-opacity':'0.38'})}catch(e){}};
+  const paint=()=>hlSync();
   // solo para las pruebas automáticas: subraya los primeros párrafos que se ven
-  window.__krTestHl=()=>{const c=rend.getContents()[0],w=c.window,out=[];Object.keys(HL).forEach(k=>{const h=w.CSS&&w.CSS.highlights&&w.CSS.highlights.get('kr-'+k);if(h)h.forEach(g=>{const q=g.getBoundingClientRect(),f=w.frameElement.getBoundingClientRect();out.push([Math.round(f.left+q.left+q.width/2),Math.round(f.top+q.top+q.height/2),Math.round(q.width),Math.round(q.height)])})});return out};
+  window.__krTestHl=()=>{const c=rend.getContents()[0],w=c.window,out=[];c.document.querySelectorAll('#kr-hlayer .kr-hb').forEach(x=>{const q=x.getBoundingClientRect(),f=w.frameElement.getBoundingClientRect();out.push([Math.round(f.left+q.left+q.width/2),Math.round(f.top+q.top+q.height/2),Math.round(q.width),Math.round(q.height)])});Object.keys(HL).forEach(k=>{const h=w.CSS&&w.CSS.highlights&&w.CSS.highlights.get('kr-'+k);if(h)h.forEach(g=>{const q=g.getBoundingClientRect(),f=w.frameElement.getBoundingClientRect();out.push([Math.round(f.left+q.left+q.width/2),Math.round(f.top+q.top+q.height/2),Math.round(q.width),Math.round(q.height)])})});return out};
   window.__krTestMarks=n=>{const c=rend.getContents()[0],d=c.document,v=view.getBoundingClientRect(),fr=c.window.frameElement.getBoundingClientRect();return [...d.querySelectorAll('p')].filter(p=>{const r=p.getBoundingClientRect();return p.textContent.trim().length>40&&fr.left+r.left>=v.left-1&&fr.left+r.left<v.right}).slice(0,n).map(p=>{const t=d.createTreeWalker(p,4).nextNode(),g=d.createRange();g.setStart(t,0);g.setEnd(t,Math.min(25,t.textContent.length));const cfi=c.cfiFromRange(g);addMark(cfi,g.toString(),'amarillo');return cfi})};
   const addMark=(cfi,text,color)=>{const m={cfi,text,color,note:'',t:Date.now()};marks.push(m);saveMarks();paint(m);return m};
   const editMark=m=>panel('Subrayado',b=>{
@@ -451,7 +458,7 @@ async function open(o){
     const r2=el('div','row');
     r2.append(btn('Guardar nota',()=>{m.note=ta.value.trim().slice(0,500);saveMarks();say('Nota guardada','ok');closePanel()}),
       btn('Definir',()=>define(m.text,'',m.cfi)),
-      btn('Borrar subrayado',()=>{try{rend.annotations.remove(m.cfi,'highlight')}catch(e){}marks=marks.filter(x=>x!==m);saveMarks();closePanel()}));
+      btn('Borrar subrayado',()=>{marks=marks.filter(x=>x!==m);saveMarks();closePanel()}));
     b.append(r2);
   });
 
