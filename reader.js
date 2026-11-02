@@ -403,6 +403,7 @@ async function open(o){
   const key=e=>{if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==='ArrowRight')rend&&rend.next();else if(e.key==='ArrowLeft')rend&&rend.prev();else if(e.key==='Escape'){pnl.classList.contains('on')?closePanel():close()}};
 
   // ----- estilo del libro -----
+  let krCssText='';const krCss=d=>{if(!d||!d.head)return;let s=d.getElementById('kr-css');if(!s){s=d.createElement('style');s.id='kr-css'}d.head.append(s);s.textContent=krCssText};
   const style=()=>{
     if(!rend)return;const q=prefs(),t=resolveTheme(),f=FONTS[q.font]||FONTS.clasica,im=' !important';
     const rules={'html':{'background':t.bg+im},
@@ -410,7 +411,12 @@ async function open(o){
       'p,div,span,li,td,th,h1,h2,h3,h4,h5,h6,blockquote,em,i,b,strong,small':{'color':t.fg+im},
       'a,a:link,a:visited':{'color':t.fg+im},'::selection':{'background':'rgba(245,200,60,.45)'}};
     if(q.just){rules['p,li,blockquote']={'text-align':'justify'+im,'text-justify':'inter-word'+im,'hyphens':'auto'+im,'-webkit-hyphens':'auto'+im}}
-    const nm='k_'+q.theme+'_'+q.font+'_'+q.lh+'_'+q.margin+'_'+t.bg+(q.just?'_j':'');rend.themes.register(nm,rules);rend.themes.select(nm);rend.themes.fontSize(q.size+'%');
+    else rules['p:not([align=center]):not([style*=center]):not([class*=center]):not([class*=centr]),li,blockquote']={'text-align':'left'+im}; // muchos libros vienen justificados de fábrica: Izquierda también tiene que verse
+    // un solo estilo propio que se reemplaza entero: con los temas de epub.js cada cambio sumaba una hoja nueva y al volver a una opción ya usada no pasaba nada
+    krCssText=Object.keys(rules).map(s=>s+'{'+Object.keys(rules[s]).map(p=>p+':'+rules[s][p]).join(';')+'}').join('\n');
+    (rend.getContents()||[]).forEach(c=>krCss(c.document));rend.themes.fontSize(q.size+'%');
+    // en modo páginas el margen lateral lo pone epub.js con el espacio entre columnas: se le pasa ahí y se rearma la página
+    if(prefs().mode!=='scrolled'&&rend.manager&&rend.settings.gap!==q.margin*2){rend.settings.gap=q.margin*2;rend.manager.settings.gap=q.margin*2;rend.manager._stageSize=undefined;try{rend.resize()}catch(e){}}
   };
   const cancelers=new Set();let lastScroll=0;
   const dimEl=el('div','kr-dim'),warmEl=el('div','kr-warm');
@@ -814,7 +820,8 @@ root.append(warmEl,dimEl);comfort();document.body.append(root);document.body.sty
     loadMarks();
     const mount=async(cfi)=>{
       const sc=prefs().mode==='scrolled';view.dataset.mode=sc?'scrolled':'paginated';view.textContent='';
-      rend=book.renderTo(view,sc?{width:'100%',height:'100%',flow:'scrolled',manager:'continuous',allowScriptedContent:false}:{width:'100%',height:'100%',flow:'paginated',spread:'none',allowScriptedContent:false});
+      rend=book.renderTo(view,sc?{width:'100%',height:'100%',flow:'scrolled',manager:'continuous',allowScriptedContent:false}:{width:'100%',height:'100%',flow:'paginated',spread:'none',gap:prefs().margin*2,allowScriptedContent:false});
+      rend.hooks.content.register(c=>{try{krCss(c.document)}catch(e){}});
       rend.hooks.content.register(c=>{try{const d=c.document;
         // seleccionar solo manteniendo apretado (un toque suelto ya no marca palabras)
         fixOrphans(d);fixText(d);markHeads(d);const ss=d.createElement('style');ss.textContent='p{margin-top:0!important;margin-bottom:.85em!important;padding-top:0!important;padding-bottom:0!important}p:empty{display:none!important}br+br{display:none!important}body{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}body.kr-sel,body.kr-sel *{-webkit-user-select:text!important;user-select:text!important}.kr-head{text-align:center!important;font-weight:600!important;font-size:1.35em!important;margin:2.2em 0 1.1em!important;break-before:column;-webkit-column-break-before:always}';d.head.append(ss);

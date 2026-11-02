@@ -548,6 +548,54 @@ def t_vista(b, base):
     ctx.close()
 
 
+def t_apariencia_ida_y_vuelta(b, base):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(300)
+    for _ in range(5):
+        pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(120)
+    pg.click("#kr button[aria-label='Apariencia']"); pg.wait_for_timeout(200)
+    B = "(()=>{const d=document.querySelector('#kr iframe').contentDocument,s=getComputedStyle(d.body),p=d.querySelector('p')||d.body,q=getComputedStyle(p);return {pad:s.paddingLeft,lh:s.lineHeight,al:q.textAlign,bg:s.backgroundColor,ff:s.fontFamily.split(',')[0]}})()"
+    def pick(row, label):
+        pg.click(f"#kr .ap-r:has-text('{row}') button:has-text('{label}')"); pg.wait_for_timeout(500); return pg.evaluate(B)
+    pg.wait_for_function("!document.querySelector('#kr .kr-prog input').disabled", timeout=120000); p0 = pg.evaluate("+document.querySelector('#kr .kr-prog input').value")
+    seq = [pick("Márgenes", x)["pad"] for x in ["Grandes", "Chicos", "Grandes", "Medios", "Chicos"]]
+    check("los márgenes cambian todas las veces", seq == ["34px", "6px", "34px", "18px", "6px"], seq)
+    check("cambiar el margen no te lleva a otra parte del libro", abs(pg.evaluate("+document.querySelector('#kr .kr-prog input').value") - p0) < 40, [p0, pg.evaluate("+document.querySelector('#kr .kr-prog input').value")])
+    seq = [pick("Interlineado", x)["lh"] for x in ["Amplio", "Justo", "Amplio", "Normal"]]
+    check("el interlineado cambia todas las veces", len(set(seq)) == 3 and seq[0] == seq[2] and seq[0] != seq[1], seq)
+    seq = [pick("Alineación", x)["al"] for x in ["Justificada", "Izquierda", "Justificada", "Izquierda"]]
+    check("la alineación cambia todas las veces", seq == ["justify", "start", "justify", "start"] or seq == ["justify", "left", "justify", "left"], seq)
+    seq = []
+    for k in ["Sepia", "Noche", "Sepia", "Claro"]:
+        pg.click(f"#kr .ap-t[aria-label='{k}']"); pg.wait_for_timeout(500); seq.append(pg.evaluate(B)["bg"])
+    check("el tema cambia todas las veces", seq[0] == seq[2] and len(set(seq)) == 3, seq)
+    seq = []
+    for k in ["Literata", "Moderna", "Literata", "Clásica"]:
+        pg.click(f"#kr .ap-f[aria-label='{k}']"); pg.wait_for_timeout(500); seq.append(pg.evaluate(B)["ff"])
+    check("la fuente cambia todas las veces", seq[0] == seq[2] and len(set(seq)) == 3, seq)
+    pg.click("#kr .ap-r:has-text('Cuidar la vista') button:has-text('Sí')"); pg.wait_for_timeout(400)
+    pg.click("#kr .ap-r:has-text('Cuidar la vista') button:has-text('No')"); pg.wait_for_timeout(400)
+    pg.click("#kr .ap-r:has-text('Cuidar la vista') button:has-text('Sí')"); pg.wait_for_timeout(400)
+    check("cuidar la vista se prende y apaga varias veces", pg.evaluate(B)["bg"] in ("rgb(243, 233, 214)", "rgb(28, 24, 21)"), pg.evaluate(B)["bg"])
+    FS = "parseFloat(getComputedStyle(document.querySelector('#kr iframe').contentDocument.body).fontSize)"
+    sizes = []
+    for lab in ["Texto más grande", "Texto más chico", "Texto más grande", "Texto más grande"]:
+        pg.click(f"#kr .ap-st[aria-label='{lab}']"); pg.wait_for_timeout(300); sizes.append(pg.evaluate(FS))
+    check("el tamaño sube y baja todas las veces", sizes[0] > sizes[1] and sizes[2] == sizes[0] and sizes[3] > sizes[2], sizes)
+    modes = []
+    for lab in ["Scroll", "Páginas", "Scroll", "Páginas"]:
+        pg.click(f"#kr .ap-r:has-text('Lectura') button:has-text('{lab}')"); pg.wait_for_timeout(2500)
+        if not pg.evaluate("document.querySelector('#kr .kr-panel').classList.contains('on')"):
+            pg.click("#kr button[aria-label='Apariencia']"); pg.wait_for_timeout(300)
+        modes.append(pg.evaluate("document.querySelector('#kr-view').dataset.mode+':'+(document.querySelector('#kr iframe')?'ok':'sin libro')"))
+    check("el modo de lectura cambia ida y vuelta", modes == ["scrolled:ok", "paginated:ok", "scrolled:ok", "paginated:ok"], modes)
+    check("después de cambiar de modo los márgenes siguen", pick("Márgenes", "Grandes")["pad"] == "34px" and pick("Márgenes", "Chicos")["pad"] == "6px")
+    n = pg.evaluate("document.querySelector('#kr iframe').contentDocument.querySelectorAll('style').length")
+    check("no se acumulan estilos viejos", n < 12, n)
+    check("sin errores al cambiar la apariencia", not errs, errs)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -604,7 +652,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]
