@@ -234,6 +234,8 @@ css.textContent='#kr{position:fixed;inset:0;z-index:30;display:flex;flex-directi
 '#kr .kr-jump{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:4;display:none;max-width:calc(100% - 24px)}#kr .kr-jump.on{display:block}#kr:not(.hide) .kr-jump{bottom:calc(104px + env(safe-area-inset-bottom,0px))}#kr .kr-jump button{height:40px;padding:0 16px;border:1px solid rgba(128,128,128,.25);border-radius:20px;background:var(--krbg);font:600 .82rem var(--sans);box-shadow:0 6px 22px rgba(0,0,0,.2)}'+
 '#kr .kr-fin{position:absolute;inset:0;z-index:20;display:grid;place-items:center;padding:20px;overflow:auto;background:var(--krbg);animation:krfin .4s ease-out}#kr .kr-finc{position:relative;width:100%;max-width:340px;text-align:center}#kr .kr-finp{height:96px;display:grid;place-items:center}#kr .kr-finp .kr-cat{width:152px;height:96px}#kr .kr-fink{display:block;margin-top:14px;color:#5468A3;font:600 .76rem var(--sans);letter-spacing:.12em;text-transform:uppercase}#kr .kr-finc h3{margin:6px 0 2px;font:600 1.7rem/1.15 var(--serif)}#kr .kr-finc p{margin:0;opacity:.7}#kr .kr-fina{display:grid;gap:8px;margin-top:22px}#kr .kr-fina button{width:100%;height:46px;border-radius:23px;margin:0}#kr .kr-fina .kr-fing{border:0;background:transparent;opacity:.7}#kr .kr-conf{position:absolute;inset:0;overflow:hidden;pointer-events:none}#kr .kr-conf i{position:absolute;top:-14px;width:7px;height:12px;border-radius:2px;opacity:0;animation:krconf 2.6s ease-in 1 forwards}@keyframes krconf{0%{opacity:1;transform:translateY(0) rotate(0)}100%{opacity:0;transform:translateY(90vh) rotate(420deg)}}@keyframes krfin{from{opacity:0}}@media(prefers-reduced-motion:reduce){#kr .kr-conf,#kr .kr-mc{animation:none;display:none}#kr .kr-mc{display:block}}'+
 '@media(min-width:700px){#kr .kr-panel{left:50%;right:auto;width:min(560px,100%);border-left:1px solid rgba(128,128,128,.3);border-right:1px solid rgba(128,128,128,.3);transform:translate(-50%,105%)}#kr .kr-panel.on{transform:translate(-50%,0)}}'+
+'.kr-mine{display:block;width:100%;text-align:left;padding:18px 18px 16px;order:-1;grid-column:1/-1;white-space:normal;cursor:pointer}.kr-mine q{display:block;margin:6px 0 10px;font:italic 1.08rem/1.5 var(--serif);color:var(--ink)}.kr-mine q::before{content:"“"}.kr-mine q::after{content:"”"}.kr-mine .kc-k{color:var(--acc);font:600 .7rem var(--sans);letter-spacing:.1em;text-transform:uppercase}.kr-mine-b{color:var(--mute);font-size:.8rem}'+
+'.kr-lf{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 0 12px}.kr-lf::-webkit-scrollbar{display:none}.kr-lf button{flex:none;padding:6px 12px;border-radius:999px;font-size:.78rem;background:var(--soft);color:var(--ink);border:1px solid transparent;box-shadow:none}.kr-lf button.on{background:var(--btn);color:var(--btnInk)}'+
 '#kr .li{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid rgba(128,128,128,.2);border-radius:0;height:auto;min-height:44px;padding:10px 4px;font-weight:500;white-space:normal}'+
 '#kr .li small{display:block;opacity:.65;font-weight:400;margin-top:2px}'+
 '#kr .row{display:flex;align-items:center;gap:8px;margin:10px 0;flex-wrap:wrap}#kr .row>b{min-width:78px;font-weight:600;font-size:.85rem}'+
@@ -708,11 +710,14 @@ async function open(o){
         }
         if(AU.gen!==gen)return;
         const nh=nextHref(seg.href);if(!nh)break;
+        if(AU.sleep==='cap'){AU.sleep=0;AU.rest={...seg,from:seg.text.length};AU.on=false;AU.paused=true;auHl.style.display='none';auNote();say('Terminó el capítulo y se pausó la lectura','ok');return}
         AU.load=true;auNote();seg=await audioText(nh);
       }
     }catch(e){if(AU.gen===gen)say('Audio: '+((e&&e.message)||'error'),'err')}
     if(AU.gen===gen){AU.on=false;AU.paused=false;AU.load=false;auHl.style.display='none';auNote()}
   }
+  // temporizador para dormirse escuchando: pausa (no detiene), así se puede seguir después
+  const auSleep=v=>{clearTimeout(AU.sleepT);AU.sleep=v||0;if(typeof v==='number'&&v>0){AU.sleepT=setTimeout(()=>{AU.sleep=0;if(AU.on){pauseAudio();say('Se pausó la lectura. ¡Que descanses!','ok')}},v*60000);say('La lectura se pausa en '+v+' minutos','ok')}else if(v==='cap')say('La lectura se pausa al terminar este capítulo','ok')};
   const pauseAudio=()=>{if(!AU.on)return;AU.paused=true;if(aCfg().eng==='ai'&&AU.audio){AU.audio.pause()}else{AU.gen++;try{speechSynthesis.cancel()}catch(e){}AU.rest=AU.seg?{...AU.seg,from:AU.at}:null;AU.on=false}auNote()};
   const resumeAudio=()=>{if(!AU.paused)return;if(AU.on&&AU.audio){AU.paused=false;AU.audio.play().catch(()=>{});auNote()}else if(AU.rest){const q=AU.rest;AU.rest=null;runAudio(q)}};
   const auHl=el('div','kr-hl'),aup=el('div','kr-aup'),auPicker=el('div','kr-pick');
@@ -759,6 +764,7 @@ async function open(o){
       else{const s=document.createElement('select');s.style.cssText='width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin:6px 0';vs.forEach(v=>{const o2=document.createElement('option');o2.value=v.voiceURI;o2.textContent=v.name+' ('+v.lang+')';s.append(o2)});s.value=vs.some(v=>v.voiceURI===c.dev)?c.dev:vs[0].voiceURI;s.onchange=()=>setA('dev',s.value);b.append(s)}
     }
     chips('Resaltar',[['Sí',true],['No',false]],()=>aCfg().hl!==false,v=>{setA('hl',v);if(!v)auHl.style.display='none'});
+    chips('Apagar',[['No',0],['15 min',15],['30 min',30],['Al terminar el capítulo','cap']],()=>AU.sleep||0,v=>{auSleep(v)});
     chips('Velocidad',[['Lenta',0.85],['Normal',1],['Rápida',1.25],['Muy rápida',1.5]],()=>aCfg().rate,v=>{setA('rate',v);if(AU.audio)AU.audio.playbackRate=v});
     b.append(el('p','note','Después de tocar Leer, tocá la palabra donde querés empezar. Sigue solo con las páginas y los capítulos siguientes.'));
     // música de Spotify mientras leés
@@ -1060,6 +1066,11 @@ function renderLib(){
   host.textContent='';
   {const h=new Date().getHours(),g=el('div','greet',(h<5||h>=20?'Buenas noches':h<13?'Buen día':'Buenas tardes')+(window.kUserName?', '+window.kUserName:''));g.id='lib-greet';host.append(g)}
   host.append(el('h2','vt','Mi biblioteca'),el('p','vs','Tus libros, incluso sin conexión.'));cont(); // la tarjeta para seguir leyendo va primero
+  // una frase que subrayaste, distinta cada día: invita a volver a esa página
+  {const all=[];lib().forEach(x=>{(store.get(hlKey(x.id),[])||[]).forEach(m=>{const t=String(m.text||'').replace(/\s+/g,' ').trim();if(t.length>=25)all.push({x,m,t})})});
+   if(all.length){const day=Math.floor(Date.now()/864e5),q=all[day%all.length],c=el('button','card kr-mine');c.type='button';c.setAttribute('aria-label','Volver a esta frase en '+q.x.title);
+     c.append(el('small','kc-k','Una frase tuya'),el('q','',q.t.length>220?q.t.slice(0,217).replace(/\s+\S*$/,'')+'…':q.t),el('small','kr-mine-b',(window.kTitle?window.kTitle(q.x.title):q.x.title)+(q.x.author?' · '+q.x.author:'')));
+     c.onclick=()=>open({id:q.x.id,url:q.x.url,title:q.x.title,author:q.x.author,cached:true,local:q.x.local,cfi:q.m.cfi});host.append(c)}}
   const S0=stats(),sc=el('div','card kr-stats');
   [[String(S0.streak),S0.streak===1?'día seguido':'días seguidos'],[fmtMin(S0.today),'hoy'],[fmtMin(S0.week),'esta semana']].forEach(([v,k])=>{const c=el('div','kr-sc');c.append(el('b','',v),el('small','',k));sc.append(c)});
   const goalM=(window.KEx&&window.KEx.goal())||10,gS=goalM*60,pctG=Math.min(1,S0.today/gS);
@@ -1084,7 +1095,12 @@ function renderLib(){
   const grid=el('div','kr-rgrid');sec.append(grid);
   if(!l.length){sec.append(el('p','hint2','Todavía no abriste ningún libro. Buscá uno y tocá “Leer en la app”, o abrí un archivo.'));const g=btn('Buscar mi primer libro',()=>window.showView&&window.showView('buscar'));g.classList.add('empty-cta');sec.append(g)};
   if(showMode==='shelves')libShelves(sec,l);
-  else l.forEach(x=>{
+  else{
+  const fin=x=>(x.pct||0)>=.985||store.get('kr_fin_'+x.id,false)===true,F={todos:['Todos',()=>true],leyendo:['Leyendo',x=>(x.pct||0)>0&&!fin(x)],terminados:['Terminados',fin],nuevos:['Sin empezar',x=>!(x.pct||0)&&!fin(x)]};
+  let lf=store.get('kr_lf','todos');if(!F[lf])lf='todos';
+  if(l.length>=3){const fc=el('div','kr-lf');Object.keys(F).forEach(k=>{const n=l.filter(F[k][1]).length;if(k!=='todos'&&!n)return;const b=el('button',k===lf?'on':'',F[k][0]+' · '+n);b.type='button';b.setAttribute('aria-pressed',k===lf);b.onclick=()=>{store.set('kr_lf',k);renderLib()};fc.append(b)});grid.before(fc)}
+  const shown=l.filter(F[lf][1]);if(!shown.length&&l.length)grid.append(el('p','hint2','No hay libros en este grupo.'));
+  shown.forEach(x=>{
     const r=el('div','lib-item'),d=el('div'),cv=store.get('kr_cov_'+x.id,'')||x.img||'';{const ph=()=>{const p=el('button','lib-cov ph');p.append(coverArt(x.title,x.author));p.type='button';p.setAttribute('aria-label','Leer '+x.title);p.onclick=()=>{if(Date.now()-lpT>700)go()};return p};
       if(cv){const im=el('img','lib-cov');im.src=cv;im.alt='Leer '+x.title;im.loading='lazy';im.onclick=()=>{if(Date.now()-lpT>700)go()};im.onerror=()=>im.replaceWith(ph());r.append(im)}else r.append(ph())}d.append(el('b','',window.kTitle?window.kTitle(x.title):x.title),el('small','',(x.author?x.author+' · ':'')+Math.round((x.pct||0)*100)+'% · '+(x.local?'archivo propio · ':'')+fmtDate(x.t)));
     const bar=el('div','lib-bar'),i=el('i');i.style.width=Math.round((x.pct||0)*100)+'%';bar.append(i);d.append(bar);
@@ -1094,7 +1110,7 @@ function renderLib(){
     const dv=btn('Drive',()=>actDrive(x),'Subir a Google Drive','ghost');
     const del=btn('Quitar',()=>actRemove(x),'Quitar','ghost');
     const bw=el('div','lib-btns');bw.append(rv,ls,dv,del);r.append(d,bw);longPress(r,()=>actionMenu(x));grid.append(r);
-  });
+  })}
   host.append(sec);
   if(window.KEx)window.KEx.render(host);
   try{window.KSoc&&window.KSoc.syncLib&&window.KSoc.syncLib()}catch(e){} // la biblioteca que ven los amigos

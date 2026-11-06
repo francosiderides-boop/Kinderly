@@ -693,6 +693,45 @@ def t_subrayar_con_dedo(b, base, sin_api=False):
     ctx.close()
 
 
+def t_mejoras_biblioteca(b, base):
+    lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "pct": .42, "t": 3}, {"id": "x1", "url": "https://www.gutenberg.org/x1.epub", "title": "Don Quijote", "author": "Cervantes", "pct": 1, "t": 2}, {"id": "x2", "url": "https://www.gutenberg.org/x2.epub", "title": "Cuentos de la selva", "author": "Quiroga", "pct": 0, "t": 1}]
+    hl = [{"cfi": "epubcfi(/6/4!/4/4/18[I]/14,/1:0,/1:25)", "text": "Y puesta denodadamente en ejecución aquella osada ley", "color": "amarillo", "note": "", "t": 1}]
+    errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true", "kr_hl_" + MARIANELA: json.dumps(hl)}); pg = page(ctx, base + "index.html#biblioteca", errs)
+    check("aparece una frase subrayada en la biblioteca", "denodadamente" in pg.inner_text(".kr-mine q") and "Marianela" in pg.inner_text(".kr-mine"))
+    chips = pg.evaluate("[...document.querySelectorAll('.kr-lf button')].map(b=>b.textContent)")
+    check("los filtros cuentan cada grupo", chips == ["Todos · 3", "Leyendo · 1", "Terminados · 1", "Sin empezar · 1"], chips)
+    pg.click(".kr-lf button:has-text('Terminados')"); pg.wait_for_timeout(200)
+    names = pg.evaluate("[...document.querySelectorAll('.kr-recent .lib-item b')].map(b=>b.textContent)")
+    check("el filtro Terminados muestra solo esos", names == ["Don Quijote"], names)
+    pg.click(".kr-lf button:has-text('Todos')"); pg.wait_for_timeout(200)
+    check("Todos vuelve a mostrar los tres", pg.locator(".kr-recent .lib-item").count() == 3)
+    pg.click(".kr-mine"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(600)
+    check("tocar la frase abre el libro en esa parte", "denodadamente" in pg.evaluate("document.querySelector('#kr iframe').contentDocument.body.textContent"))
+    pg.evaluate("document.querySelector('#kr .kr-top button').click()"); pg.wait_for_timeout(300)
+    check("sin errores en la biblioteca", not errs, errs)
+    ctx.close()
+
+
+def t_temporizador(b, base):
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); ctx.add_init_script(TTS_STUB)
+    ctx.add_init_script("const st=window.setTimeout;window.setTimeout=(f,d,...a)=>st(f,d===15*60000?1500:d,...a)")
+    pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(300)
+    for _ in range(6):
+        pg.keyboard.press("ArrowRight"); pg.wait_for_timeout(120)
+    pg.evaluate("window.__tts.delay=50;window.__tts.step=200")
+    pg.click("#kr button[aria-label='Audiolectura']"); pg.wait_for_timeout(200)
+    pg.click("#kr .row button:has-text('15 min')"); pg.wait_for_timeout(100)
+    pg.click("#kr .kr-play"); pg.wait_for_timeout(100); v = pg.viewport_size; pg.mouse.click(v["width"] / 2, 150); pg.wait_for_timeout(600)
+    check("la lectura arranca", pg.locator("#kr .kr-aup button:has-text('Pausa')").count() == 1 or pg.evaluate("window.__tts.said.length") >= 1)
+    pg.wait_for_timeout(2000)
+    check("al cumplirse el tiempo se pausa", pg.locator("#kr .kr-aup button:has-text('Seguir')").count() == 1, pg.inner_text("#kr .kr-aup"))
+    check("avisa que se pausó", "descanses" in pg.inner_text("#status"))
+    pg.evaluate("document.querySelector('#kr .kr-aup button:last-child').click()")
+    check("sin errores con el temporizador", not errs, errs)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -749,7 +788,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho), ("subrayados", t_subrayados), ("subrayar_dedo", t_subrayar_con_dedo), ("subrayados_viejo", lambda b, base: t_subrayados(b, base, True)), ("subrayar_dedo_viejo", lambda b, base: t_subrayar_con_dedo(b, base, True))]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho), ("subrayados", t_subrayados), ("subrayar_dedo", t_subrayar_con_dedo), ("subrayados_viejo", lambda b, base: t_subrayados(b, base, True)), ("subrayar_dedo_viejo", lambda b, base: t_subrayar_con_dedo(b, base, True)), ("mejoras_biblioteca", t_mejoras_biblioteca), ("temporizador", t_temporizador)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]
