@@ -1,3 +1,4 @@
+from pathlib import Path
 import os
 """Pruebas de Kinderly en Chromium (Playwright).
 
@@ -18,6 +19,8 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 MOCK = REPO / "tests" / "fbmock"
 OUT = pathlib.Path(tempfile.mkdtemp(prefix="kinderly-tests-"))
 MARIANELA = "https://www.gutenberg.org/ebooks/17340.epub.noimages"
+_fx = Path(__file__).parent / "fixtures" / "marianela.epub"
+FIXTURE_B64 = __import__("base64").b64encode(_fx.read_bytes()).decode() if _fx.exists() else ""
 LOVECRAFT = "https://archive.org/download/en-las-montanas-de-la-locura-h.-p.-lovecraft/En%20Las%20Montanas%20De%20La%20Locura%20-%20H.P.%20Lovecraft.epub"
 BASE_LS = {"k_welcome": "1", "k_inst_x": "1", "kr_air": json.dumps({"off": 1})}
 READY = "document.querySelector('#kr')&&!document.querySelector('#kr .kr-msg')"
@@ -43,6 +46,16 @@ def ctx_for(b, ls=None, fdb=None, deny=False, sw=False, **kw):
     if not sw:
         opts["service_workers"] = "block"
     ctx = b.new_context(**opts)
+    # Marianela se sirve desde una copia local (dominio público): las pruebas no dependen de que Gutenberg esté en línea
+    def dl(route):
+        try:
+            if json.loads(route.request.post_data or "{}").get("url") == MARIANELA:
+                route.fulfill(status=200, content_type="application/json", body=json.dumps({"ok": True, "data": FIXTURE_B64})); return
+        except Exception:
+            pass
+        route.continue_()
+    if FIXTURE_B64:
+        ctx.route("**/script.google.com/**", dl)
     init = ""
     if fdb is not None:
         init += "window.__fdb=" + json.dumps(fdb) + ";" + ("window.__fdbDeny=1;" if deny else "")
@@ -622,6 +635,14 @@ def t_ancho(b, base):
     errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
     pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(300)
     pg.click("#kr button[aria-label='Apariencia']"); pg.wait_for_timeout(200)
+    ctx.close()
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true", "kr_cfg": json.dumps({"cw": "completo"})}, viewport={"width": 1440, "height": 900}, device_scale_factor=1); pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(400)
+    check("si antes quedó Completo guardado, vuelve a la columna cómoda", pg.evaluate("Math.round(document.querySelector('#kr-view').getBoundingClientRect().width)") == 720)
+    ctx.close()
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
+    pg.evaluate(f"window.KReader.open({{url:'{MARIANELA}',title:'Marianela',author:'x'}})"); pg.wait_for_function(READY, timeout=120000); pg.wait_for_timeout(300)
+    pg.click("#kr button[aria-label='Apariencia']"); pg.wait_for_timeout(200)
     check("en el celular el texto usa todo el ancho y no aparece la opción", pg.evaluate("document.querySelector('#kr-view').getBoundingClientRect().width") == 390 and pg.locator("#kr .ap-r:has-text('Ancho del texto')").count() == 0)
     ctx.close()
 
@@ -732,6 +753,34 @@ def t_temporizador(b, base):
     ctx.close()
 
 
+def t_club_charla(b, base):
+    seed = {"users": {"u1": {"username": "franco", "usernameLower": "franco"}, "u2": {"name": "Ana", "username": "ana", "usernameLower": "ana"}},
+            "friendships": {"u1_u2": {"members": ["u1", "u2"], "names": {"u1": "franco", "u2": "Ana"}}},
+            "clubReads": {"c1": {"title": "Marianela", "author": "Galdós", "url": MARIANELA, "from": "u2", "fromName": "Ana", "members": ["u1", "u2"], "joined": ["u1", "u2"], "names": {"u1": "franco", "u2": "Ana"}, "deadline": 1900000000000, "chapters": ["I", "II", "III"]}},
+            "clubReads/c1/progress": {"u1": {"uid": "u1", "done": 2, "pct": .5}, "u2": {"uid": "u2", "done": 3, "pct": .9}},
+            "clubReads/c1/notes": {"0_u2": {"uid": "u2", "name": "Ana", "ch": 0, "text": "Me encantó Nela"}, "0_u1": {"uid": "u1", "name": "franco", "ch": 0, "text": "Muy triste el comienzo"}},
+            "clubReads/c1/replies": {"r1": {"uid": "u2", "name": "Ana", "note": "0_u1", "ch": 0, "text": "¡Sí, re triste!"}},
+            "clubReads/c1/likes": {"0_u1_u2": {"uid": "u2", "note": "0_u1", "ch": 0}}}
+    errs = []; ctx = ctx_for(b, {"kr_qs_off": "true", "k_club_c1": "2"}, seed); pg = page(ctx, base + "index.html#club", errs); pg.wait_for_timeout(1200)
+    pg.click("#club-body button:has-text('Comentarios')"); pg.wait_for_timeout(300); pg.click(".cl-ch >> nth=0"); pg.wait_for_timeout(800)
+    check("se ve el comentario de la amiga", "Me encantó Nela" in pg.inner_text(".ks-box .cl-notes"))
+    check("en tu comentario ves el corazón y la respuesta de tu amiga", "♥ 1 amigo" in pg.inner_text(".ks-box .cl-mine") and "re triste" in pg.inner_text(".ks-box .cl-mine"), pg.inner_text(".ks-box .cl-mine"))
+    pg.click(".ks-box .cl-notes .cl-like"); pg.wait_for_timeout(500)
+    likes = pg.evaluate("Object.values(window.__fdb['clubReads/c1/likes']||{}).filter(x=>x.uid==='u1')")
+    check("dar me gusta se guarda", len(likes) == 1 and likes[0]["note"] == "0_u2", likes)
+    check("el corazón queda marcado", "♥ 1" in pg.inner_text(".ks-box .cl-notes .cl-like"), pg.inner_text(".ks-box .cl-notes .cl-like"))
+    pg.click(".ks-box .cl-notes .cl-like"); pg.wait_for_timeout(500)
+    check("tocar otra vez lo saca", len(pg.evaluate("Object.values(window.__fdb['clubReads/c1/likes']||{}).filter(x=>x.uid==='u1')")) == 0)
+    pg.click(".ks-box .cl-notes .cl-rb"); pg.fill(".ks-box .cl-rf input", "¡A mí también!"); pg.click(".ks-box .cl-rf button"); pg.wait_for_timeout(500)
+    reps = pg.evaluate("Object.values(window.__fdb['clubReads/c1/replies']).filter(x=>x.uid==='u1')")
+    check("responder se guarda para ese comentario", len(reps) == 1 and reps[0]["note"] == "0_u2" and reps[0]["ch"] == 0, reps)
+    check("la respuesta aparece abajo del comentario", "A mí también" in pg.inner_text(".ks-box .cl-notes .cl-reps"))
+    pg.click(".ks-box .cl-notes .cl-rdel"); pg.wait_for_timeout(500)
+    check("podés borrar tu respuesta", len(pg.evaluate("Object.values(window.__fdb['clubReads/c1/replies']).filter(x=>x.uid==='u1')")) == 0)
+    check("sin errores en la charla del club", not errs, errs)
+    ctx.close()
+
+
 def t_lector_completo(b, base):
     lib = [{"id": MARIANELA, "url": MARIANELA, "title": "Marianela", "author": "Galdós", "cfi": "", "pct": .42, "t": 1}]
     errs = []; ctx = ctx_for(b, {"kr_lib": json.dumps(lib), "kr_qs_off": "true"}); pg = page(ctx, base + "index.html#biblioteca", errs)
@@ -788,7 +837,7 @@ def t_instalar(b, base):
 
 TESTS = [("versiones", t_versiones), ("inicio", t_inicio), ("meta", t_meta), ("busqueda", t_busqueda), ("amigos", t_amigos),
          ("sincronizacion", t_sincronizacion), ("copia", t_copia), ("lector", t_lector), ("lector_sin_indice", t_lector_sin_indice),
-         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho), ("subrayados", t_subrayados), ("subrayar_dedo", t_subrayar_con_dedo), ("subrayados_viejo", lambda b, base: t_subrayados(b, base, True)), ("subrayar_dedo_viejo", lambda b, base: t_subrayar_con_dedo(b, base, True)), ("mejoras_biblioteca", t_mejoras_biblioteca), ("temporizador", t_temporizador)]
+         ("sin_conexion", t_sin_conexion), ("instalar", t_instalar), ("navegacion", t_navegacion), ("perfil", t_perfil), ("regla", t_regla_y_barra), ("club", t_club), ("lector_completo", t_lector_completo), ("lector_diseno", t_lector_diseno), ("audio", t_audio), ("narrador", t_narrador), ("detalles", t_detalles), ("vista", t_vista), ("apariencia", t_apariencia_ida_y_vuelta), ("ancho", t_ancho), ("subrayados", t_subrayados), ("subrayar_dedo", t_subrayar_con_dedo), ("subrayados_viejo", lambda b, base: t_subrayados(b, base, True)), ("subrayar_dedo_viejo", lambda b, base: t_subrayar_con_dedo(b, base, True)), ("mejoras_biblioteca", t_mejoras_biblioteca), ("temporizador", t_temporizador), ("club_charla", t_club_charla)]
 
 if __name__ == "__main__":
     only = sys.argv[1:]

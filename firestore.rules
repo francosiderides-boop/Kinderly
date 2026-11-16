@@ -171,6 +171,27 @@ service cloud.firestore {
           && request.resource.data.ch < get(/databases/$(database)/documents/clubReads/$(id)/progress/$(request.auth.uid)).data.done;
         allow delete: if signedIn() && resource.data.uid == request.auth.uid;
       }
+      // v198 · me gusta y respuestas a los comentarios, solo sobre capítulos que ya leíste
+      match /likes/{likeId} {
+        allow read: if signedIn() && request.auth.uid in clubDoc(id).joined;
+        allow create: if signedIn() && request.auth.uid in clubDoc(id).joined
+          && request.resource.data.keys().hasOnly(['uid', 'note', 'ch'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.note is string && request.resource.data.ch is int
+          && likeId == request.resource.data.note + '_' + request.auth.uid
+          && request.resource.data.ch < get(/databases/$(database)/documents/clubReads/$(id)/progress/$(request.auth.uid)).data.done;
+        allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      }
+      match /replies/{replyId} {
+        allow read: if signedIn() && request.auth.uid in clubDoc(id).joined;
+        allow create: if signedIn() && request.auth.uid in clubDoc(id).joined
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'note', 'ch', 'text', 'updatedAt'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.note is string && request.resource.data.ch is int
+          && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 400
+          && request.resource.data.ch < get(/databases/$(database)/documents/clubReads/$(id)/progress/$(request.auth.uid)).data.done;
+        allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+      }
     }
   }
 }

@@ -319,7 +319,7 @@ async function open(o){
   const turn=d=>{root.classList.add('hide');fsEnter();d>0?rend.next():rend.prev()};
   const top=el('div','kr-bar kr-top'),bot=el('div','kr-bar kr-bot'),view=el('div');view.id='kr-view';
   // en la compu el renglón no se estira a todo el monitor: el texto queda en una columna cómoda y centrada
-  const CW={angosto:560,medio:720,completo:0},cwNow=()=>CW[prefs().cw]!=null?CW[prefs().cw]:CW.medio;
+  const CW={angosto:560,medio:720,completo:0},cwNow=()=>CW[prefs().ancho]!=null?CW[prefs().ancho]:CW.medio;
   const applyWidth=()=>{const w=cwNow();root.style.setProperty('--krw',w?w+'px':'100%');if(rend&&rend.manager){rend.manager._stageSize=undefined;try{rend.resize()}catch(e){}}};
   const msg=el('div','kr-msg'),msgT=el('span','kr-msgt','Preparando tu libro…');{const cv=store.get('kr_cov_'+id,'')||o.img||(lib().find(x=>x.id===id)||{}).img||'',w=el('span','kr-mc');if(cv){const im=el('img');im.src=cv;im.alt='';im.onerror=()=>{im.replaceWith(coverArt(title,o.author))};w.append(im)}else w.append(coverArt(title,o.author));msg.append(w,msgT)}
   const pnl=el('div','kr-panel');const selbar=el('div','selbar');
@@ -578,7 +578,7 @@ async function open(o){
     b.append(fr);
     seg('Interlineado',[['Justo',1.35],['Normal',1.6],['Amplio',1.9]],()=>prefs().lh,v=>{setPref('lh',v);style()});
     seg('Márgenes',[['Chicos',6],['Medios',18],['Grandes',34]],()=>prefs().margin,v=>{setPref('margin',v);style()});
-    if(innerWidth>=700)seg('Ancho del texto',[['Angosto','angosto'],['Medio','medio'],['Completo','completo']],()=>prefs().cw||'medio',v=>{setPref('cw',v);applyWidth()});
+    if(innerWidth>=700)seg('Ancho del texto',[['Angosto','angosto'],['Medio','medio'],['Completo','completo']],()=>prefs().ancho||'medio',v=>{setPref('ancho',v);applyWidth()});
     seg('Alineación',[['Izquierda',false],['Justificada',true]],()=>!!prefs().just,v=>{setPref('just',v);style()});
     seg('Lectura',[['Páginas','paginated'],['Scroll','scrolled']],()=>prefs().mode||'paginated',v=>{setPref('mode',v);if(remount)remount()});
     const sl=(label,key,max)=>{const i=el('input');i.type='range';i.min=0;i.max=max;i.value=prefs()[key]||0;i.className='ap-rg';i.setAttribute('aria-label',label);i.oninput=()=>{setPref(key,+i.value);comfort()};row(label,i)};
